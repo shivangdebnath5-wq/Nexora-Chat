@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PulseChat</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      --bg-main: #f3f4f6;
+      --bg-card: #ffffff;
+      --bg-sidebar: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --msg-sent: #2563eb;
+      --msg-sent-text: #ffffff;
+      --msg-received: #e2e8f0;
+      --msg-received-text: #0f172a;
+      --input-bg: #f1f5f9;
+      --shadow: rgba(0, 0, 0, 0.15);
+      --status-online: #22c55e;
+      --status-idle: #eab308;
+      --status-dnd: #ef4444;
+      --status-offline: #94a3b8;
+    }
+
+    [data-theme="dark"] {
+      --bg-main: #0f172a;
+      --bg-card: #1e293b;
+      --bg-sidebar: #0f172a;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --msg-sent: #2563eb;
+      --msg-sent-text: #ffffff;
+      --msg-received: #334155;
+      --msg-received-text: #f8fafc;
+      --input-bg: #334155;
+      --shadow: rgba(0, 0, 0, 0.4);
+      --status-online: #22c55e;
+      --status-idle: #eab308;
+      --status-dnd: #ef4444;
+      --status-offline: #64748b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
+    body { background-color: var(--bg-main); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .card { background: var(--bg-card); width: 100%; max-width: 420px; padding: 32px; border-radius: 16px; box-shadow: 0 10px 25px var(--shadow); border: 1px solid var(--border); }
+    h2, h3 { margin-bottom: 20px; color: var(--text-main); text-align: center; font-weight: 700; }
+    input, select { width: 100%; padding: 12px 14px; margin-bottom: 14px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
+    input:focus { border-color: var(--primary); }
+    button { width: 100%; padding: 12px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 10px; font-size: 14px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    button:hover { background: var(--primary-hover); }
+    button.secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+    button.secondary:hover { background: var(--input-bg); color: var(--text-main); }
+    .hidden { display: none !important; }
+    
+    /* Layout */
+    #app-screen { width: 950px; height: 620px; display: flex; background: var(--bg-card); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px var(--shadow); border: 1px solid var(--border); }
+    .sidebar { width: 320px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--bg-sidebar); }
+    .sidebar-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: relative; }
+    .main-chat { flex: 1; display: flex; flex-direction: column; background: var(--bg-card); position: relative; }
+    .chat-header { padding: 16px 20px; border-bottom: 1px solid var(--border); font-weight: 600; display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); z-index: 2; }
+    .messages-list { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; background-size: cover; background-position: center; background-repeat: no-repeat; }
+    
+    /* Profile Pictures & Status Badges */
+    .avatar-container { position: relative; display: inline-block; flex-shrink: 0; cursor: pointer; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); background: #dce3e6; display: block; }
+    .avatar-large { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); display: block; margin: 0 auto 12px auto; }
+    
+    /* Profile Frames */
+    .frame-gold { border: 2px solid #fbbf24 !important; box-shadow: 0 0 10px #fbbf24; }
+    .frame-neon { border: 2px solid #06b6d4 !important; box-shadow: 0 0 12px #06b6d4; }
+    .frame-rose { border: 2px solid #e11d48 !important; box-shadow: 0 0 10px #e11d48; }
+    .frame-void { border: 2px solid #8b5cf6 !important; box-shadow: 0 0 12px #8b5cf6; }
+
+    .status-badge {
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 2px solid var(--bg-card);
+      background-color: var(--status-offline);
+    }
+    .status-badge.online { background-color: var(--status-online); }
+    .status-badge.idle { background-color: var(--status-idle); }
+    .status-badge.dnd { background-color: var(--status-dnd); }
+    .status-badge.offline { background-color: var(--status-offline); }
+
+    .user-profile-info { display: flex; align-items: center; gap: 10px; }
+
+    /* Custom Status Selector Menu */
+    .status-menu {
+      position: absolute;
+      top: 55px;
+      left: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 8px 20px var(--shadow);
+      z-index: 100;
+      width: 180px;
+      display: flex;
+      flex-direction: column;
+      padding: 6px 0;
+    }
+    .status-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text-main);
+    }
+    .status-option:hover { background: var(--input-bg); }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+    /* Messages & Attachments */
+    .message-wrapper { display: flex; flex-direction: column; position: relative; width: 100%; user-select: none; }
+    .message-wrapper.sent { align-items: flex-end; }
+    .message-wrapper.received { align-items: flex-start; }
+    
+    .message-body-row { display: flex; align-items: flex-end; gap: 8px; max-width: 75%; position: relative; }
+    .message-wrapper.sent .message-body-row { flex-direction: row-reverse; }
+
+    .message { padding: 10px 14px; border-radius: 14px; font-size: 14px; word-break: break-word; display: flex; flex-direction: column; gap: 6px; line-height: 1.4; position: relative; cursor: pointer; }
+    .message.sent { background: var(--msg-sent); color: var(--msg-sent-text); border-bottom-right-radius: 4px; }
+    .message.received { background: var(--msg-received); color: var(--msg-received-text); border-bottom-left-radius: 4px; }
+    .message img.attachment-img { max-width: 100%; max-height: 220px; border-radius: 8px; object-fit: cover; cursor: pointer; }
+    .file-attachment { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(0, 0, 0, 0.08); border-radius: 8px; text-decoration: none; color: inherit; font-size: 13px; font-weight: 500; }
+    .message.sent .file-attachment { background: rgba(255, 255, 255, 0.2); color: white; }
+    .map-link { color: inherit; text-decoration: underline; font-weight: bold; }
+
+    /* Single Popover Fix */
+    .msg-popover {
+      position: absolute;
+      top: -38px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 15px var(--shadow);
+      z-index: 50;
+      animation: popIn 0.12s ease-out;
+    }
+    .message-wrapper.sent .msg-popover { right: 0; }
+    .message-wrapper.received .msg-popover { left: 40px; }
+
+    @keyframes popIn {
+      from { transform: scale(0.85); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .popover-reactions { display: flex; gap: 4px; border-right: 1px solid var(--border); padding-right: 6px; }
+    .popover-reactions span { cursor: pointer; font-size: 15px; padding: 2px 4px; border-radius: 6px; transition: transform 0.1s; }
+    .popover-reactions span:hover { transform: scale(1.3); background: var(--input-bg); }
+    
+    .popover-btn { cursor: pointer; font-size: 14px; padding: 4px 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .popover-btn:hover { background: var(--input-bg); }
+
+    .popover-dropdown {
+      position: absolute;
+      top: 36px;
+      right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 6px 16px var(--shadow);
+      display: flex;
+      flex-direction: column;
+      width: 130px;
+      z-index: 60;
+      overflow: hidden;
+    }
+    .popover-dropdown-item { padding: 8px 12px; font-size: 12px; cursor: pointer; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+    .popover-dropdown-item:hover { background: var(--input-bg); }
+    .popover-dropdown-item.danger { color: #ef4444; }
+
+    /* Emoji Reaction Badge below message */
+    .active-reactions {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      margin-top: 4px;
+      background: var(--bg-card);
+      padding: 2px 8px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 6px var(--shadow);
+      width: fit-content;
+      cursor: pointer;
+    }
+    .message-wrapper.sent .active-reactions { margin-right: 40px; }
+    .message-wrapper.received .active-reactions { margin-left: 40px; }
+
+    /* Typing Status */
+    .typing-status { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 0 20px 4px; height: 16px; }
+
+    /* Controls & Inputs */
+    .chat-input { padding: 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; background: var(--bg-card); position: relative; z-index: 2; }
+    .input-row { display: flex; gap: 8px; align-items: center; }
+    .chat-input input[type="text"] { margin-bottom: 0; flex: 1; }
+    .chat-input button { width: auto; margin-bottom: 0; white-space: nowrap; }
+    .icon-btn { background: var(--input-bg); color: var(--text-main); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; font-size: 16px; border: 1px solid var(--border); }
+    .icon-btn:hover { background: var(--border); }
+    
+    .attachment-preview { display: flex; align-items: center; justify-content: space-between; background: var(--input-bg); padding: 8px 12px; border-radius: 8px; font-size: 12px; color: var(--text-muted); }
+    .attachment-preview button { padding: 4px 8px; font-size: 11px; background: #ef4444; width: auto; margin-bottom: 0; }
+
+    /* Emoji Picker Drawer */
+    .emoji-picker { position: absolute; bottom: 75px; left: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; box-shadow: 0 8px 20px var(--shadow); z-index: 100; max-height: 180px; overflow-y: auto; width: 240px; }
+    .emoji-picker span { font-size: 20px; cursor: pointer; text-align: center; border-radius: 6px; padding: 4px; }
+    .emoji-picker span:hover { background: var(--input-bg); }
+
+    /* Settings Modal */
+    .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+
+    .section { padding: 14px; border-bottom: 1px solid var(--border); }
+    .item-list { list-style: none; overflow-y: auto; max-height: 140px; }
+    .item-list li { padding: 10px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); margin-bottom: 6px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; }
+    .item-list button { width: auto; padding: 4px 10px; margin: 0; font-size: 12px; }
+    .active-friend { background: var(--input-bg) !important; font-weight: 600; border-color: var(--primary) !important; }
+
+    /* Chat extensions */
+    .extension-menu { position:absolute; bottom:74px; left:16px; width:292px; padding:10px; border:1px solid var(--border); border-radius:16px; background:var(--bg-card); box-shadow:0 14px 32px var(--shadow); z-index:101; }
+    .extension-menu h4 { font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; margin:2px 4px 10px; }
+    .extension-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; }
+    .extension-option { width:100%; min-height:44px; justify-content:flex-start; padding:9px; margin:0; background:transparent; color:var(--text-main); border:1px solid transparent; font-size:13px; }
+    .extension-option:hover { background:var(--input-bg); border-color:var(--border); }
+    .extension-card { min-width:230px; max-width:310px; padding:14px; border-radius:14px; background:var(--bg-card); color:var(--text-main); border:1px solid var(--border); box-shadow:0 4px 10px rgba(15,23,42,.08); }
+    .message.sent .extension-card { background:#fff; color:#0f172a; }
+    .extension-title { display:flex; align-items:center; gap:8px; font-weight:700; margin-bottom:9px; }
+    .extension-meta { font-size:12px; color:var(--text-muted); margin-top:8px; }
+    .poll-option { width:100%; margin:6px 0 0; padding:8px 10px; display:flex; justify-content:space-between; background:var(--input-bg); color:var(--text-main); border:1px solid var(--border); border-radius:8px; font-size:13px; }
+    .poll-option:disabled { cursor:default; opacity:.8; }
+    .poll-bar { height:5px; margin-top:4px; border-radius:8px; background:var(--primary); }
+    .timer-display { font-size:28px; font-weight:800; letter-spacing:.04em; color:var(--primary); margin:4px 0; }
+    .sticky-note { background:#fef3a5; color:#4b3b00; transform:rotate(-1deg); border:0; border-radius:3px; box-shadow:2px 3px 7px rgba(0,0,0,.2); }
+    .todo-item, .shopping-item { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
+    .todo-item:last-child, .shopping-item:last-child { border-bottom:0; }
+    .todo-item.done span, .shopping-item.done span { text-decoration:line-through; opacity:.55; }
+    .extension-dialog { max-width:430px; }
+    .extension-dialog h3 { text-align:left; margin-bottom:14px; }
+    .extension-dialog label { font-size:12px; color:var(--text-muted); display:block; margin:8px 0 5px; }
+    .extension-dialog textarea { width:100%; min-height:72px; resize:vertical; padding:12px 14px; background:var(--input-bg); color:var(--text-main); border:1px solid var(--border); border-radius:8px; }
+    .extension-dialog .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
+    .extension-dialog .dialog-actions button { width:auto; margin:0; }
+    .settings-section { margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
+    .status-pills { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+    .status-pills button { margin:0; padding:8px 5px; font-size:11px; background:var(--input-bg); color:var(--text-main); border:1px solid var(--border); }
+    .status-pills button.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+  </style>
+</head>
+<body>
+
+  <!-- Auth Screen -->
+  <div id="auth-screen" class="card">
+    <h2 id="auth-title">PulseChat Login</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <input type="date" id="dob">
+    <button id="auth-btn" onclick="handleAuth()">Sign In</button>
+    <button class="secondary" onclick="toggleAuthMode()">Create an Account</button>
+  </div>
+
+  <!-- Main App Screen -->
+  <div id="app-screen" class="hidden">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="user-profile-info">
+          <div class="avatar-container" onclick="toggleStatusMenu(event)">
+            <img id="sidebar-avatar" class="avatar" src="" alt="Profile">
+            <span id="sidebar-status-badge" class="status-badge online"></span>
+          </div>
+          <div><strong id="user-display"></strong><small id="quick-status-label" style="display:block;color:var(--text-muted);font-size:11px;line-height:1.3;"></small></div>
+        </div>
+        <div style="display:flex; gap:6px;"><button class="icon-btn" onclick="openHubCreator()" title="Create a Hub">+</button><button class="icon-btn" onclick="openSettings()" title="Settings">⚙️</button></div>
+
+        <!-- Custom Status Selector -->
+        <div id="status-menu" class="status-menu hidden">
+          <div class="status-option" onclick="setUserStatus('online')">
+            <span class="status-dot" style="background:var(--status-online);"></span> Online
+          </div>
+          <div class="status-option" onclick="setUserStatus('idle')">
+            <span class="status-dot" style="background:var(--status-idle);"></span> Idle
+          </div>
+          <div class="status-option" onclick="setUserStatus('dnd')">
+            <span class="status-dot" style="background:var(--status-dnd);"></span> Do Not Disturb
+          </div>
+          <div class="status-option" onclick="setUserStatus('offline')">
+            <span class="status-dot" style="background:var(--status-offline);"></span> Invisible / Offline
+          </div>
+        </div>
+      </div>
+      
+      <!-- Add Friend Section -->
+      <div class="section">
+        <input type="text" id="search-username" placeholder="Search username...">
+        <button onclick="sendFriendRequest()">Add Friend</button>
+      </div>
+
+      <!-- Friend Requests -->
+      <div class="section">
+        <small style="color:var(--text-muted);">Requests</small>
+        <ul id="requests-list" class="item-list" style="margin-top:6px;"></ul>
+      </div>
+
+      <!-- Friends List -->
+      <div class="section" style="flex:1;">
+        <small style="color:var(--text-muted);">Conversations</small>
+        <ul id="friends-list" class="item-list" style="margin-top:6px;"></ul>
+      </div>
+    </div>
+
+    <!-- Chat Window -->
+    <div class="main-chat">
+      <div id="chat-header" class="chat-header">
+        <button id="mobile-conversations" class="icon-btn" onclick="showMobileSidebar()" title="Conversations">☰</button>
+        <div class="user-profile-info">
+          <div class="avatar-container hidden" id="chat-header-avatar-container">
+            <img id="chat-header-avatar" class="avatar" src="" alt="Friend Avatar">
+            <span id="chat-header-status-badge" class="status-badge offline"></span>
+          </div>
+          <span id="chat-title">Select a friend to message</span>
+        </div>
+        <div class="header-actions">
+          <button id="pinned-messages-btn" class="icon-btn" onclick="togglePinnedMessages()" title="Pinned messages">📌</button>
+          <button id="hub-settings-btn" class="icon-btn hidden" onclick="openHubSettings()" title="Hub settings">⋮</button>
+          <div id="pinned-messages-menu" class="pinned-messages-menu hidden"></div>
+        </div>
+      </div>
+      
+      <div id="messages-list" class="messages-list"></div>
+      <div id="typing-status" class="typing-status"></div>
+      
+      <div class="chat-input hidden" id="chat-input-container">
+        <!-- Emoji Drawer -->
+        <div id="emoji-picker" class="emoji-picker hidden">
+          <span onclick="addEmoji('😀')">😀</span><span onclick="addEmoji('😂')">😂</span><span onclick="addEmoji('😍')">😍</span>
+          <span onclick="addEmoji('😎')">😎</span><span onclick="addEmoji('👍')">👍</span><span onclick="addEmoji('🔥')">🔥</span>
+          <span onclick="addEmoji('🎉')">🎉</span><span onclick="addEmoji('❤️')">❤️</span><span onclick="addEmoji('🙏')">🙏</span>
+          <span onclick="addEmoji('😊')">😊</span><span onclick="addEmoji('🙌')">🙌</span><span onclick="addEmoji('✨')">✨</span>
+        </div>
+
+        <!-- Attachment Preview -->
+        <div id="attachment-preview" class="attachment-preview hidden">
+          <span id="preview-filename"></span>
+          <button onclick="removeAttachment()">Remove</button>
+        </div>
+
+        <div class="input-row">
+          <button class="icon-btn" onclick="toggleEmojiPicker()" title="Add Emoji">😊</button>
+          <button class="icon-btn" onclick="shareLocation()" title="Share Location">📍</button>
+          <button class="icon-btn" onclick="toggleExtensionMenu()" title="Chat extensions">+</button>
+          <label class="icon-btn" title="Attach File">
+            📎
+            <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(event)">
+          </label>
+          <input type="text" id="message-input" placeholder="Type a message..." oninput="sendTypingSignal()" onkeypress="if(event.key==='Enter') sendMessage()">
+          <button id="send-btn" onclick="sendMessage()" style="width: auto;">Send</button>
+        </div>
+        <div id="extension-menu" class="extension-menu hidden"><h4>Send something useful</h4><div class="extension-grid">
+          <button class="extension-option" onclick="openExtension('poll')">Poll</button><button class="extension-option" onclick="openExtension('countdown')">Countdown</button><button class="extension-option" onclick="openExtension('note')">Sticky note</button><button class="extension-option" onclick="openExtension('todo')">To-do list</button><button class="extension-option" onclick="openExtension('calendar')">Calendar event</button><button class="extension-option" onclick="openExtension('game')">Play a game</button><button class="extension-option" onclick="openExtension('shopping')">Shopping list</button>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="card" style="max-width:380px; max-height: 90vh; overflow-y: auto;">
+      <h2>Settings</h2>
+      
+      <!-- Profile Picture Uploader -->
+      <img id="settings-avatar-preview" class="avatar-large" src="" alt="Profile Picture">
+      <label style="font-size:14px; display:block; margin-bottom:6px; text-align:center;">Change Profile Picture</label>
+      <input type="file" id="pfp-input" accept="image/*" onchange="handlePfpChange(event)" style="font-size:12px;">
+
+      <!-- Profile Frame Selector -->
+      <label style="font-size:14px; display:block; margin-bottom:6px; margin-top:10px;">Profile Frame</label>
+      <select id="frame-select" onchange="changeProfileFrame(this.value)">
+        <option value="">None</option>
+        <option value="frame-gold">Golden Halo</option>
+        <option value="frame-neon">Neon Cyan</option>
+        <option value="frame-rose">Rose Quartz</option>
+        <option value="frame-void">Void Purple</option>
+      </select>
+
+      <label style="font-size:14px; display:block; margin-bottom:6px; margin-top:10px;">Theme Mode</label>
+      <select id="theme-select" onchange="changeTheme(this.value)">
+        <option value="light">Light Mode</option>
+        <option value="dark">Dark Mode</option>
+      </select>
+
+      <div class="settings-section"><label style="font-size:14px; display:block; margin-bottom:8px;">Quick status</label><div class="status-pills" id="quick-status-pills">
+        <button onclick="setQuickStatus('free')">Free</button><button onclick="setQuickStatus('studying')">Studying</button><button onclick="setQuickStatus('busy')">Busy</button><button onclick="setQuickStatus('gaming')">Gaming</button><button onclick="setQuickStatus('class')">In class</button><button onclick="setQuickStatus('sleeping')">Sleeping</button>
+      </div><small style="display:block;margin-top:8px;color:var(--text-muted);">After 10 minutes without activity, your status changes to Studying.</small></div>
+
+      <!-- Custom Wallpaper Controls -->
+      <label style="font-size:14px; display:block; margin-bottom:6px; margin-top:10px;">Chat Background Wallpaper</label>
+      <input type="file" id="wallpaper-file" accept="image/*" onchange="handleWallpaperUpload(event)" style="font-size:12px;">
+      <input type="text" id="wallpaper-url" placeholder="Or enter Image URL..." onchange="handleWallpaperUrl(this.value)" style="font-size:12px;">
+      <button onclick="clearWallpaper()" class="secondary" style="font-size:12px; padding:8px;">Reset Default Wallpaper</button>
+
+      <button onclick="closeSettings()" class="secondary" style="margin-top:14px;">Close</button>
+      <button onclick="logout()" style="background:#ef4444; margin-top:8px;">Log Out</button>
+    </div>
+  </div>
+
+  <div id="extension-modal" class="modal hidden"><div class="card extension-dialog"><h3 id="extension-title">New extension</h3><div id="extension-fields"></div><div class="dialog-actions"><button class="secondary" onclick="closeExtension()">Cancel</button><button onclick="sendExtension()">Send</button></div></div></div>
+
+
+  <script>
+    const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><rect width='100%' height='100%' fill='%23dce3e6'/><circle cx='100' cy='100' r='85' fill='none' stroke='%23ffffff' stroke-width='8'/><circle cx='100' cy='80' r='32' fill='%23ffffff'/><path d='M40,170 C40,125 70,125 100,125 C130,125 160,125 160,170 Z' fill='%23ffffff'/></svg>`;
+
+    let isLogin = true;
+    let currentUser = null;
+    let activeFriend = null;
+    let currentAttachment = null;
+    let editingMsgId = null;
+    let knownMsgCount = 0;
+    let typingTimer = null;
+    let activePopoverMsgId = null;
+    let activeMoreMenuMsgId = null;
+    let activeExtension = null;
+    let lastUserActivity = Date.now();
+
+    const DB = {
+      getUsers: () => JSON.parse(localStorage.getItem('users')) || {},
+      saveUsers: (users) => localStorage.setItem('users', JSON.stringify(users)),
+      getMessages: () => JSON.parse(localStorage.getItem('messages')) || [],
+      saveMessages: (msgs) => localStorage.setItem('messages', JSON.stringify(msgs)),
+      getSession: () => localStorage.getItem('active_session'),
+      saveSession: (username) => localStorage.setItem('active_session', username),
+      clearSession: () => localStorage.removeItem('active_session'),
+      getTyping: () => JSON.parse(localStorage.getItem('typing_data')) || {},
+      saveTyping: (data) => localStorage.setItem('typing_data', JSON.stringify(data)),
+      getPresence: () => JSON.parse(localStorage.getItem('presence_data')) || {},
+      savePresence: (data) => localStorage.setItem('presence_data', JSON.stringify(data))
+    };
+
+    function updatePresenceHeartbeat() {
+      if (!currentUser) return;
+      const presence = DB.getPresence();
+      const userStatus = localStorage.getItem(`status_${currentUser}`) || 'online';
+      presence[currentUser] = {
+        status: userStatus,
+        lastSeen: Date.now()
+      };
+      DB.savePresence(presence);
+    }
+
+    function getUserPresence(username) {
+      const presence = DB.getPresence();
+      const p = presence[username];
+      if (!p) return 'offline';
+      if (Date.now() - p.lastSeen > 10000) return 'offline';
+      return p.status || 'offline';
+    }
+
+    function setUserStatus(status) {
+      if (!currentUser) return;
+      localStorage.setItem(`status_${currentUser}`, status);
+      updatePresenceHeartbeat();
+      updateStatusBadgeUI('sidebar-status-badge', status);
+      document.getElementById('status-menu').classList.add('hidden');
+      renderSidebar();
+      renderMessages(false);
+    }
+
+    const QUICK_STATUS = { free: 'Free', studying: 'Studying', busy: 'Busy', gaming: 'Gaming', class: 'In class', sleeping: 'Sleeping' };
+    function setQuickStatus(status) {
+      if (!currentUser) return;
+      localStorage.setItem(`quick_status_${currentUser}`, status);
+      document.querySelectorAll('#quick-status-pills button').forEach(b => b.classList.toggle('active', b.textContent.trim() === QUICK_STATUS[status]));
+      const label = document.getElementById('quick-status-label'); if (label) label.textContent = QUICK_STATUS[status];
+      lastUserActivity = Date.now();
+      updatePresenceHeartbeat();
+    }
+    function refreshQuickStatus() {
+      const saved = localStorage.getItem(`quick_status_${currentUser}`) || 'free';
+      document.querySelectorAll('#quick-status-pills button').forEach(b => b.classList.toggle('active', b.textContent.trim() === QUICK_STATUS[saved]));
+      const label = document.getElementById('quick-status-label'); if (label) label.textContent = QUICK_STATUS[saved];
+    }
+    ['click', 'keydown', 'mousemove', 'touchstart'].forEach(eventName => document.addEventListener(eventName, () => { lastUserActivity = Date.now(); }));
+    setInterval(() => {
+      if (currentUser && Date.now() - lastUserActivity >= 600000 && localStorage.getItem(`quick_status_${currentUser}`) !== 'studying') setQuickStatus('studying');
+    }, 30000);
+
+    function toggleStatusMenu(event) {
+      event.stopPropagation();
+      document.getElementById('status-menu').classList.toggle('hidden');
+    }
+
+    function updateStatusBadgeUI(elementId, status) {
+      const badge = document.getElementById(elementId);
+      if (badge) {
+        badge.className = `status-badge ${status}`;
+      }
+    }
+
+    function playPopSound() {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.12);
+    }
+
+    function showBrowserNotification(msg) {
+      if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+        new Notification(`New message from @${msg.sender}`, { body: msg.text || 'Sent an attachment' });
+      }
+    }
+
+    window.onload = function() {
+      applyTheme(localStorage.getItem('theme') || 'light');
+      applyWallpaper(localStorage.getItem('wallpaper') || '');
+      if ('Notification' in window && Notification.permission !== 'granted') {
+        Notification.requestPermission();
+      }
+      
+      document.addEventListener('click', (e) => {
+        const statusMenu = document.getElementById('status-menu');
+        if (statusMenu && !statusMenu.classList.contains('hidden')) {
+          statusMenu.classList.add('hidden');
+        }
+        
+        if (!e.target.closest('.msg-popover') && !e.target.closest('.message')) {
+          if (activePopoverMsgId !== null || activeMoreMenuMsgId !== null) {
+            activePopoverMsgId = null;
+            activeMoreMenuMsgId = null;
+            renderMessages(false);
+          }
+        }
+      });
+
+      const rawSession = DB.getSession();
+      if (rawSession) {
+        try {
+          const parsed = JSON.parse(rawSession);
+          if (typeof parsed === 'object' && parsed !== null && parsed.username) {
+            currentUser = parsed.username;
+            DB.saveSession(currentUser);
+          } else {
+            currentUser = rawSession;
+          }
+        } catch (e) {
+          currentUser = rawSession;
+        }
+        loadApp();
+      }
+
+      setInterval(() => {
+        updatePresenceHeartbeat();
+        if (currentUser) {
+          renderSidebar();
+          if (activeFriend) {
+            renderMessages(false);
+            checkTypingStatus();
+          }
+        }
+      }, 3000);
+    };
+
+    function toggleAuthMode() {
+      isLogin = !isLogin;
+      document.getElementById('auth-title').innerText = isLogin ? 'PulseChat Login' : 'Create Account';
+      document.getElementById('auth-btn').innerText = isLogin ? 'Sign In' : 'Sign Up';
+      document.getElementById('dob').classList.toggle('hidden', isLogin);
+    }
+
+    function handleAuth() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const dob = document.getElementById('dob').value;
+      const users = DB.getUsers();
+
+      if (!username || !password) return alert('Fill in all fields');
+
+      if (isLogin) {
+        if (users[username] && users[username].password === password) {
+          currentUser = username;
+          DB.saveSession(username);
+          loadApp();
+        } else {
+          alert('Invalid login credentials');
+        }
+      } else {
+        if (users[username]) return alert('Username already taken');
+        if (!dob) return alert('Select your birthdate');
+        
+        users[username] = { password, dob, requests: [], friends: [], pfp: DEFAULT_AVATAR, frame: '' };
+        DB.saveUsers(users);
+        currentUser = username;
+        DB.saveSession(username);
+        loadApp();
+      }
+    }
+
+    function logout() {
+      if (currentUser) {
+        const presence = DB.getPresence();
+        delete presence[currentUser];
+        DB.savePresence(presence);
+      }
+      currentUser = null;
+      activeFriend = null;
+      DB.clearSession();
+      closeSettings();
+      document.getElementById('app-screen').classList.add('hidden');
+      document.getElementById('auth-screen').classList.remove('hidden');
+    }
+
+    function loadApp() {
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('app-screen').classList.remove('hidden');
+      document.getElementById('user-display').innerText = `@${currentUser}`;
+      
+      const users = DB.getUsers();
+      const user = users[currentUser];
+      const pfpUrl = (user && user.pfp) ? user.pfp : DEFAULT_AVATAR;
+      const frameClass = (user && user.frame) ? user.frame : '';
+      
+      const sidebarAvatar = document.getElementById('sidebar-avatar');
+      sidebarAvatar.src = pfpUrl;
+      sidebarAvatar.className = `avatar ${frameClass}`;
+
+      const settingsPreview = document.getElementById('settings-avatar-preview');
+      settingsPreview.src = pfpUrl;
+      settingsPreview.className = `avatar-large ${frameClass}`;
+      
+      const savedStatus = localStorage.getItem(`status_${currentUser}`) || 'online';
+      updateStatusBadgeUI('sidebar-status-badge', savedStatus);
+      updatePresenceHeartbeat();
+      refreshQuickStatus();
+
+      renderSidebar();
+    }
+
+    function changeProfileFrame(frameClass) {
+      const users = DB.getUsers();
+      if (users[currentUser]) {
+        users[currentUser].frame = frameClass;
+        DB.saveUsers(users);
+        
+        const settingsPreview = document.getElementById('settings-avatar-preview');
+        settingsPreview.className = `avatar-large ${frameClass}`;
+        
+        const sidebarAvatar = document.getElementById('sidebar-avatar');
+        sidebarAvatar.className = `avatar ${frameClass}`;
+        
+        renderSidebar();
+        renderMessages(false);
+      }
+    }
+
+    function handlePfpChange(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) return alert("Please select an image under 2MB.");
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const users = DB.getUsers();
+        if (users[currentUser]) {
+          users[currentUser].pfp = e.target.result;
+          DB.saveUsers(users);
+          document.getElementById('sidebar-avatar').src = e.target.result;
+          document.getElementById('settings-avatar-preview').src = e.target.result;
+          renderSidebar();
+          renderMessages(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function changeTheme(theme) {
+      localStorage.setItem('theme', theme);
+      applyTheme(theme);
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.getElementById('theme-select').value = theme;
+    }
+
+    function handleWallpaperUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (file.size > 3 * 1024 * 1024) return alert("Select a wallpaper under 3MB.");
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const wpData = `url('${e.target.result}')`;
+        localStorage.setItem('wallpaper', wpData);
+        applyWallpaper(wpData);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function handleWallpaperUrl(url) {
+      if (!url.trim()) return;
+      const wpData = `url('${url.trim()}')`;
+      localStorage.setItem('wallpaper', wpData);
+      applyWallpaper(wpData);
+    }
+
+    function clearWallpaper() {
+      localStorage.removeItem('wallpaper');
+      applyWallpaper('');
+      document.getElementById('wallpaper-url').value = '';
+      document.getElementById('wallpaper-file').value = '';
+    }
+
+    function applyWallpaper(wpStyle) {
+      const msgList = document.getElementById('messages-list');
+      msgList.style.backgroundImage = wpStyle;
+    }
+
+    function openSettings() { 
+      const users = DB.getUsers();
+      const pfpUrl = (users[currentUser] && users[currentUser].pfp) ? users[currentUser].pfp : DEFAULT_AVATAR;
+      const frameClass = (users[currentUser] && users[currentUser].frame) ? users[currentUser].frame : '';
+      
+      const settingsPreview = document.getElementById('settings-avatar-preview');
+      settingsPreview.src = pfpUrl;
+      settingsPreview.className = `avatar-large ${frameClass}`;
+      document.getElementById('frame-select').value = frameClass;
+      refreshQuickStatus();
+
+      document.getElementById('settings-modal').classList.remove('hidden'); 
+    }
+    
+    function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
+
+    function toggleExtensionMenu() { document.getElementById('extension-menu').classList.toggle('hidden'); document.getElementById('emoji-picker').classList.add('hidden'); }
+    function closeExtension() { document.getElementById('extension-modal').classList.add('hidden'); activeExtension = null; }
+    function openExtension(type) {
+      if (!activeFriend) return;
+      activeExtension = type;
+      document.getElementById('extension-menu').classList.add('hidden');
+      const fields = {
+        poll: `<label>Question</label><input id="ext-title" placeholder="Where should we eat?"><label>Options (one per line)</label><textarea id="ext-items" placeholder="Pizza\nSushi\nBurgers"></textarea><label>Poll closes</label><input id="ext-date" type="datetime-local">`,
+        countdown: `<label>Countdown name</label><input id="ext-title" placeholder="Movie night"><label>Ends at</label><input id="ext-date" type="datetime-local">`,
+        note: `<label>Sticky note</label><textarea id="ext-title" placeholder="A little note for you..."></textarea>`,
+        todo: `<label>List title</label><input id="ext-title" placeholder="Weekend tasks"><label>Tasks (one per line)</label><textarea id="ext-items" placeholder="Buy groceries\nFinish notes"></textarea><label>Due date (optional)</label><input id="ext-date" type="date">`,
+        calendar: `<label>Event title</label><input id="ext-title" placeholder="Team meeting"><label>Date & time</label><input id="ext-date" type="datetime-local"><label>Google Meet or event link (optional)</label><input id="ext-link" placeholder="https://meet.google.com/...">`,
+        game: `<label>Choose a game</label><select id="ext-title"><option>Chess</option><option>Tic-tac-toe</option><option>Word battle</option><option>Guess the emoji</option><option>Trivia</option><option>Drawing challenge</option><option>Reaction speed</option><option>20 Questions</option></select><label>Play mode</label><select id="ext-mode"><option value="two-player">Challenge friend (requires acceptance)</option><option value="solo">Play solo while they are offline</option></select>`,
+        shopping: `<label>List title</label><input id="ext-title" placeholder="Shared shopping"><label>Items (one per line)</label><textarea id="ext-items" placeholder="Milk\nBread\nCoffee"></textarea>`
+      };
+      document.getElementById('extension-title').textContent = type === 'todo' ? 'New to-do list' : `New ${type}`;
+      document.getElementById('extension-fields').innerHTML = fields[type];
+      document.getElementById('extension-modal').classList.remove('hidden');
+    }
+    function sendExtension() {
+      const title = document.getElementById('ext-title').value.trim();
+      const date = document.getElementById('ext-date')?.value || '';
+      const items = (document.getElementById('ext-items')?.value || '').split('\n').map(x => x.trim()).filter(Boolean);
+      if (!title || ((activeExtension === 'poll' || activeExtension === 'todo' || activeExtension === 'shopping') && !items.length) || ((activeExtension === 'countdown' || activeExtension === 'calendar') && !date)) return alert('Please complete the required fields.');
+      const messages = DB.getMessages();
+      messages.push({ id: Date.now(), sender: currentUser, receiver: activeFriend, text:'', attachment:null, reactions:{}, timestamp:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), extension:{ type:activeExtension, title, items, date, link:document.getElementById('ext-link')?.value.trim() || '', mode:document.getElementById('ext-mode')?.value || '', votes:{}, checked:{}, accepted:false } });
+      DB.saveMessages(messages); closeExtension(); renderMessages(true);
+    }
+    function updateExtension(msgId, action, value) {
+      const messages = DB.getMessages(); const msg = messages.find(m => m.id === msgId); if (!msg?.extension) return;
+      const e = msg.extension;
+      if (action === 'vote') { if (e.date && Date.now() > new Date(e.date).getTime()) return; e.votes[currentUser] = value; }
+      if (action === 'check') { e.checked[value] = !e.checked[value]; }
+      if (action === 'accept') e.accepted = true;
+      DB.saveMessages(messages); renderMessages(false);
+    }
+    function escapeHTML(value='') { const div = document.createElement('div'); div.textContent = value; return div.innerHTML; }
+    function extensionHTML(m) {
+      const e = m.extension; if (!e) return ''; const closed = e.date && e.type === 'poll' && Date.now() >= new Date(e.date).getTime();
+      if (e.type === 'poll') { const counts = e.items.map((_,i) => Object.values(e.votes).filter(v => +v === i).length); const max = Math.max(0,...counts); return `<div class="extension-card"><div class="extension-title">Poll · ${escapeHTML(e.title)}</div>${e.items.map((item,i) => `<button class="poll-option" ${closed?'disabled':''} onclick="updateExtension(${m.id},'vote',${i})"><span>${escapeHTML(item)}</span><span>${counts[i]} vote${counts[i]===1?'':'s'}</span></button>${closed?`<div class="poll-bar" style="width:${max ? counts[i]/max*100 : 0}%"></div>`:''}`).join('')}<div class="extension-meta">${closed ? `Closed · Winner: ${escapeHTML(e.items[counts.indexOf(max)] || 'No votes')}` : `Closes ${new Date(e.date).toLocaleString()}`}</div></div>`; }
+      if (e.type === 'countdown') return `<div class="extension-card countdown-card" data-end="${e.date}"><div class="extension-title">Countdown · ${escapeHTML(e.title)}</div><div class="timer-display">--:--:--</div><div class="extension-meta">Ends ${new Date(e.date).toLocaleString()}</div></div>`;
+      if (e.type === 'note') return `<div class="extension-card sticky-note"><div class="extension-title">Sticky note</div>${escapeHTML(e.title).replace(/\n/g,'<br>')}</div>`;
+      if (e.type === 'todo' || e.type === 'shopping') return `<div class="extension-card"><div class="extension-title">${e.type === 'todo' ? 'To-do' : 'Shopping list'} · ${escapeHTML(e.title)}</div>${e.items.map((item,i) => `<label class="${e.type}-item ${e.checked[i]?'done':''}"><input type="checkbox" ${e.checked[i]?'checked':''} onchange="updateExtension(${m.id},'check',${i})"><span>${escapeHTML(item)}</span></label>`).join('')}<div class="extension-meta">${e.date ? `Due ${new Date(e.date).toLocaleDateString()}` : 'Shared and editable'}</div></div>`;
+      if (e.type === 'calendar') return `<div class="extension-card"><div class="extension-title">Calendar event · ${escapeHTML(e.title)}</div><div>${new Date(e.date).toLocaleString()}</div>${e.link ? `<a class="map-link" href="${escapeHTML(e.link)}" target="_blank">Join Google Meet</a>` : ''}</div>`;
+      return `<div class="extension-card"><div class="extension-title">Game · ${escapeHTML(e.title)}</div><div>${e.mode === 'solo' ? 'Solo game ready to play.' : (e.accepted ? 'Challenge accepted — game ready!' : 'Challenge sent — waiting for your friend.')}</div>${e.mode !== 'solo' && !e.accepted && m.receiver === currentUser ? `<button class="poll-option" onclick="updateExtension(${m.id},'accept')">Accept challenge</button>` : ''}</div>`;
+    }
+    function refreshCountdowns() { document.querySelectorAll('.countdown-card').forEach(card => { const diff = Math.max(0, new Date(card.dataset.end).getTime() - Date.now()); const h = Math.floor(diff/3600000); const min = Math.floor(diff%3600000/60000); const s = Math.floor(diff%60000/1000); card.querySelector('.timer-display').textContent = diff ? `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}` : 'Time is up!'; }); }
+    setInterval(refreshCountdowns, 1000);
+
+    function toggleEmojiPicker() {
+      document.getElementById('emoji-picker').classList.toggle('hidden');
+    }
+
+    function addEmoji(emoji) {
+      const input = document.getElementById('message-input');
+      input.value += emoji;
+      toggleEmojiPicker();
+      input.focus();
+    }
+
+    function sendTypingSignal() {
+      const t = DB.getTyping();
+      t[currentUser] = Date.now();
+      DB.saveTyping(t);
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => {
+        const resetT = DB.getTyping();
+        delete resetT[currentUser];
+        DB.saveTyping(resetT);
+      }, 2500);
+    }
+
+    function checkTypingStatus() {
+      if (!activeFriend) return;
+      const t = DB.getTyping();
+      const statusDiv = document.getElementById('typing-status');
+      if (t[activeFriend] && (Date.now() - t[activeFriend] < 3000)) {
+        statusDiv.innerText = `@${activeFriend} is typing...`;
+      } else {
+        statusDiv.innerText = '';
+      }
+    }
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (file.size > 3 * 1024 * 1024) return alert("Select a file under 3MB.");
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        currentAttachment = {
+          name: file.name,
+          type: file.type.startsWith('image/') ? 'image' : 'file',
+          data: e.target.result
+        };
+        document.getElementById('preview-filename').innerText = `📎 ${file.name}`;
+        document.getElementById('attachment-preview').classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeAttachment() {
+      currentAttachment = null;
+      document.getElementById('file-input').value = '';
+      document.getElementById('attachment-preview').classList.add('hidden');
+    }
+
+    function sendFriendRequest() {
+      const targetUser = document.getElementById('search-username').value.trim();
+      const users = DB.getUsers();
+
+      if (!targetUser || targetUser === currentUser || !users[targetUser]) return alert('User not found');
+      
+      const target = users[targetUser];
+      const current = users[currentUser];
+
+      if (current.friends.includes(targetUser)) return alert('Already friends');
+      if (target.requests.includes(currentUser)) return alert('Request pending');
+
+      target.requests.push(currentUser);
+      DB.saveUsers(users);
+      alert('Request sent!');
+      document.getElementById('search-username').value = '';
+    }
+
+    function acceptRequest(sender) {
+      const users = DB.getUsers();
+      users[currentUser].friends.push(sender);
+      users[sender].friends.push(currentUser);
+      users[currentUser].requests = users[currentUser].requests.filter(req => req !== sender);
+      DB.saveUsers(users);
+      renderSidebar();
+    }
+
+    function selectFriend(friend) {
+      activeFriend = friend;
+      knownMsgCount = 0;
+      activePopoverMsgId = null;
+      activeMoreMenuMsgId = null;
+      
+      const users = DB.getUsers();
+      const friendPfp = (users[friend] && users[friend].pfp) ? users[friend].pfp : DEFAULT_AVATAR;
+      const friendFrame = (users[friend] && users[friend].frame) ? users[friend].frame : '';
+      
+      const chatHeaderContainer = document.getElementById('chat-header-avatar-container');
+      const chatHeaderImg = document.getElementById('chat-header-avatar');
+      chatHeaderImg.src = friendPfp;
+      chatHeaderImg.className = `avatar ${friendFrame}`;
+      chatHeaderContainer.classList.remove('hidden');
+
+      const friendStatus = getUserPresence(friend);
+      updateStatusBadgeUI('chat-header-status-badge', friendStatus);
+
+      document.getElementById('chat-title').innerText = `@${friend}`;
+      document.getElementById('chat-input-container').classList.remove('hidden');
+      renderSidebar();
+      renderMessages(true);
+    }
+
+    function shareLocation() {
+      if (!navigator.geolocation) {
+        return alert("Geolocation is not supported by your browser.");
+      }
+      navigator.geolocation.getCurrentPosition((position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+        
+        const messages = DB.getMessages();
+        messages.push({
+          id: Date.now(),
+          sender: currentUser,
+          receiver: activeFriend,
+          text: `📍 My Location: ${mapsUrl}`,
+          attachment: null,
+          reactions: {},
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+        DB.saveMessages(messages);
+        renderMessages(true);
+      }, () => {
+        alert("Unable to retrieve your location.");
+      });
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('message-input');
+      const text = input.value.trim();
+      
+      if ((!text && !currentAttachment) || !activeFriend) return;
+
+      const messages = DB.getMessages();
+
+      if (editingMsgId) {
+        const msg = messages.find(m => m.id === editingMsgId);
+        if (msg) {
+          msg.text = text;
+          msg.edited = true;
+        }
+        editingMsgId = null;
+        document.getElementById('send-btn').innerText = 'Send';
+        DB.saveMessages(messages);
+        renderMessages(false);
+      } else {
+        messages.push({
+          id: Date.now(),
+          sender: currentUser,
+          receiver: activeFriend,
+          text: text,
+          attachment: currentAttachment,
+          reactions: {},
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+        DB.saveMessages(messages);
+        removeAttachment();
+        renderMessages(true);
+      }
+
+      input.value = '';
+    }
+
+    function toggleMsgPopover(event, msgId) {
+      event.stopPropagation();
+      if (activePopoverMsgId === msgId) {
+        activePopoverMsgId = null;
+        activeMoreMenuMsgId = null;
+      } else {
+        activePopoverMsgId = msgId;
+        activeMoreMenuMsgId = null;
+      }
+      renderMessages(false);
+    }
+
+    function toggleMoreMenu(event, msgId) {
+      event.stopPropagation();
+      activeMoreMenuMsgId = activeMoreMenuMsgId === msgId ? null : msgId;
+      renderMessages(false);
+    }
+
+    function reactToMsg(msgId, emoji) {
+      const messages = DB.getMessages();
+      const msg = messages.find(m => m.id === msgId);
+      if (msg) {
+        if (!msg.reactions) msg.reactions = {};
+        if (msg.reactions[currentUser] === emoji) {
+          delete msg.reactions[currentUser];
+        } else {
+          msg.reactions[currentUser] = emoji;
+        }
+        DB.saveMessages(messages);
+      }
+      activePopoverMsgId = null;
+      activeMoreMenuMsgId = null;
+      renderMessages(false);
+    }
+
+    function startEditMsg(msgId) {
+      const messages = DB.getMessages();
+      const msg = messages.find(m => m.id === msgId);
+      if (msg) {
+        editingMsgId = msgId;
+        document.getElementById('message-input').value = msg.text || '';
+        document.getElementById('send-btn').innerText = 'Save';
+        document.getElementById('message-input').focus();
+      }
+      activePopoverMsgId = null;
+      activeMoreMenuMsgId = null;
+      renderMessages(false);
+    }
+
+    function deleteMsg(msgId) {
+      let messages = DB.getMessages();
+      messages = messages.filter(m => m.id !== msgId);
+      DB.saveMessages(messages);
+      activePopoverMsgId = null;
+      activeMoreMenuMsgId = null;
+      renderMessages(false);
+    }
+
+    function renderSidebar() {
+      const users = DB.getUsers();
+      const user = users[currentUser];
+
+      const reqList = document.getElementById('requests-list');
+      reqList.innerHTML = '';
+      (user.requests || []).forEach(req => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>@${req}</span> <button onclick="acceptRequest('${req}')">Accept</button>`;
+        reqList.appendChild(li);
+      });
+
+      const friendList = document.getElementById('friends-list');
+      friendList.innerHTML = '';
+      (user.friends || []).forEach(f => {
+        const li = document.createElement('li');
+        if (f === activeFriend) li.classList.add('active-friend');
+
+        const friendPfp = (users[f] && users[f].pfp) ? users[f].pfp : DEFAULT_AVATAR;
+        const friendFrame = (users[f] && users[f].frame) ? users[f].frame : '';
+        const friendStatus = getUserPresence(f);
+
+        li.innerHTML = `
+          <div class="user-profile-info">
+            <div class="avatar-container">
+              <img class="avatar ${friendFrame}" src="${friendPfp}" alt="${f}">
+              <span class="status-badge ${friendStatus}"></span>
+            </div>
+            <span>@${f}</span>
+          </div>
+        `;
+        li.onclick = () => selectFriend(f);
+        friendList.appendChild(li);
+      });
+    }
+
+    function parseTextLinks(text) {
+      if (!text) return '';
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" class="map-link">${url}</a>`);
+    }
+
+    function renderMessages(forceScroll = false) {
+      if (!activeFriend) return;
+
+      const users = DB.getUsers();
+      const messages = DB.getMessages().filter(m => 
+        (m.sender === currentUser && m.receiver === activeFriend) ||
+        (m.sender === activeFriend && m.receiver === currentUser)
+      );
+
+      if (messages.length > knownMsgCount && knownMsgCount !== 0) {
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg.sender === activeFriend) {
+          playPopSound();
+          showBrowserNotification(lastMsg);
+        }
+      }
+      knownMsgCount = messages.length;
+
+      const msgList = document.getElementById('messages-list');
+      msgList.innerHTML = '';
+
+      messages.forEach(m => {
+        const isSent = m.sender === currentUser;
+        const wrapper = document.createElement('div');
+        wrapper.className = `message-wrapper ${isSent ? 'sent' : 'received'}`;
+
+        const bodyRow = document.createElement('div');
+        bodyRow.className = 'message-body-row';
+
+        const pfpUrl = (users[m.sender] && users[m.sender].pfp) ? users[m.sender].pfp : DEFAULT_AVATAR;
+        const frameClass = (users[m.sender] && users[m.sender].frame) ? users[m.sender].frame : '';
+        const avatarImg = `<img class="avatar ${frameClass}" src="${pfpUrl}" style="width:26px; height:26px;">`;
+
+        let attachmentHTML = '';
+        if (m.attachment) {
+          if (m.attachment.type === 'image') {
+            attachmentHTML = `<img src="${m.attachment.data}" class="attachment-img" onclick="window.open('${m.attachment.data}')">`;
+          } else {
+            attachmentHTML = `<a href="${m.attachment.data}" download="${m.attachment.name}" class="file-attachment">📄 ${m.attachment.name}</a>`;
+          }
+        }
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+        msgDiv.onclick = (e) => toggleMsgPopover(e, m.id);
+
+        const formattedText = parseTextLinks(m.text);
+        const structuredContent = extensionHTML(m);
+
+        msgDiv.innerHTML = `
+          ${attachmentHTML}
+          ${structuredContent}
+          ${formattedText ? `<div>${formattedText}</div>` : ''}
+          <div style="font-size:10px; opacity:0.7; text-align:right;">
+            ${m.edited ? '(edited) ' : ''}${m.timestamp}
+          </div>
+        `;
+
+        bodyRow.innerHTML = avatarImg;
+        bodyRow.appendChild(msgDiv);
+
+        if (activePopoverMsgId === m.id) {
+          const popover = document.createElement('div');
+          popover.className = 'msg-popover';
+
+          const popoverReactions = document.createElement('div');
+          popoverReactions.className = 'popover-reactions';
+          ['👍', '❤️', '😂', '🔥', '🎉'].forEach(emoji => {
+            const span = document.createElement('span');
+            span.innerText = emoji;
+            span.onclick = (e) => { e.stopPropagation(); reactToMsg(m.id, emoji); };
+            popoverReactions.appendChild(span);
+          });
+
+          const moreBtn = document.createElement('div');
+          moreBtn.className = 'popover-btn';
+          moreBtn.innerText = '⋮';
+          moreBtn.onclick = (e) => toggleMoreMenu(e, m.id);
+
+          popover.appendChild(popoverReactions);
+          popover.appendChild(moreBtn);
+
+          if (activeMoreMenuMsgId === m.id) {
+            const dropdown = document.createElement('div');
+            dropdown.className = 'popover-dropdown';
+
+            if (isSent) {
+              const editItem = document.createElement('div');
+              editItem.className = 'popover-dropdown-item';
+              editItem.innerHTML = '✏️ Edit';
+              editItem.onclick = (e) => { e.stopPropagation(); startEditMsg(m.id); };
+              dropdown.appendChild(editItem);
+            }
+
+            const deleteItem = document.createElement('div');
+            deleteItem.className = 'popover-dropdown-item danger';
+            deleteItem.innerHTML = '🗑️ Delete';
+            deleteItem.onclick = (e) => { e.stopPropagation(); deleteMsg(m.id); };
+            dropdown.appendChild(deleteItem);
+
+            popover.appendChild(dropdown);
+          }
+
+          bodyRow.appendChild(popover);
+        }
+
+        wrapper.appendChild(bodyRow);
+
+        if (m.reactions && Object.keys(m.reactions).length > 0) {
+          const reactionCounts = {};
+          Object.values(m.reactions).forEach(r => {
+            reactionCounts[r] = (reactionCounts[r] || 0) + 1;
+          });
+
+          const reactionBadge = document.createElement('div');
+          reactionBadge.className = 'active-reactions';
+          reactionBadge.innerHTML = Object.entries(reactionCounts)
+            .map(([emoji, count]) => `${emoji} ${count > 1 ? count : ''}`)
+            .join(' ');
+
+          reactionBadge.onclick = (e) => toggleMsgPopover(e, m.id);
+          wrapper.appendChild(reactionBadge);
+        }
+
+        msgList.appendChild(wrapper);
+      });
+
+      if (forceScroll) {
+        msgList.scrollTop = msgList.scrollHeight;
+      }
+    }
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>
