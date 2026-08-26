@@ -286,7 +286,7 @@
           </div>
           <div><strong id="user-display"></strong><small id="quick-status-label" style="display:block;color:var(--text-muted);font-size:11px;line-height:1.3;"></small></div>
         </div>
-        <div style="display:flex; gap:6px;"><button class="icon-btn" onclick="openHubCreator()" title="Create a Hub">+</button><button class="icon-btn" onclick="openSettings()" title="Settings">⚙️</button></div>
+        <div style="display:flex; gap:6px;"><button class="icon-btn" onclick="openHubCreator()" title="Create a Hub">+</button><button class="icon-btn" onclick="openSettings()" title="Settings"><img src="https://i.ibb.co/cX6q2bwF/images-removebg-preview.png" alt="Settings" style="width:22px; height:22px; object-fit:contain;"></button></div>
 
         <!-- Custom Status Selector -->
         <div id="status-menu" class="status-menu hidden">
@@ -369,7 +369,7 @@
             <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(event)">
           </label>
           <input type="text" id="message-input" placeholder="Type a message..." oninput="sendTypingSignal()" onkeypress="if(event.key==='Enter') sendMessage()">
-          <button id="send-btn" onclick="sendMessage()" style="width: auto;">Send</button>
+          <button id="send-btn" onclick="sendMessage()" title="Send message"><img src="https://i.ibb.co/ccSt9Sbz/Chat-GPT-Image-Aug-26-2026-02-07-48-PM-removebg-preview.png" alt="Send" style="width:24px; height:24px; object-fit:contain;"></button>
         </div>
         <div id="extension-menu" class="extension-menu hidden"><h4>Send something useful</h4><div class="extension-grid">
           <button class="extension-option" onclick="openExtension('poll')">Poll</button><button class="extension-option" onclick="openExtension('countdown')">Countdown</button><button class="extension-option" onclick="openExtension('note')">Sticky note</button><button class="extension-option" onclick="openExtension('todo')">To-do list</button><button class="extension-option" onclick="openExtension('calendar')">Calendar event</button><button class="extension-option" onclick="openExtension('game')">Play a game</button><button class="extension-option" onclick="openExtension('shopping')">Shopping list</button>
@@ -950,7 +950,6 @@
           msg.edited = true;
         }
         editingMsgId = null;
-        document.getElementById('send-btn').innerText = 'Send';
         DB.saveMessages(messages);
         renderMessages(false);
       } else {
@@ -1012,7 +1011,6 @@
       if (msg) {
         editingMsgId = msgId;
         document.getElementById('message-input').value = msg.text || '';
-        document.getElementById('send-btn').innerText = 'Save';
         document.getElementById('message-input').focus();
       }
       activePopoverMsgId = null;
