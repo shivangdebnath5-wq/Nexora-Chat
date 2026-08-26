@@ -74,7 +74,7 @@
   .input-row { gap:5px; }
   .icon-btn { width:38px; height:38px; padding:0; }
   #message-input { min-width:0; padding:10px; }
-  #send-btn { padding:10px 12px; }
+  #send-btn { width:42px !important; height:42px; padding:0; background:#000; }
   .extension-menu { left:10px; bottom:66px; max-width:calc(100vw - 20px); }
   .extension-card { min-width:0; max-width:calc(100vw - 66px); }
   .pinned-messages-menu { width:min(280px, calc(100vw - 28px)); }
@@ -100,7 +100,7 @@
   .messages-list { min-width:0; min-height:0; padding:12px max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left)); gap:12px; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
   .message-body-row { max-width:88%; gap:6px; }.message { max-width:100%; padding:9px 11px; font-size:15px; line-height:1.38; }.message img.attachment-img { max-height:190px; }.extension-card, .game-card, .smart-context-card { min-width:0; max-width:100%; }.smart-context-card { margin:6px 30px 0; }
   .typing-status { height:18px; padding:1px 14px; flex-shrink:0; }.chat-input { flex-shrink:0; padding:8px max(8px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); gap:6px; box-shadow:0 -4px 16px rgba(15,23,42,.06); }
-  .input-row { width:100%; display:grid; grid-template-columns:38px 38px 38px 38px minmax(0,1fr) 48px; gap:5px; }.chat-input .icon-btn, .chat-input label.icon-btn { width:38px; min-width:38px; height:42px; padding:0; border-radius:12px; }.chat-input input[type="text"] { min-width:0; width:100%; height:42px; padding:10px; font-size:16px; border-radius:12px; } #send-btn { width:48px !important; height:42px; padding:0 !important; border-radius:12px; font-size:12px; }
+  .input-row { width:100%; display:grid; grid-template-columns:38px 38px 38px 38px minmax(0,1fr) 42px; gap:5px; }.chat-input .icon-btn, .chat-input label.icon-btn { width:38px; min-width:38px; height:42px; padding:0; border-radius:12px; }.chat-input input[type="text"] { min-width:0; width:100%; height:42px; padding:10px; font-size:16px; border-radius:12px; } #send-btn { width:42px !important; height:42px; padding:0 !important; border-radius:12px; font-size:12px; background:#000; }
   .attachment-preview { min-width:0; padding:7px 9px; }.attachment-preview span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .emoji-picker, .extension-menu { position:fixed; z-index:900; left:8px; right:8px; bottom:calc(66px + env(safe-area-inset-bottom)); width:auto; max-width:none; max-height:min(45dvh,360px); border-radius:18px; padding:12px; box-shadow:0 -8px 30px rgba(15,23,42,.25); }.emoji-picker { grid-template-columns:repeat(6,1fr); }.emoji-picker span { min-height:38px; display:grid; place-items:center; }.extension-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }.extension-option { min-height:48px; font-size:14px; }
   .sidebar { z-index:1001; width:min(88vw,360px); height:var(--mobile-app-height); max-height:none; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); overflow-y:auto; overscroll-behavior:contain; border-right:1px solid var(--border); } #app-screen.sidebar-open::after { content:''; position:absolute; inset:0; z-index:1000; background:rgba(15,23,42,.38); backdrop-filter:blur(1px); } #app-screen.sidebar-open .sidebar { z-index:1002; transform:translateX(0); }
@@ -111,7 +111,7 @@
   .modal { width:100%; height:var(--mobile-app-height); padding:0; align-items:flex-end; background:rgba(15,23,42,.52); }.modal .card, .modal .card.extension-dialog, .modal .card.quest-shop, .modal .card.quest-modal-card { width:100%; max-width:none; max-height:min(92dvh,760px) !important; margin:0; padding:20px max(16px,env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)); border-radius:22px 22px 0 0; overflow-y:auto; box-shadow:0 -12px 36px rgba(15,23,42,.24); }.modal .card h2, .modal .card h3 { text-align:left; margin-bottom:14px; }.modal input, .modal select, .modal textarea { min-height:46px; font-size:16px; }.modal button { min-height:46px; font-size:14px; }.extension-dialog .dialog-actions { position:sticky; bottom:calc(-20px - env(safe-area-inset-bottom)); padding:10px 0 calc(2px + env(safe-area-inset-bottom)); background:var(--bg-card); }
   .hub-modal .card { max-width:none; }.hub-member-list { gap:7px; }.hub-member-chip { min-height:34px; font-size:13px; }.hub-member-chip button { min-height:24px; }.game-board { max-width:100%; }.chess-board { width:min(100%,300px); }.timer-display { font-size:25px; }
 }
-@media (max-width: 360px) { .input-row { grid-template-columns:34px 34px 34px 34px minmax(0,1fr) 44px; gap:3px; }.chat-input .icon-btn, .chat-input label.icon-btn { width:34px; min-width:34px; }.header-actions .icon-btn, #mobile-conversations { width:38px; min-width:38px; height:38px; }.chat-header { padding-left:8px; padding-right:8px; }.message-body-row { max-width:92%; } }
+@media (max-width: 360px) { .input-row { grid-template-columns:34px 34px 34px 34px minmax(0,1fr) 38px; gap:3px; }.chat-input .icon-btn, .chat-input label.icon-btn { width:34px; min-width:34px; }.header-actions .icon-btn, #mobile-conversations { width:38px; min-width:38px; height:38px; }.chat-header { padding-left:8px; padding-right:8px; }.message-body-row { max-width:92%; } #send-btn { width:38px !important; height:38px; } }
 
 /* Hub-media safety net: uploaded art stays within its intended UI surface. */
 @media (min-width: 721px) { #mobile-conversations { display:none !important; } }
@@ -132,3 +132,96 @@
 .main-chat.hub-active .chat-header[style*="background-image"] .hub-banner-meta { color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.65); }
 .hub-chat-bg { background-repeat:no-repeat !important; }
 .avatar, .avatar-large { display:block; object-fit:cover; }
+
+/* Mobile Chat Extensions: retain the existing components, but give every
+   extension a contained, touch-first layout on small screens. */
+@media (max-width: 720px) {
+  :root { --extension-keyboard-offset: 0px; }
+
+  #extension-menu,
+  #emoji-picker {
+    z-index:1100;
+    bottom:calc(66px + env(safe-area-inset-bottom) + var(--extension-keyboard-offset));
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  #extension-menu {
+    max-height:min(52dvh, 390px);
+    overflow-y:auto;
+    padding-bottom:max(12px, env(safe-area-inset-bottom));
+  }
+
+  #extension-menu h4 { position:sticky; top:-12px; z-index:1; padding:5px 4px 9px; background:var(--bg-card); }
+  .extension-grid { min-width:0; }
+  #extension-menu .extension-option { min-width:0; min-height:50px; padding:11px 10px; border-radius:10px; touch-action:manipulation; }
+
+  .message:has(.extension-card) { width:100%; min-width:0; }
+  #messages-list .extension-card,
+  #messages-list .game-card {
+    box-sizing:border-box;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    max-height:min(56dvh, 440px);
+    overflow-x:hidden;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  #messages-list .extension-title,
+  #messages-list .extension-meta,
+  #messages-list .todo-item span,
+  #messages-list .shopping-item span,
+  #messages-list .game-status,
+  #messages-list .game-prompt { min-width:0; overflow-wrap:anywhere; }
+  #messages-list .extension-title { align-items:flex-start; line-height:1.3; }
+  #messages-list .extension-meta { line-height:1.45; }
+  #messages-list .sticky-note { max-height:min(52dvh, 400px); overflow-y:auto; overflow-wrap:anywhere; }
+
+  #messages-list .poll-option { min-height:48px; padding:10px 12px; gap:12px; touch-action:manipulation; }
+  #messages-list .poll-option span:first-child { min-width:0; overflow-wrap:anywhere; text-align:left; }
+  #messages-list .poll-option span:last-child { flex:0 0 auto; white-space:nowrap; }
+  #messages-list .todo-item,
+  #messages-list .shopping-item { min-height:44px; padding:9px 1px; align-items:flex-start; }
+  #messages-list .todo-item input,
+  #messages-list .shopping-item input { width:22px; height:22px; min-width:22px; margin:0; accent-color:var(--primary); }
+
+  #messages-list .game-actions { align-items:stretch; }
+  #messages-list .game-actions input { flex:1 1 130px; min-width:0; min-height:44px; width:100%; font-size:16px; }
+  #messages-list .game-actions button { min-height:44px; padding:9px 12px; touch-action:manipulation; }
+  #messages-list .game-board { width:min(100%, 280px); }
+  #messages-list .chess-board { width:100%; max-width:300px; }
+  #messages-list .chess-board button { min-width:0; font-size:clamp(14px, 5vw, 20px); }
+  #messages-list .game-log { max-height:130px; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+
+  #extension-modal { z-index:1200; }
+  #extension-modal .extension-dialog {
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    max-height:calc(100dvh - max(16px, env(safe-area-inset-top)));
+    overflow:hidden;
+  }
+  #extension-fields { min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:0 1px 8px; }
+  #extension-fields input,
+  #extension-fields select,
+  #extension-fields textarea { box-sizing:border-box; width:100%; min-width:0; min-height:48px; font-size:16px; }
+  #extension-fields textarea { max-height:min(30dvh, 240px); overflow-y:auto; resize:vertical; }
+  .extension-dialog .dialog-actions {
+    flex:0 0 auto;
+    bottom:auto;
+    margin-top:8px;
+    padding:12px 0 max(2px, env(safe-area-inset-bottom));
+    background:var(--bg-card);
+    border-top:1px solid var(--border);
+  }
+  .extension-dialog .dialog-actions button { flex:1 1 0; min-width:0; min-height:48px; touch-action:manipulation; }
+}
+
+@media (max-width: 360px) {
+  #extension-menu .extension-grid { grid-template-columns:1fr; }
+  #messages-list .extension-card, #messages-list .game-card { max-height:52dvh; }
+  #messages-list .poll-option { font-size:12px; gap:7px; }
+}
