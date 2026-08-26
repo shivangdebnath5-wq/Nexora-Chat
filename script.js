@@ -2,6 +2,24 @@
 const baseExtensionHTML = extensionHTML;
 const baseUpdateExtension = updateExtension;
 
+/* Keep the existing extension composer above the phone keyboard and bring a
+   focused field into view without changing desktop behavior. */
+(() => {
+  const updateExtensionKeyboardOffset = () => {
+    const viewport = window.visualViewport;
+    const offset = viewport ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop) : 0;
+    document.documentElement.style.setProperty('--extension-keyboard-offset', `${offset}px`);
+  };
+  window.visualViewport?.addEventListener('resize', updateExtensionKeyboardOffset);
+  window.visualViewport?.addEventListener('scroll', updateExtensionKeyboardOffset);
+  window.addEventListener('orientationchange', updateExtensionKeyboardOffset);
+  document.addEventListener('focusin', event => {
+    if (!event.target.closest('#extension-modal')) return;
+    window.setTimeout(() => event.target.scrollIntoView({ block:'center', behavior:'smooth' }), 120);
+  });
+  updateExtensionKeyboardOffset();
+})();
+
 function getPinnedChats() { return JSON.parse(localStorage.getItem(`pinned_chats_${currentUser}`) || '[]'); }
 function savePinnedChats(pins) { localStorage.setItem(`pinned_chats_${currentUser}`, JSON.stringify(pins)); }
 function togglePinnedChat(friend, event) {
