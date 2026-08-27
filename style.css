@@ -1,5 +1,6 @@
 /* Upgrade layer: pins, playable game cards and responsive layout */
 #mobile-conversations { display:none; }
+.brand-logo { display:block; width:min(100%, 260px); height:auto; max-height:150px; margin:0 auto 20px; object-fit:contain; }
 .pin-chat-btn { width:30px !important; height:30px !important; padding:0 !important; margin:0 0 0 6px !important; border:0 !important; background:transparent !important; color:var(--text-muted) !important; font-size:14px !important; }
 .pin-chat-btn:hover, .pin-chat-btn.pinned { color:#f59e0b !important; background:var(--input-bg) !important; }
 .pinned-chat { border-left:3px solid #f59e0b !important; }
