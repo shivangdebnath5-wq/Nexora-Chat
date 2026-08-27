@@ -1,4 +1,4 @@
-/* PulseChat interaction upgrade. Existing inline functions remain the data layer. */
+/* NexoraChat interaction upgrade. Existing inline functions remain the data layer. */
 const baseExtensionHTML = extensionHTML;
 const baseUpdateExtension = updateExtension;
 
