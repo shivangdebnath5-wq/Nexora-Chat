@@ -69,14 +69,13 @@
   #app-screen.sidebar-open .sidebar { transform:translateX(0); }
   .main-chat { min-width:0; width:100%; }
   .chat-header { padding:12px; gap:10px; }
-  #mobile-conversations { display:flex; width:38px; height:38px; flex:0 0 auto; }
+  #mobile-conversations { display:flex; width:38px; height:38px; flex:0 0 auto; } 
   .messages-list { padding:12px; gap:12px; }
   .chat-input { padding:10px; }
   .input-row { gap:5px; }
   .icon-btn { width:38px; height:38px; padding:0; }
   #message-input { min-width:0; padding:10px; }
-  #send-btn { width:42px !important; height:42px; padding:0; background:#000; }
-  .extension-menu { left:10px; bottom:66px; max-width:calc(100vw - 20px); }
+  #send-btn { width:42px !important; height:42px; padding:0; background:#000; }  
   .extension-card { min-width:0; max-width:calc(100vw - 66px); }
   .pinned-messages-menu { width:min(280px, calc(100vw - 28px)); }
   .smart-context-card { max-width:calc(100vw - 84px); margin-left:32px; margin-right:32px; }
