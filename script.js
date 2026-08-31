@@ -199,7 +199,7 @@ function renderHubMessages(scroll) {
   const hub = hubById(activeHub); if (!hub) return; const list = document.getElementById('messages-list'); const query = document.getElementById('hub-message-search')?.value.trim().toLowerCase() || ''; list.innerHTML = '';
   const visibleMessages = hub.messages.filter(message => !query || `${message.sender} ${message.text || ''}`.toLowerCase().includes(query));
   if (!visibleMessages.length && query) list.innerHTML = '<div class="hub-search-empty">No Hub messages match your search.</div>';
-  visibleMessages.forEach(message => { const sent = message.sender === currentUser; const row = document.createElement('div'); row.className = `message-wrapper ${sent ? 'sent' : 'received'}`; row.innerHTML = `<div class="message-body-row"><img class="avatar" src="${(DB.getUsers()[message.sender]?.pfp) || DEFAULT_AVATAR}" style="width:26px;height:26px;"><div class="message ${sent ? 'sent' : 'received'}"><div class="hub-message-name">@${safeHubText(message.sender)}</div>${message.attachment?.type === 'image' ? `<img src="${message.attachment.data}" class="attachment-img">` : ''}${message.text ? `<div>${parseTextLinks(message.text)}</div>` : ''}<div style="font-size:10px;opacity:.7;text-align:right;">${message.timestamp}</div></div></div>`; list.appendChild(row); }); if (scroll) list.scrollTop = list.scrollHeight;
+  visibleMessages.forEach(message => { const sent = message.sender === currentUser; const row = document.createElement('div'); row.className = `message-wrapper ${sent ? 'sent' : 'received'}${scroll ? ' message-arrive' : ''}`; row.dataset.messageId = message.id; row.innerHTML = `<div class="message-body-row"><img class="avatar" src="${(DB.getUsers()[message.sender]?.pfp) || DEFAULT_AVATAR}" style="width:26px;height:26px;"><div class="message ${sent ? 'sent' : 'received'}"><div class="hub-message-name">@${safeHubText(message.sender)}</div>${message.attachment?.type === 'image' ? `<img src="${message.attachment.data}" class="attachment-img">` : ''}${message.text ? `<div>${parseTextLinks(message.text)}</div>` : ''}<div style="font-size:10px;opacity:.7;text-align:right;">${message.timestamp}</div></div></div>`; list.appendChild(row); }); if (scroll) list.scrollTop = list.scrollHeight;
 }
 sendMessage = function() { if (!activeHub) return directSendMessage(); const input = document.getElementById('message-input'), text = input.value.trim(); if (!text && !currentAttachment) return; const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return; hub.messages.push({id:Date.now(),sender:currentUser,text,attachment:currentAttachment,timestamp:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}); saveHubs(hubs); input.value=''; removeAttachment(); renderHubMessages(true); };
 function openHubSettings() { const hub = hubById(activeHub); if (!hub) return; addHubModals(); ensureHubAppearanceSettings(); if (hub.owner !== currentUser) return alert('Only the Hub owner can change settings or manage members.'); document.getElementById('hub-edit-name').value = hub.name; document.getElementById('hub-edit-description').value = hub.description; renderHubMembers(hub); document.getElementById('hub-settings-modal').classList.remove('hidden'); }
@@ -396,4 +396,46 @@ renderMessages = function(forceScroll) {
     const message = shown[index], context = smartContextFor(message);
     if (message && context && !wrapper.querySelector('.smart-context-card')) wrapper.insertAdjacentHTML('beforeend', smartContextCard(message, context));
   });
+};
+
+/* Swipe right to reply and left to forward. Horizontal drags must be deliberate,
+   so scrolling and the existing message popovers continue to work normally. */
+let swipeStart = null;
+function messageById(id) {
+  if (activeHub) return hubById(activeHub)?.messages.find(message => String(message.id) === String(id));
+  return DB.getMessages().find(message => String(message.id) === String(id));
+}
+function replyToMessage(message) {
+  const input = document.getElementById('message-input'); if (!input || !message) return;
+  const text = message.text || pinnedPreview(message);
+  input.value = `↩ @${message.sender}: ${text.slice(0, 100)}\n`;
+  input.focus(); input.setSelectionRange(input.value.length, input.value.length);
+}
+function openForwardSheet(message) {
+  if (!message || document.getElementById('forward-message-sheet')) return;
+  const users = DB.getUsers(); const friends = (users[currentUser]?.friends || []).filter(friend => friend !== activeFriend);
+  const hubs = getHubs().filter(hub => hub.members.includes(currentUser) && hub.id !== activeHub);
+  const options = [...friends.map(friend => `<button onclick="forwardMessageTo('${safeHubText(friend)}','direct')">@${safeHubText(friend)}</button>`), ...hubs.map(hub => `<button onclick="forwardMessageTo('${hub.id}','hub')"># ${safeHubText(hub.name)}</button>`)].join('') || '<p class="forward-empty">No other conversations available.</p>';
+  document.body.insertAdjacentHTML('beforeend', `<div id="forward-message-sheet" class="forward-sheet"><div class="forward-card"><div class="forward-sheet-title"><span>Forward message</span><button class="icon-btn" onclick="closeForwardSheet()" aria-label="Close">×</button></div><p class="forward-preview">${safeHubText(pinnedPreview(message)).slice(0, 140)}</p><div class="forward-destinations">${options}</div></div></div>`);
+  document.getElementById('forward-message-sheet').dataset.messageId = message.id;
+}
+function closeForwardSheet() { document.getElementById('forward-message-sheet')?.remove(); }
+function forwardMessageTo(destination, type) {
+  const sheet = document.getElementById('forward-message-sheet'); const message = messageById(sheet?.dataset.messageId); if (!message) return closeForwardSheet();
+  const timestamp = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); const text = `↪ ${message.text || pinnedPreview(message)}`;
+  if (type === 'hub') { const hubs = getHubs(); const hub = hubs.find(item => String(item.id) === String(destination)); if (hub) { hub.messages.push({id:Date.now(),sender:currentUser,text,attachment:null,timestamp}); saveHubs(hubs); } }
+  else { const messages = DB.getMessages(); messages.push({id:Date.now(),sender:currentUser,receiver:destination,text,attachment:null,reactions:{},timestamp}); DB.saveMessages(messages); }
+  closeForwardSheet();
+}
+document.addEventListener('pointerdown', event => { const wrapper = event.target.closest('.message-wrapper[data-message-id]'); if (!wrapper || event.pointerType === 'mouse') return; swipeStart = { wrapper, x:event.clientX, y:event.clientY, moved:false }; });
+document.addEventListener('pointermove', event => { if (!swipeStart) return; const dx = event.clientX - swipeStart.x, dy = event.clientY - swipeStart.y; if (Math.abs(dy) > Math.abs(dx) || Math.abs(dx) < 8) return; swipeStart.moved = true; const shift = Math.max(-68, Math.min(68, dx)); swipeStart.wrapper.style.setProperty('--swipe-x', `${shift}px`); swipeStart.wrapper.classList.add('swiping'); swipeStart.wrapper.classList.toggle('swipe-reply', shift > 20); swipeStart.wrapper.classList.toggle('swipe-forward', shift < -20); });
+document.addEventListener('pointerup', event => { if (!swipeStart) return; const { wrapper, x, y, moved } = swipeStart; const dx = event.clientX - x, dy = event.clientY - y; swipeStart = null; wrapper.style.removeProperty('--swipe-x'); wrapper.classList.remove('swiping','swipe-reply','swipe-forward'); if (!moved || Math.abs(dy) > 56 || Math.abs(dx) < 58) return; const message = messageById(wrapper.dataset.messageId); if (dx > 0) replyToMessage(message); else openForwardSheet(message); });
+document.addEventListener('pointercancel', () => { if (!swipeStart) return; swipeStart.wrapper.style.removeProperty('--swipe-x'); swipeStart.wrapper.classList.remove('swiping','swipe-reply','swipe-forward'); swipeStart = null; });
+window.closeForwardSheet = closeForwardSheet;
+window.forwardMessageTo = forwardMessageTo;
+
+const renderMessagesWithMotion = renderMessages;
+renderMessages = function(forceScroll) {
+  renderMessagesWithMotion(forceScroll);
+  if (forceScroll) document.querySelector('.message-wrapper:last-of-type')?.classList.add('message-arrive');
 };
