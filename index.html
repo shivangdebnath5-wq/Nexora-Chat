@@ -256,6 +256,7 @@
     .extension-option { width:100%; min-height:44px; justify-content:flex-start; padding:9px; margin:0; background:transparent; color:var(--text-main); border:1px solid transparent; font-size:13px; }
     .extension-option:hover { background:var(--input-bg); border-color:var(--border); }
     .extension-card { min-width:230px; max-width:310px; padding:14px; border-radius:14px; background:var(--bg-card); color:var(--text-main); border:1px solid var(--border); box-shadow:0 4px 10px rgba(15,23,42,.08); }
+    .extension-card.shopping-card { min-width:260px; max-width:420px; width:min(420px, calc(100vw - 90px)); }
     .message.sent .extension-card { background:#fff; color:#0f172a; }
     .extension-title { display:flex; align-items:center; gap:8px; font-weight:700; margin-bottom:9px; }
     .extension-meta { font-size:12px; color:var(--text-muted); margin-top:8px; }
@@ -264,7 +265,9 @@
     .poll-bar { height:5px; margin-top:4px; border-radius:8px; background:var(--primary); }
     .timer-display { font-size:28px; font-weight:800; letter-spacing:.04em; color:var(--primary); margin:4px 0; }
     .sticky-note { background:#fef3a5; color:#4b3b00; transform:rotate(-1deg); border:0; border-radius:3px; box-shadow:2px 3px 7px rgba(0,0,0,.2); }
-    .todo-item, .shopping-item { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
+    .todo-item, .shopping-item { display:flex; align-items:center; gap:8px; width:100%; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
+    .todo-item input, .shopping-item input { width:auto; flex:0 0 auto; margin:0; }
+    .todo-item span, .shopping-item span { display:block; flex:1 1 auto; min-width:0; line-height:1.45; overflow-wrap:anywhere; word-break:break-word; }
     .todo-item:last-child, .shopping-item:last-child { border-bottom:0; }
     .todo-item.done span, .shopping-item.done span { text-decoration:line-through; opacity:.55; }
     .extension-dialog { max-width:430px; }
@@ -853,7 +856,8 @@
       if (e.type === 'poll') { const counts = e.items.map((_,i) => Object.values(e.votes).filter(v => +v === i).length); const max = Math.max(0,...counts); return `<div class="extension-card"><div class="extension-title">Poll · ${escapeHTML(e.title)}</div>${e.items.map((item,i) => `<button class="poll-option" ${closed?'disabled':''} onclick="updateExtension(${m.id},'vote',${i})"><span>${escapeHTML(item)}</span><span>${counts[i]} vote${counts[i]===1?'':'s'}</span></button>${closed?`<div class="poll-bar" style="width:${max ? counts[i]/max*100 : 0}%"></div>`:''}`).join('')}<div class="extension-meta">${closed ? `Closed · Winner: ${escapeHTML(e.items[counts.indexOf(max)] || 'No votes')}` : `Closes ${new Date(e.date).toLocaleString()}`}</div></div>`; }
       if (e.type === 'countdown') return `<div class="extension-card countdown-card" data-end="${e.date}"><div class="extension-title">Countdown · ${escapeHTML(e.title)}</div><div class="timer-display">--:--:--</div><div class="extension-meta">Ends ${new Date(e.date).toLocaleString()}</div></div>`;
       if (e.type === 'note') return `<div class="extension-card sticky-note"><div class="extension-title">Sticky note</div>${escapeHTML(e.title).replace(/\n/g,'<br>')}</div>`;
-      if (e.type === 'todo' || e.type === 'shopping') return `<div class="extension-card"><div class="extension-title">${e.type === 'todo' ? 'To-do' : 'Shopping list'} · ${escapeHTML(e.title)}</div>${e.items.map((item,i) => `<label class="${e.type}-item ${e.checked[i]?'done':''}"><input type="checkbox" ${e.checked[i]?'checked':''} onchange="updateExtension(${m.id},'check',${i})"><span>${escapeHTML(item)}</span></label>`).join('')}<div class="extension-meta">${e.date ? `Due ${new Date(e.date).toLocaleDateString()}` : 'Shared and editable'}</div></div>`;
+      if (e.type === 'todo') return `<div class="extension-card"><div class="extension-title">To-do · ${escapeHTML(e.title)}</div>${e.items.map((item,i) => `<label class="todo-item ${e.checked[i]?'done':''}"><input type="checkbox" ${e.checked[i]?'checked':''} onchange="updateExtension(${m.id},'check',${i})"><span>${escapeHTML(item)}</span></label>`).join('')}<div class="extension-meta">${e.date ? `Due ${new Date(e.date).toLocaleDateString()}` : 'Shared and editable'}</div></div>`;
+      if (e.type === 'shopping') return `<div class="extension-card shopping-card"><div class="extension-title">Shopping list · ${escapeHTML(e.title)}</div>${e.items.map((item,i) => `<label class="shopping-item ${e.checked[i]?'done':''}"><input type="checkbox" ${e.checked[i]?'checked':''} onchange="updateExtension(${m.id},'check',${i})"><span>${escapeHTML(item)}</span></label>`).join('')}<div class="extension-meta">${e.date ? `Due ${new Date(e.date).toLocaleDateString()}` : 'Shared and editable'}</div></div>`;
       if (e.type === 'calendar') return `<div class="extension-card"><div class="extension-title">Calendar event · ${escapeHTML(e.title)}</div><div>${new Date(e.date).toLocaleString()}</div>${e.link ? `<a class="map-link" href="${escapeHTML(e.link)}" target="_blank">Join Google Meet</a>` : ''}</div>`;
       return `<div class="extension-card"><div class="extension-title">Game · ${escapeHTML(e.title)}</div><div>${e.mode === 'solo' ? 'Solo game ready to play.' : (e.accepted ? 'Challenge accepted — game ready!' : 'Challenge sent — waiting for your friend.')}</div>${e.mode !== 'solo' && !e.accepted && m.receiver === currentUser ? `<button class="poll-option" onclick="updateExtension(${m.id},'accept')">Accept challenge</button>` : ''}</div>`;
     }
