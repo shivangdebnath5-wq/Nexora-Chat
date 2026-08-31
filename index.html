@@ -49,6 +49,21 @@
       --status-offline: #64748b;
     }
 
+    /* Theme palettes: each palette supplies the same semantic tokens used by the
+       existing UI, so Hubs, DMs, menus, messages and modal content stay in sync. */
+    [data-theme="onyx"] { --bg-main:#0a0a0c; --bg-card:#17171b; --bg-sidebar:#101014; --text-main:#f4f4f5; --text-muted:#a1a1aa; --border:#303038; --primary:#8b93a1; --primary-hover:#a6afbe; --msg-sent:#5f6672; --msg-sent-text:#fff; --msg-received:#29292f; --msg-received-text:#f4f4f5; --input-bg:#24242a; --shadow:rgba(0,0,0,.58); }
+    [data-theme="starlight-nova"] { --bg-main:#1a1f38; --bg-card:#252b4a; --bg-sidebar:#1d2240; --text-main:#f7f8ff; --text-muted:#b9c2f5; --border:#4d5b91; --primary:rgb(147,164,236); --primary-hover:#b4c1ff; --msg-sent:#7185d8; --msg-sent-text:#fff; --msg-received:#333b64; --msg-received-text:#f7f8ff; --input-bg:#30385e; --shadow:rgba(12,16,42,.5); }
+    [data-theme="midnight-aurora"] { --bg-main:rgb(18,30,48); --bg-card:#1c314c; --bg-sidebar:#14273f; --text-main:#eff8ff; --text-muted:#a7c5de; --border:#365675; --primary:#4eb5d8; --primary-hover:#71cbed; --msg-sent:#237d9d; --msg-sent-text:#fff; --msg-received:#28435f; --msg-received-text:#eff8ff; --input-bg:#29445f; --shadow:rgba(2,12,28,.55); }
+    [data-theme="nebula-violet"] { --bg-main:#201938; --bg-card:#2d2450; --bg-sidebar:#251d43; --text-main:#faf7ff; --text-muted:#c7bdea; --border:#554589; --primary:rgb(92,72,160); --primary-hover:#8069ca; --msg-sent:#624eab; --msg-sent-text:#fff; --msg-received:#3a3061; --msg-received-text:#faf7ff; --input-bg:#3a3062; --shadow:rgba(18,9,43,.58); }
+    [data-theme="cyber-cyan"] { --bg-main:#08272c; --bg-card:#10383d; --bg-sidebar:#0a2d32; --text-main:#efffff; --text-muted:#a7d9dc; --border:#27676e; --primary:rgb(35,190,205); --primary-hover:#5bd9e5; --msg-sent:#138e9c; --msg-sent-text:#fff; --msg-received:#174b52; --msg-received-text:#efffff; --input-bg:#1b5056; --shadow:rgba(0,19,22,.62); }
+    [data-theme="ember-glow"] { --bg-main:#301713; --bg-card:#47221c; --bg-sidebar:#371914; --text-main:#fff7f3; --text-muted:#efb8aa; --border:#804235; --primary:rgb(225,92,65); --primary-hover:#f58c72; --msg-sent:#b94632; --msg-sent-text:#fff; --msg-received:#5b2a22; --msg-received-text:#fff7f3; --input-bg:#5a2b24; --shadow:rgba(30,6,2,.6); }
+    [data-theme="oceanic"] { --bg-main:#0a2933; --bg-card:#123d4a; --bg-sidebar:#0d303b; --text-main:#f0fbff; --text-muted:#acd1da; --border:#347286; --primary:rgb(32,126,150); --primary-hover:#3da4bd; --msg-sent:#17677d; --msg-sent-text:#fff; --msg-received:#1a4c5a; --msg-received-text:#f0fbff; --input-bg:#1c5060; --shadow:rgba(0,20,28,.6); }
+    [data-theme="sakura-mist"] { --bg-main:#351b2a; --bg-card:#51283d; --bg-sidebar:#401f32; --text-main:#fff7fb; --text-muted:#edb7cf; --border:#91516f; --primary:rgb(220,130,170); --primary-hover:#f0a5c9; --msg-sent:#b85f8c; --msg-sent-text:#fff; --msg-received:#64314c; --msg-received-text:#fff7fb; --input-bg:#63334c; --shadow:rgba(35,5,19,.57); }
+    [data-theme="forest-pulse"] { --bg-main:#0d291d; --bg-card:#17432f; --bg-sidebar:#103624; --text-main:#f1fff7; --text-muted:#b0dac2; --border:#3b795b; --primary:rgb(48,125,88); --primary-hover:#58a876; --msg-sent:#246943; --msg-sent-text:#fff; --msg-received:#20533a; --msg-received-text:#f1fff7; --input-bg:#245b40; --shadow:rgba(2,24,13,.62); }
+    [data-theme="solar-flare"] { --bg-main:#39290d; --bg-card:#513b13; --bg-sidebar:#43300e; --text-main:#fff9e9; --text-muted:#f0d69a; --border:#8e6b27; --primary:rgb(235,170,55); --primary-hover:#ffd06e; --msg-sent:#b87a19; --msg-sent-text:#fff; --msg-received:#664c18; --msg-received-text:#fff9e9; --input-bg:#694f1a; --shadow:rgba(34,23,1,.62); }
+    [data-theme="arctic-frost"] { --bg-main:#102d3b; --bg-card:#1b4658; --bg-sidebar:#153646; --text-main:#f3fcff; --text-muted:#bddde8; --border:#52899e; --primary:rgb(125,190,220); --primary-hover:#afe2f6; --msg-sent:#4a91af; --msg-sent-text:#fff; --msg-received:#28576a; --msg-received-text:#f3fcff; --input-bg:#2c6074; --shadow:rgba(0,22,32,.58); }
+    [data-theme="royal-eclipse"] { --bg-main:#19132d; --bg-card:#292044; --bg-sidebar:#201832; --text-main:#f9f6ff; --text-muted:#c9bee5; --border:#554176; --primary:rgb(73,55,115); --primary-hover:#8e78c4; --msg-sent:#59458b; --msg-sent-text:#fff; --msg-received:#352855; --msg-received-text:#f9f6ff; --input-bg:#392c5b; --shadow:rgba(10,5,24,.63); }
+
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
     body { background-color: var(--bg-main); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; }
     .card { background: var(--bg-card); width: 100%; max-width: 420px; padding: 32px; border-radius: 16px; box-shadow: 0 10px 25px var(--shadow); border: 1px solid var(--border); }
@@ -407,11 +422,20 @@
         <option value="frame-void">Void Purple</option>
       </select>
 
-      <label style="font-size:14px; display:block; margin-bottom:6px; margin-top:10px;">Theme Mode</label>
-      <select id="theme-select" onchange="changeTheme(this.value)">
-        <option value="light">Light Mode</option>
-        <option value="dark">Dark Mode</option>
-      </select>
+      <div class="settings-section theme-settings">
+        <label class="theme-selector-label">App theme</label>
+        <p class="theme-selector-help">Choose a look for the complete Nexora interface.</p>
+        <select id="theme-select" class="theme-native-select" onchange="changeTheme(this.value)" aria-label="App theme">
+          <option value="light">Light Mode</option><option value="dark">Dark Mode</option>
+          <option value="onyx">Onyx</option><option value="starlight-nova">Starlight Nova</option>
+          <option value="midnight-aurora">Midnight Aurora</option><option value="nebula-violet">Nebula Violet</option>
+          <option value="cyber-cyan">Cyber Cyan</option><option value="ember-glow">Ember Glow</option>
+          <option value="oceanic">Oceanic</option><option value="sakura-mist">Sakura Mist</option>
+          <option value="forest-pulse">Forest Pulse</option><option value="solar-flare">Solar Flare</option>
+          <option value="arctic-frost">Arctic Frost</option><option value="royal-eclipse">Royal Eclipse</option>
+        </select>
+        <div id="theme-preview-grid" class="theme-preview-grid" role="radiogroup" aria-label="Choose app theme"></div>
+      </div>
 
       <div class="settings-section"><label style="font-size:14px; display:block; margin-bottom:8px;">Quick status</label><div class="status-pills" id="quick-status-pills">
         <button onclick="setQuickStatus('free')">Free</button><button onclick="setQuickStatus('studying')">Studying</button><button onclick="setQuickStatus('busy')">Busy</button><button onclick="setQuickStatus('gaming')">Gaming</button><button onclick="setQuickStatus('class')">In class</button><button onclick="setQuickStatus('sleeping')">Sleeping</button>
@@ -700,14 +724,42 @@
       reader.readAsDataURL(file);
     }
 
+    const THEMES = [
+      { id: 'light', name: 'Light', colors: ['#f3f4f6', '#ffffff', '#2563eb'] },
+      { id: 'dark', name: 'Dark', colors: ['#0f172a', '#1e293b', '#3b82f6'] },
+      { id: 'onyx', name: 'Onyx', colors: ['#0a0a0c', '#17171b', '#8b93a1'] },
+      { id: 'starlight-nova', name: 'Starlight Nova', colors: ['#1a1f38', '#252b4a', 'rgb(147, 164, 236)'] },
+      { id: 'midnight-aurora', name: 'Midnight Aurora', colors: ['rgb(18, 30, 48)', '#1c314c', '#4eb5d8'] },
+      { id: 'nebula-violet', name: 'Nebula Violet', colors: ['#201938', '#2d2450', 'rgb(92, 72, 160)'] },
+      { id: 'cyber-cyan', name: 'Cyber Cyan', colors: ['#08272c', '#10383d', 'rgb(35, 190, 205)'] },
+      { id: 'ember-glow', name: 'Ember Glow', colors: ['#301713', '#47221c', 'rgb(225, 92, 65)'] },
+      { id: 'oceanic', name: 'Oceanic', colors: ['#0a2933', '#123d4a', 'rgb(32, 126, 150)'] },
+      { id: 'sakura-mist', name: 'Sakura Mist', colors: ['#351b2a', '#51283d', 'rgb(220, 130, 170)'] },
+      { id: 'forest-pulse', name: 'Forest Pulse', colors: ['#0d291d', '#17432f', 'rgb(48, 125, 88)'] },
+      { id: 'solar-flare', name: 'Solar Flare', colors: ['#39290d', '#513b13', 'rgb(235, 170, 55)'] },
+      { id: 'arctic-frost', name: 'Arctic Frost', colors: ['#102d3b', '#1b4658', 'rgb(125, 190, 220)'] },
+      { id: 'royal-eclipse', name: 'Royal Eclipse', colors: ['#19132d', '#292044', 'rgb(73, 55, 115)'] }
+    ];
+
+    function renderThemeSelector() {
+      const grid = document.getElementById('theme-preview-grid');
+      if (!grid) return;
+      const selectedTheme = document.documentElement.getAttribute('data-theme') || localStorage.getItem('theme') || 'light';
+      grid.innerHTML = THEMES.map(theme => `<button type="button" class="theme-preview${theme.id === selectedTheme ? ' selected' : ''}" role="radio" aria-checked="${theme.id === selectedTheme}" onclick="changeTheme('${theme.id}')" title="${theme.name}"><span class="theme-preview-swatch" style="--theme-a:${theme.colors[0]};--theme-b:${theme.colors[1]};--theme-c:${theme.colors[2]}"><i></i><b></b></span><span>${theme.name}</span></button>`).join('');
+    }
+
     function changeTheme(theme) {
+      if (!THEMES.some(item => item.id === theme)) theme = 'light';
       localStorage.setItem('theme', theme);
       applyTheme(theme);
     }
 
     function applyTheme(theme) {
+      if (!THEMES.some(item => item.id === theme)) theme = 'light';
       document.documentElement.setAttribute('data-theme', theme);
-      document.getElementById('theme-select').value = theme;
+      const select = document.getElementById('theme-select');
+      if (select) select.value = theme;
+      renderThemeSelector();
     }
 
     function handleWallpaperUpload(event) {
