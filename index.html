@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NexoraChat</title>
-  <link rel="icon" type="image/png" href="https://i.ibb.co/HysGVpW/Chat-GPT-Image-Aug-25-2026-09-59-06-AM.png">
+  <link rel="icon" type="image/png" href="https://i.ibb.co/Cj76XZz/d5b34859-cdfb-4a7d-9b72-6cea78857d5f.png">
   <link rel="stylesheet" href="style.css">
   <style>
     :root {
@@ -22,7 +22,7 @@
       --msg-received-text: #0f172a;
       --input-bg: #f1f5f9;
       --shadow: rgba(0, 0, 0, 0.15);
-      --status-online: #22c55e;
+      --status-online: #22c55e;  
       --status-idle: #eab308;
       --status-dnd: #ef4444;
       --status-offline: #94a3b8;
@@ -98,19 +98,74 @@
     .frame-void { border: 2px solid #8b5cf6 !important; box-shadow: 0 0 12px #8b5cf6; }
 
     .status-badge {
-      position: absolute;  
-      bottom: -1px;
-      right: -1px;
-      width: 10px;
-      height: 10px;
+      position: absolute;
+      right: 2px;
+      bottom: 2px;
+      left: auto;
+      top: auto;
+      width: 13px;
+      height: 13px;
       border-radius: 50%;
       border: 2px solid var(--bg-card);
       background-color: var(--status-offline);
+      background-size: 70% 70%;
+      background-repeat: no-repeat;
+      background-position: center;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-sizing: border-box;
     }
     .status-badge.online { background-color: var(--status-online); }
     .status-badge.idle { background-color: var(--status-idle); }
     .status-badge.dnd { background-color: var(--status-dnd); }
     .status-badge.offline { background-color: var(--status-offline); }
+    .status-badge.quick-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background-color: #ffffff;
+      border-color: var(--bg-card);
+      box-sizing: border-box;
+      padding: 0;
+      position: absolute;
+      right: 2px;
+      bottom: 2px;
+      left: auto;
+      top: auto;
+    }
+    .status-badge.quick-status::before {
+      content: "";
+      display: block;
+      width: 72%;
+      height: 72%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      background-image: var(--status-icon, none);
+      flex-shrink: 0;
+    }
+    .status-badge.quick-status.studying { --status-icon: url('Asset Logo/study.svg'); }
+    .status-badge.quick-status.busy { --status-icon: url('Asset Logo/do not disturb.svg'); }
+    .status-badge.quick-status.gaming { --status-icon: url('Asset Logo/game.svg'); }
+    .status-badge.quick-status.class { --status-icon: url('Asset Logo/class.svg'); }
+    .status-badge.quick-status.sleeping { --status-icon: url('Asset Logo/sleep.svg'); }
+    .status-badge.quick-status.free {
+      background-color: var(--status-online);
+      --status-icon: none;
+    }
+    .status-badge.quick-status.free::before {
+      content: "";
+      width: 36%;
+      height: 36%;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+      background-image: none;
+    }
 
     .user-profile-info { display: flex; align-items: center; gap: 10px; }
 
@@ -335,7 +390,7 @@
 
   <!-- Auth Screen -->
   <div id="auth-screen" class="card">
-    <img class="brand-logo" src="https://i.ibb.co/HysGVpW/Chat-GPT-Image-Aug-25-2026-09-59-06-AM.png" alt="Nexora brand">
+    <img class="brand-logo" src="https://i.ibb.co/Cj76XZz/d5b34859-cdfb-4a7d-9b72-6cea78857d5f.png" alt="Nexora brand">
     <h2 id="auth-title">PulseChat Login</h2>
     <input type="text" id="username" placeholder="Username">
     <input type="password" id="password" placeholder="Password">
@@ -629,6 +684,24 @@
     }
 
     const QUICK_STATUS = { free: 'Free', studying: 'Studying', busy: 'Busy', gaming: 'Gaming', class: 'In class', sleeping: 'Sleeping' };
+    const QUICK_STATUS_ICONS = {
+      free: '',
+      studying: 'Asset Logo/study.svg',
+      busy: 'Asset Logo/do not disturb.svg',
+      gaming: 'Asset Logo/game.svg',
+      class: 'Asset Logo/class.svg',
+      sleeping: 'Asset Logo/sleep.svg'
+    };
+
+    function getQuickStatusForUser(username) {
+      return localStorage.getItem(`quick_status_${username}`) || 'free';
+    }
+
+    function getBadgeStatusForUser(username) {
+      const quickStatus = getQuickStatusForUser(username);
+      return quickStatus === 'free' ? 'free' : (quickStatus || getUserPresence(username));
+    }
+
     function setQuickStatus(status) {
       if (!currentUser) return;
       localStorage.setItem(`quick_status_${currentUser}`, status);
@@ -636,11 +709,14 @@
       const label = document.getElementById('quick-status-label'); if (label) label.textContent = QUICK_STATUS[status];
       lastUserActivity = Date.now();
       updatePresenceHeartbeat();
+      updateStatusBadgeUI('sidebar-status-badge', getBadgeStatusForUser(currentUser));
+      renderSidebar();
     }
     function refreshQuickStatus() {
-      const saved = localStorage.getItem(`quick_status_${currentUser}`) || 'free';
+      const saved = getQuickStatusForUser(currentUser || '');
       document.querySelectorAll('#quick-status-pills button').forEach(b => b.classList.toggle('active', b.textContent.trim() === QUICK_STATUS[saved]));
       const label = document.getElementById('quick-status-label'); if (label) label.textContent = QUICK_STATUS[saved];
+      if (currentUser) updateStatusBadgeUI('sidebar-status-badge', getBadgeStatusForUser(currentUser));
     }
     ['click', 'keydown', 'mousemove', 'touchstart'].forEach(eventName => document.addEventListener(eventName, () => { lastUserActivity = Date.now(); }));
     setInterval(() => {
@@ -654,9 +730,39 @@
 
     function updateStatusBadgeUI(elementId, status) {
       const badge = document.getElementById(elementId);
-      if (badge) {
-        badge.className = `status-badge ${status}`;
+      if (!badge) return;
+
+      badge.className = 'status-badge';
+      badge.style.backgroundImage = 'none';
+      badge.style.backgroundColor = 'var(--status-offline)';
+
+      if (status && QUICK_STATUS_ICONS[status]) {
+        badge.classList.add('quick-status', status);
+        badge.style.backgroundImage = `url("${QUICK_STATUS_ICONS[status]}")`;
+        badge.style.backgroundColor = '#ffffff';
+        return;
       }
+
+      if (status === 'online' || status === 'free') {
+        badge.classList.add('online');
+        badge.style.backgroundColor = 'var(--status-online)';
+        return;
+      }
+
+      if (status === 'idle') {
+        badge.classList.add('idle');
+        badge.style.backgroundColor = 'var(--status-idle)';
+        return;
+      }
+
+      if (status === 'dnd') {
+        badge.classList.add('dnd');
+        badge.style.backgroundColor = 'var(--status-dnd)';
+        return;
+      }
+
+      badge.classList.add('offline');
+      badge.style.backgroundColor = 'var(--status-offline)';
     }
 
     function playPopSound() {
@@ -1115,7 +1221,7 @@
       chatHeaderImg.className = `avatar ${friendFrame}`;
       chatHeaderContainer.classList.remove('hidden');
 
-      const friendStatus = getUserPresence(friend);
+      const friendStatus = getBadgeStatusForUser(friend);
       updateStatusBadgeUI('chat-header-status-badge', friendStatus);
 
       document.getElementById('chat-title').innerText = `@${friend}`;
@@ -1262,17 +1368,21 @@
 
         const friendPfp = (users[f] && users[f].pfp) ? users[f].pfp : DEFAULT_AVATAR;
         const friendFrame = (users[f] && users[f].frame) ? users[f].frame : '';
-        const friendStatus = getUserPresence(f);
+        const friendStatus = getBadgeStatusForUser(f);
 
         li.innerHTML = `
           <div class="user-profile-info">
             <div class="avatar-container">
               <img class="avatar ${friendFrame}" src="${friendPfp}" alt="${f}">
-              <span class="status-badge ${friendStatus}"></span>
+              <span class="status-badge"></span>
             </div>
             <span>@${f}</span>
           </div>
         `;
+        const badge = li.querySelector('.status-badge');
+        updateStatusBadgeUI(badge?.id || '', friendStatus);
+        badge.id = `friend-status-${f}`;
+        updateStatusBadgeUI(badge.id, friendStatus);
         li.onclick = () => selectFriend(f);
         friendList.appendChild(li);
       });
