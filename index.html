@@ -26,6 +26,10 @@
       --status-idle: #eab308;
       --status-dnd: #ef4444;
       --status-offline: #94a3b8;
+      --status-studying: #3b82f6;
+      --status-gaming: #8b5cf6;
+      --status-class: #06b6d4;
+      --status-sleeping: #6366f1;
     }
 
     [data-theme="dark"] {
@@ -103,69 +107,91 @@
       bottom: 2px;
       left: auto;
       top: auto;
-      width: 13px;
-      height: 13px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
       border: 2px solid var(--bg-card);
       background-color: var(--status-offline);
-      background-size: 70% 70%;
-      background-repeat: no-repeat;
-      background-position: center;
       box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
       box-sizing: border-box;
+      transition: background-color 0.32s ease, transform 0.15s ease, box-shadow 0.15s ease;
     }
     .status-badge.online { background-color: var(--status-online); }
     .status-badge.idle { background-color: var(--status-idle); }
     .status-badge.dnd { background-color: var(--status-dnd); }
     .status-badge.offline { background-color: var(--status-offline); }
     .status-badge.quick-status {
+      background-color: var(--status-online);
+      border-color: var(--bg-card);
+      padding: 0;
+    }
+
+    /* Icon morph: the icon fades/scales out, content swaps, then fades/scales back in */
+    .status-icon {
+      width: 68%;
+      height: 68%;
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
-      background-color: #ffffff;
-      border-color: var(--bg-card);
-      box-sizing: border-box;
-      padding: 0;
-      position: absolute;
-      right: 2px;
-      bottom: 2px;
-      left: auto;
-      top: auto;
-    }
-    .status-badge.quick-status::before {
-      content: "";
-      display: block;
-      width: 72%;
-      height: 72%;
-      background-repeat: no-repeat;
-      background-position: center;
-      background-size: contain;
-      background-image: var(--status-icon, none);
       flex-shrink: 0;
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+      transition: opacity 0.16s ease, transform 0.22s cubic-bezier(.34,1.56,.64,1);
     }
-    .status-badge.quick-status.studying { --status-icon: url('Asset Logo/study.svg'); }
-    .status-badge.quick-status.busy { --status-icon: url('Asset Logo/do not disturb.svg'); }
-    .status-badge.quick-status.gaming { --status-icon: url('Asset Logo/game.svg'); }
-    .status-badge.quick-status.class { --status-icon: url('Asset Logo/class.svg'); }
-    .status-badge.quick-status.sleeping { --status-icon: url('Asset Logo/sleep.svg'); }
-    .status-badge.quick-status.free {
-      background-color: var(--status-online);
-      --status-icon: none;
+    .status-icon svg { width: 100%; height: 100%; display: block; }
+    .status-badge.icon-swap .status-icon {
+      opacity: 0;
+      transform: scale(0.3) rotate(-35deg);
+      transition: opacity 0.14s ease, transform 0.14s ease;
     }
-    .status-badge.quick-status.free::before {
-      content: "";
-      width: 36%;
-      height: 36%;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.96);
-      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
-      background-image: none;
+
+    #sidebar-status-badge { cursor: pointer; }
+    #sidebar-status-badge:hover { transform: scale(1.14); box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 2px 6px var(--shadow); }
+
+    /* Status duration popover */
+    .quick-status-popover {
+      position: absolute;
+      top: 55px;
+      left: 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 10px 28px var(--shadow);
+      z-index: 110;
+      width: 234px;
+      padding: 12px;
+      animation: popIn 0.15s ease-out;
     }
+    .qsp-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 0 2px; }
+    .qsp-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 0 1px rgba(0,0,0,0.06); }
+    .qsp-avatar .status-icon { width: 62%; height: 62%; }
+    .qsp-title { font-weight: 700; font-size: 13px; color: var(--text-main); line-height: 1.3; }
+    .qsp-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; line-height: 1.3; }
+    .qsp-divider { height: 1px; background: var(--border); margin: 4px 2px 8px; }
+    .qsp-option { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--text-main); }
+    .qsp-option:hover { background: var(--input-bg); }
+    .qsp-option.active { background: var(--input-bg); color: var(--primary); font-weight: 600; }
+    .qsp-option-icon { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; }
+    .qsp-custom { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; padding: 8px; background: var(--input-bg); border-radius: 10px; }
+    .qsp-custom input[type="datetime-local"] { margin-bottom: 0; font-size: 12px; padding: 8px 10px; color-scheme: light; }
+    [data-theme="dark"] .qsp-custom input[type="datetime-local"],
+    [data-theme="onyx"] .qsp-custom input[type="datetime-local"],
+    [data-theme="starlight-nova"] .qsp-custom input[type="datetime-local"],
+    [data-theme="midnight-aurora"] .qsp-custom input[type="datetime-local"],
+    [data-theme="nebula-violet"] .qsp-custom input[type="datetime-local"],
+    [data-theme="cyber-cyan"] .qsp-custom input[type="datetime-local"],
+    [data-theme="ember-glow"] .qsp-custom input[type="datetime-local"],
+    [data-theme="oceanic"] .qsp-custom input[type="datetime-local"],
+    [data-theme="sakura-mist"] .qsp-custom input[type="datetime-local"],
+    [data-theme="forest-pulse"] .qsp-custom input[type="datetime-local"],
+    [data-theme="solar-flare"] .qsp-custom input[type="datetime-local"],
+    [data-theme="arctic-frost"] .qsp-custom input[type="datetime-local"],
+    [data-theme="royal-eclipse"] .qsp-custom input[type="datetime-local"] { color-scheme: dark; }
+    .qsp-custom button { margin-bottom: 0; padding: 8px; font-size: 12px; }
 
     .user-profile-info { display: flex; align-items: center; gap: 10px; }
 
@@ -382,7 +408,9 @@
     .extension-dialog .dialog-actions button { width:auto; margin:0; }
     .settings-section { margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
     .status-pills { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
-    .status-pills button { margin:0; padding:8px 5px; font-size:11px; background:var(--input-bg); color:var(--text-main); border:1px solid var(--border); }
+    .status-pills button { margin:0; padding:8px 5px; font-size:11px; background:var(--input-bg); color:var(--text-main); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+    .status-pills button .qs-pill-dot { width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .status-pills button .qs-pill-dot svg { width:60%; height:60%; display:block; }
     .status-pills button.active { background:var(--primary); color:#fff; border-color:var(--primary); }
   </style>
 </head>
@@ -410,7 +438,7 @@
         <div class="user-profile-info">
           <div class="avatar-container" onclick="toggleStatusMenu(event)">
             <img id="sidebar-avatar" class="avatar" src="" alt="Profile">
-            <span id="sidebar-status-badge" class="status-badge online"></span>
+            <span id="sidebar-status-badge" class="status-badge online" onclick="toggleQuickStatusPopover(event)" title="Click to set how long this status lasts"></span>
           </div>
           <div><strong id="user-display"></strong><small id="user-nexora-id" class="nexora-id"></small><small id="quick-status-label" style="display:block;color:var(--text-muted);font-size:11px;line-height:1.3;"></small></div>
         </div>
@@ -431,6 +459,9 @@
             <span class="status-dot" style="background:var(--status-offline);"></span> Invisible / Offline
           </div>
         </div>
+
+        <!-- Status Duration Popover -->
+        <div id="quick-status-popover" class="quick-status-popover hidden"></div>
       </div>
       
       <!-- Add Friend Section -->
@@ -561,9 +592,7 @@
         <div id="theme-preview-grid" class="theme-preview-grid" role="radiogroup" aria-label="Choose app theme"></div>
       </div>
 
-      <div class="settings-section"><label style="font-size:14px; display:block; margin-bottom:8px;">Quick status</label><div class="status-pills" id="quick-status-pills">
-        <button onclick="setQuickStatus('free')">Free</button><button onclick="setQuickStatus('studying')">Studying</button><button onclick="setQuickStatus('busy')">Busy</button><button onclick="setQuickStatus('gaming')">Gaming</button><button onclick="setQuickStatus('class')">In class</button><button onclick="setQuickStatus('sleeping')">Sleeping</button>
-      </div><small style="display:block;margin-top:8px;color:var(--text-muted);">After 10 minutes without activity, your status changes to Studying.</small></div>
+      <div class="settings-section"><label style="font-size:14px; display:block; margin-bottom:8px;">Quick status</label><div class="status-pills" id="quick-status-pills"></div><small style="display:block;margin-top:8px;color:var(--text-muted);">After 10 minutes without activity, your status changes to Studying. Tap your status badge to set how long it should last.</small></div>
 
       <!-- Custom Wallpaper Controls -->
       <label style="font-size:14px; display:block; margin-bottom:6px; margin-top:10px;">Chat Background Wallpaper</label>
@@ -684,13 +713,29 @@
     }
 
     const QUICK_STATUS = { free: 'Free', studying: 'Studying', busy: 'Busy', gaming: 'Gaming', class: 'In class', sleeping: 'Sleeping' };
-    const QUICK_STATUS_ICONS = {
-      free: '',
-      studying: 'Asset Logo/study.svg',
-      busy: 'Asset Logo/do not disturb.svg',
-      gaming: 'Asset Logo/game.svg',
-      class: 'Asset Logo/class.svg',
-      sleeping: 'Asset Logo/sleep.svg'
+
+    // Clean, flat 2D icons (inline SVG, no external assets) for each status badge.
+    const STATUS_ICON_SVG = {
+      gaming: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.5 7.5h9A4.5 4.5 0 0 1 21 12v.6a3.4 3.4 0 0 1-6.1 2.06l-.86-1.1a2.6 2.6 0 0 0-2.08-1h-.92a2.6 2.6 0 0 0-2.08 1l-.86 1.1A3.4 3.4 0 0 1 3 12.6V12a4.5 4.5 0 0 1 4.5-4.5Z" fill="#fff"/></svg>',
+      studying: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7.4c-1.55-1.15-3.6-1.6-5.45-1.3a.95.95 0 0 0-.8.95v9.1c0 .6.53 1.05 1.12.96 1.72-.27 3.6.12 5.13 1.19 1.53-1.07 3.41-1.46 5.13-1.19.59.09 1.12-.36 1.12-.96v-9.1a.95.95 0 0 0-.8-.95c-1.85-.3-3.9.15-5.45 1.3Z" fill="none" stroke="#fff" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/><path d="M12 7.4V17.3" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>',
+      class: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="5.2" y="6.6" width="13.6" height="8.6" rx="1.3" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M3 17.4h18l-1.3 1.5a1.6 1.6 0 0 1-1.2.5H5.5a1.6 1.6 0 0 1-1.2-.5L3 17.4Z" fill="#fff"/></svg>',
+      sleeping: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16.2 4.8a7.6 7.6 0 1 0 3 13.4 8.9 8.9 0 0 1-3-13.4Z" fill="#fff"/></svg>',
+      dnd: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="10.85" width="12" height="2.3" rx="1.15" fill="#fff"/></svg>'
+    };
+    STATUS_ICON_SVG.busy = STATUS_ICON_SVG.dnd;
+
+    // Every possible badge state mapped to a background color + optional icon.
+    const STATUS_VISUALS = {
+      free:     { bg: 'var(--status-online)',   svg: '' },
+      online:   { bg: 'var(--status-online)',   svg: '' },
+      idle:     { bg: 'var(--status-idle)',     svg: '' },
+      dnd:      { bg: 'var(--status-dnd)',      svg: STATUS_ICON_SVG.dnd },
+      offline:  { bg: 'var(--status-offline)',  svg: '' },
+      busy:     { bg: 'var(--status-dnd)',      svg: STATUS_ICON_SVG.busy },
+      studying: { bg: 'var(--status-studying)', svg: STATUS_ICON_SVG.studying },
+      gaming:   { bg: 'var(--status-gaming)',   svg: STATUS_ICON_SVG.gaming },
+      class:    { bg: 'var(--status-class)',    svg: STATUS_ICON_SVG.class },
+      sleeping: { bg: 'var(--status-sleeping)', svg: STATUS_ICON_SVG.sleeping }
     };
 
     function getQuickStatusForUser(username) {
@@ -702,67 +747,187 @@
       return quickStatus === 'free' ? 'free' : (quickStatus || getUserPresence(username));
     }
 
-    function setQuickStatus(status) {
+    /* ---------------- Status duration / auto-expiry ---------------- */
+    function getQuickStatusExpiry(username) {
+      const raw = localStorage.getItem(`quick_status_expiry_${username}`);
+      return raw ? parseInt(raw, 10) : null;
+    }
+    function setQuickStatusExpiry(username, timestamp) {
+      if (timestamp) localStorage.setItem(`quick_status_expiry_${username}`, String(timestamp));
+      else localStorage.removeItem(`quick_status_expiry_${username}`);
+    }
+    function checkQuickStatusExpiry() {
+      if (!currentUser) return;
+      const expiry = getQuickStatusExpiry(currentUser);
+      if (expiry && Date.now() >= expiry && getQuickStatusForUser(currentUser) !== 'free') {
+        setQuickStatus('free');
+      }
+    }
+    function formatExpiry(timestamp) {
+      const d = new Date(timestamp);
+      const now = new Date();
+      const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      if (d.toDateString() === now.toDateString()) return `today at ${timeStr}`;
+      return `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${timeStr}`;
+    }
+
+    function setQuickStatus(status, expiryTs = null) {
       if (!currentUser) return;
       localStorage.setItem(`quick_status_${currentUser}`, status);
-      document.querySelectorAll('#quick-status-pills button').forEach(b => b.classList.toggle('active', b.textContent.trim() === QUICK_STATUS[status]));
+      setQuickStatusExpiry(currentUser, expiryTs);
+      document.querySelectorAll('#quick-status-pills button').forEach(b => b.classList.toggle('active', b.dataset.status === status));
       const label = document.getElementById('quick-status-label'); if (label) label.textContent = QUICK_STATUS[status];
       lastUserActivity = Date.now();
       updatePresenceHeartbeat();
       updateStatusBadgeUI('sidebar-status-badge', getBadgeStatusForUser(currentUser));
+      closeQuickStatusPopover();
       renderSidebar();
     }
+
+    function renderQuickStatusPills() {
+      const container = document.getElementById('quick-status-pills');
+      if (!container) return;
+      const current = getQuickStatusForUser(currentUser || '');
+      container.innerHTML = Object.keys(QUICK_STATUS).map(key => {
+        const visual = STATUS_VISUALS[key] || STATUS_VISUALS.free;
+        const icon = visual.svg || '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="#fff"/></svg>';
+        return `<button type="button" data-status="${key}" class="${key === current ? 'active' : ''}" onclick="setQuickStatus('${key}')">
+          <span class="qs-pill-dot" style="background:${visual.bg};">${icon}</span>
+          <span>${QUICK_STATUS[key]}</span>
+        </button>`;
+      }).join('');
+    }
+
     function refreshQuickStatus() {
+      renderQuickStatusPills();
       const saved = getQuickStatusForUser(currentUser || '');
-      document.querySelectorAll('#quick-status-pills button').forEach(b => b.classList.toggle('active', b.textContent.trim() === QUICK_STATUS[saved]));
       const label = document.getElementById('quick-status-label'); if (label) label.textContent = QUICK_STATUS[saved];
       if (currentUser) updateStatusBadgeUI('sidebar-status-badge', getBadgeStatusForUser(currentUser));
     }
     ['click', 'keydown', 'mousemove', 'touchstart'].forEach(eventName => document.addEventListener(eventName, () => { lastUserActivity = Date.now(); }));
     setInterval(() => {
+      checkQuickStatusExpiry();
       if (currentUser && Date.now() - lastUserActivity >= 600000 && localStorage.getItem(`quick_status_${currentUser}`) !== 'studying') setQuickStatus('studying');
     }, 30000);
 
     function toggleStatusMenu(event) {
       event.stopPropagation();
+      closeQuickStatusPopover();
       document.getElementById('status-menu').classList.toggle('hidden');
+    }
+
+    /* ---------------- Quick-status duration popover ---------------- */
+    function toggleQuickStatusPopover(event) {
+      event.stopPropagation();
+      const statusMenu = document.getElementById('status-menu');
+      if (statusMenu) statusMenu.classList.add('hidden');
+      const pop = document.getElementById('quick-status-popover');
+      if (!pop) return;
+      const wasHidden = pop.classList.contains('hidden');
+      closeQuickStatusPopover();
+      if (wasHidden) renderQuickStatusPopover();
+    }
+
+    function closeQuickStatusPopover() {
+      const pop = document.getElementById('quick-status-popover');
+      if (pop) { pop.classList.add('hidden'); pop.innerHTML = ''; }
+    }
+
+    function renderQuickStatusPopover() {
+      if (!currentUser) return;
+      const pop = document.getElementById('quick-status-popover');
+      if (!pop) return;
+      const status = getQuickStatusForUser(currentUser);
+      const label = QUICK_STATUS[status] || 'Free';
+      const visual = STATUS_VISUALS[status] || STATUS_VISUALS.free;
+      const icon = visual.svg || '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="#fff"/></svg>';
+      const expiry = getQuickStatusExpiry(currentUser);
+
+      pop.innerHTML = `
+        <div class="qsp-header">
+          <span class="qsp-avatar" style="background:${visual.bg};">${icon}</span>
+          <div>
+            <div class="qsp-title">${label}</div>
+            <div class="qsp-sub">${expiry ? 'Clears ' + formatExpiry(expiry) : 'Set to stay until changed'}</div>
+          </div>
+        </div>
+        <div class="qsp-divider"></div>
+        <div class="qsp-option" onclick="applyQuickStatusDuration('forever')">
+          <span class="qsp-option-icon">&#8734;</span> Forever
+        </div>
+        <div class="qsp-option" onclick="applyQuickStatusDuration('8h')">
+          <span class="qsp-option-icon">&#9201;</span> For 8 hours
+        </div>
+        <div class="qsp-option" onclick="toggleCustomDurationRow(event)">
+          <span class="qsp-option-icon">&#128197;</span> Custom time
+        </div>
+        <div id="custom-duration-row" class="qsp-custom hidden">
+          <input type="datetime-local" id="custom-duration-input">
+          <button type="button" onclick="applyQuickStatusDuration('custom')">Set duration</button>
+        </div>
+      `;
+      pop.classList.remove('hidden');
+    }
+
+    function toggleCustomDurationRow(event) {
+      event.stopPropagation();
+      const row = document.getElementById('custom-duration-row');
+      if (!row) return;
+      row.classList.toggle('hidden');
+      if (!row.classList.contains('hidden')) {
+        const input = document.getElementById('custom-duration-input');
+        if (input) {
+          const local = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
+          const localStr = local.toISOString().slice(0, 16);
+          input.min = localStr;
+          if (!input.value) input.value = localStr;
+        }
+      }
+    }
+
+    function applyQuickStatusDuration(kind) {
+      if (!currentUser) return;
+      const status = getQuickStatusForUser(currentUser);
+      let expiryTs = null;
+      if (kind === '8h') {
+        expiryTs = Date.now() + 8 * 60 * 60 * 1000;
+      } else if (kind === 'custom') {
+        const input = document.getElementById('custom-duration-input');
+        if (!input || !input.value) return;
+        const chosen = new Date(input.value).getTime();
+        if (isNaN(chosen) || chosen <= Date.now()) { alert('Please choose a time in the future.'); return; }
+        expiryTs = chosen;
+      }
+      setQuickStatus(status, expiryTs);
     }
 
     function updateStatusBadgeUI(elementId, status) {
       const badge = document.getElementById(elementId);
       if (!badge) return;
+      const statusKey = STATUS_VISUALS[status] ? status : 'offline';
+      const visual = STATUS_VISUALS[statusKey];
 
-      badge.className = 'status-badge';
-      badge.style.backgroundImage = 'none';
-      badge.style.backgroundColor = 'var(--status-offline)';
+      const paint = () => {
+        badge.className = 'status-badge' + (visual.svg ? ' quick-status' : '') + ' ' + statusKey;
+        badge.style.backgroundImage = 'none';
+        badge.style.backgroundColor = visual.bg;
+        badge.innerHTML = `<span class="status-icon">${visual.svg}</span>`;
+      };
 
-      if (status && QUICK_STATUS_ICONS[status]) {
-        badge.classList.add('quick-status', status);
-        badge.style.backgroundImage = `url("${QUICK_STATUS_ICONS[status]}")`;
-        badge.style.backgroundColor = '#ffffff';
-        return;
-      }
+      if (badge.dataset.status === statusKey) return;
+      const isFirstPaint = !badge.dataset.status;
+      badge.dataset.status = statusKey;
 
-      if (status === 'online' || status === 'free') {
-        badge.classList.add('online');
-        badge.style.backgroundColor = 'var(--status-online)';
-        return;
-      }
+      if (isFirstPaint) { paint(); return; }
 
-      if (status === 'idle') {
-        badge.classList.add('idle');
-        badge.style.backgroundColor = 'var(--status-idle)';
-        return;
-      }
-
-      if (status === 'dnd') {
-        badge.classList.add('dnd');
-        badge.style.backgroundColor = 'var(--status-dnd)';
-        return;
-      }
-
-      badge.classList.add('offline');
-      badge.style.backgroundColor = 'var(--status-offline)';
+      // Smooth morph: fade/scale the old icon out, swap the content, then fade/scale the new one in.
+      badge.classList.add('icon-swap');
+      setTimeout(() => {
+        paint();
+        badge.classList.add('icon-swap');
+        void badge.offsetWidth;
+        badge.classList.remove('icon-swap');
+      }, 160);
     }
 
     function playPopSound() {
@@ -795,6 +960,11 @@
         const statusMenu = document.getElementById('status-menu');
         if (statusMenu && !statusMenu.classList.contains('hidden')) {
           statusMenu.classList.add('hidden');
+        }
+
+        const qsPopover = document.getElementById('quick-status-popover');
+        if (qsPopover && !qsPopover.classList.contains('hidden') && !e.target.closest('#quick-status-popover') && !e.target.closest('#sidebar-status-badge')) {
+          closeQuickStatusPopover();
         }
         
         if (!e.target.closest('.msg-popover') && !e.target.closest('.message')) {
@@ -913,6 +1083,7 @@
       const savedStatus = localStorage.getItem(`status_${currentUser}`) || 'online';
       updateStatusBadgeUI('sidebar-status-badge', savedStatus);
       updatePresenceHeartbeat();
+      checkQuickStatusExpiry();
       refreshQuickStatus();
 
       renderSidebar();
