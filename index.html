@@ -416,10 +416,39 @@
 </head>
 <body>
 
+  <!-- Decorative ambient background for the login screen (no functionality, purely visual) -->
+  <div id="auth-fx" aria-hidden="true">
+    <div class="auth-fx-glow auth-fx-glow-a"></div>
+    <div class="auth-fx-glow auth-fx-glow-b"></div>
+    <div class="auth-fx-grid"></div>
+    <div class="auth-fx-particles">
+      <span style="--x:6%; --y:18%; --d:0s; --dur:9s;"></span>
+      <span style="--x:14%; --y:62%; --d:.6s; --dur:11s;"></span>
+      <span style="--x:22%; --y:38%; --d:1.4s; --dur:8s;"></span>
+      <span style="--x:9%; --y:84%; --d:2.1s; --dur:12s;"></span>
+      <span style="--x:31%; --y:14%; --d:.3s; --dur:10s;"></span>
+      <span style="--x:38%; --y:70%; --d:1.8s; --dur:9.5s;"></span>
+      <span style="--x:46%; --y:26%; --d:2.6s; --dur:11.5s;"></span>
+      <span style="--x:52%; --y:88%; --d:.9s; --dur:8.5s;"></span>
+      <span style="--x:61%; --y:46%; --d:1.2s; --dur:10.5s;"></span>
+      <span style="--x:68%; --y:12%; --d:2.3s; --dur:9s;"></span>
+      <span style="--x:74%; --y:64%; --d:.4s; --dur:12.5s;"></span>
+      <span style="--x:80%; --y:34%; --d:1.7s; --dur:8.8s;"></span>
+      <span style="--x:87%; --y:78%; --d:2.9s; --dur:11s;"></span>
+      <span style="--x:91%; --y:20%; --d:.7s; --dur:9.8s;"></span>
+      <span style="--x:96%; --y:54%; --d:1.5s; --dur:10.2s;"></span>
+      <span style="--x:44%; --y:50%; --d:2s; --dur:13s;"></span>
+      <span style="--x:17%; --y:8%; --d:1s; --dur:9.2s;"></span>
+      <span style="--x:63%; --y:90%; --d:2.4s; --dur:11.8s;"></span>
+    </div>
+  </div>
+  <div id="auth-success-fx" aria-hidden="true"></div>
+
   <!-- Auth Screen -->
   <div id="auth-screen" class="card">
     <img class="brand-logo" src="https://i.ibb.co/Cj76XZz/d5b34859-cdfb-4a7d-9b72-6cea78857d5f.png" alt="Nexora brand">
-    <h2 id="auth-title">PulseChat Login</h2>
+    <h2 id="auth-title">Nexora Chat Login</h2>
+    <blockquote class="auth-tagline">Connet &bull; Create &bull; Experience.</blockquote>
     <input type="text" id="username" placeholder="Username">
     <input type="password" id="password" placeholder="Password">
     <div id="dob-field" class="hidden">
@@ -1014,9 +1043,20 @@
 
     function toggleAuthMode() {
       isLogin = !isLogin;
-      document.getElementById('auth-title').innerText = isLogin ? 'PulseChat Login' : 'Create Account';
+      document.getElementById('auth-title').innerText = isLogin ? 'Nexora Chat Login' : 'Create Account';
       document.getElementById('auth-btn').innerText = isLogin ? 'Sign In' : 'Sign Up';
       syncAuthMode();
+    }
+
+    function authError(message) {
+      const el = document.getElementById('auth-screen');
+      if (el) {
+        el.classList.remove('auth-shake');
+        void el.offsetWidth;
+        el.classList.add('auth-shake');
+        setTimeout(() => el.classList.remove('auth-shake'), 900);
+      }
+      alert(message);
     }
 
     function handleAuth() {
@@ -1025,7 +1065,7 @@
       const dob = document.getElementById('dob').value;
       const users = DB.getUsers();
 
-      if (!username || !password) return alert('Fill in all fields');
+      if (!username || !password) return authError('Fill in all fields');
 
       if (isLogin) {
         if (users[username] && users[username].password === password) {
@@ -1033,11 +1073,11 @@
           DB.saveSession(username);
           loadApp();
         } else {
-          alert('Invalid login credentials');
+          authError('Invalid login credentials');
         }
       } else {
-        if (users[username]) return alert('Username already taken');
-        if (!dob) return alert('Select your birthdate');
+        if (users[username]) return authError('Username already taken');
+        if (!dob) return authError('Select your birthdate');
         
         users[username] = { password, dob, nexoraId: generateNexoraId(users), requests: [], friends: [], pfp: DEFAULT_AVATAR, frame: '' };
         DB.saveUsers(users);
@@ -1046,6 +1086,29 @@
         loadApp();
       }
     }
+
+    /* Purely decorative: keeps the ambient login background and success flash
+       in sync with the existing auth-screen visibility, without altering any
+       auth/session logic above. */
+    (function initAuthAmbience() {
+      const authScreen = document.getElementById('auth-screen');
+      const fx = document.getElementById('auth-fx');
+      const successFx = document.getElementById('auth-success-fx');
+      if (!authScreen) return;
+      let wasHidden = authScreen.classList.contains('hidden');
+      const sync = () => {
+        const isHidden = authScreen.classList.contains('hidden');
+        if (fx) fx.classList.toggle('auth-fx-hidden', isHidden);
+        if (isHidden && !wasHidden && successFx) {
+          successFx.classList.remove('play');
+          void successFx.offsetWidth;
+          successFx.classList.add('play');
+        }
+        wasHidden = isHidden;
+      };
+      sync();
+      new MutationObserver(sync).observe(authScreen, { attributes: true, attributeFilter: ['class'] });
+    })();
 
     function logout() {
       if (currentUser) {

@@ -400,6 +400,7 @@
   background: linear-gradient(140deg, rgba(255,255,255,.07), transparent 42%);
 }
 #auth-screen #auth-title { color:#f5f6ff; letter-spacing:.01em; text-shadow: 0 0 18px rgba(99,102,241,.4); }
+#auth-screen .auth-tagline { margin:-10px 0 20px; color:rgba(202,207,240,.7); font-size:12px; font-weight:700; font-style:italic; line-height:1.4; text-align:center; }
 #auth-screen label { color:#c7cbf5; }
 #auth-screen input, #auth-screen select {
   background: rgba(255,255,255,.045);
