@@ -67,6 +67,7 @@
     [data-theme="solar-flare"] { --bg-main:#39290d; --bg-card:#513b13; --bg-sidebar:#43300e; --text-main:#fff9e9; --text-muted:#f0d69a; --border:#8e6b27; --primary:rgb(235,170,55); --primary-hover:#ffd06e; --msg-sent:#b87a19; --msg-sent-text:#fff; --msg-received:#664c18; --msg-received-text:#fff9e9; --input-bg:#694f1a; --shadow:rgba(34,23,1,.62); }
     [data-theme="arctic-frost"] { --bg-main:#102d3b; --bg-card:#1b4658; --bg-sidebar:#153646; --text-main:#f3fcff; --text-muted:#bddde8; --border:#52899e; --primary:rgb(125,190,220); --primary-hover:#afe2f6; --msg-sent:#4a91af; --msg-sent-text:#fff; --msg-received:#28576a; --msg-received-text:#f3fcff; --input-bg:#2c6074; --shadow:rgba(0,22,32,.58); }
     [data-theme="royal-eclipse"] { --bg-main:#19132d; --bg-card:#292044; --bg-sidebar:#201832; --text-main:#f9f6ff; --text-muted:#c9bee5; --border:#554176; --primary:rgb(73,55,115); --primary-hover:#8e78c4; --msg-sent:#59458b; --msg-sent-text:#fff; --msg-received:#352855; --msg-received-text:#f9f6ff; --input-bg:#392c5b; --shadow:rgba(10,5,24,.63); }
+    [data-theme="sage-garden"] { --bg-main:#eef2e8; --bg-card:#f8faf5; --bg-sidebar:#e5ebdf; --text-main:#243126; --text-muted:#64705f; --border:#cbd6c2; --primary:rgb(156,175,136); --primary-hover:#82996c; --primary-text:#243126; --msg-sent:#9caf88; --msg-sent-text:#243126; --msg-received:#dce6d6; --msg-received-text:#243126; --input-bg:#e8eee3; --shadow:rgba(50,70,42,.18); }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
     body { background-color: var(--bg-main); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; }
@@ -74,7 +75,7 @@
     h2, h3 { margin-bottom: 20px; color: var(--text-main); text-align: center; font-weight: 700; }
     input, select { width: 100%; padding: 12px 14px; margin-bottom: 14px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
     input:focus { border-color: var(--primary); }
-    button { width: 100%; padding: 12px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 10px; font-size: 14px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    button { width: 100%; padding: 12px; background: var(--primary); color: var(--primary-text, #fff); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 10px; font-size: 14px; display: flex; justify-content: center; align-items: center; gap: 8px; }
     button:hover { background: var(--primary-hover); }
     button.secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
     button.secondary:hover { background: var(--input-bg); color: var(--text-main); }
@@ -617,6 +618,7 @@
           <option value="oceanic">Oceanic</option><option value="sakura-mist">Sakura Mist</option>
           <option value="forest-pulse">Forest Pulse</option><option value="solar-flare">Solar Flare</option>
           <option value="arctic-frost">Arctic Frost</option><option value="royal-eclipse">Royal Eclipse</option>
+          <option value="sage-garden">Sage Garden</option>
         </select>
         <div id="theme-preview-grid" class="theme-preview-grid" role="radiogroup" aria-label="Choose app theme"></div>
       </div>
@@ -1203,7 +1205,8 @@
       { id: 'forest-pulse', name: 'Forest Pulse', colors: ['#0d291d', '#17432f', 'rgb(48, 125, 88)'] },
       { id: 'solar-flare', name: 'Solar Flare', colors: ['#39290d', '#513b13', 'rgb(235, 170, 55)'] },
       { id: 'arctic-frost', name: 'Arctic Frost', colors: ['#102d3b', '#1b4658', 'rgb(125, 190, 220)'] },
-      { id: 'royal-eclipse', name: 'Royal Eclipse', colors: ['#19132d', '#292044', 'rgb(73, 55, 115)'] }
+      { id: 'royal-eclipse', name: 'Royal Eclipse', colors: ['#19132d', '#292044', 'rgb(73, 55, 115)'] },
+      { id: 'sage-garden', name: 'Sage Garden', colors: ['#eef2e8', '#f8faf5', 'rgb(156, 175, 136)'] }
     ];
 
     function renderThemeSelector() {
