@@ -6,6 +6,7 @@
   <title>NexoraChat</title>
   <link rel="icon" type="image/png" href="https://i.ibb.co/Cj76XZz/d5b34859-cdfb-4a7d-9b72-6cea78857d5f.png">
   <link rel="stylesheet" href="style.css">
+
   <style>
     :root {
       --bg-main: #f3f4f6;
@@ -415,7 +416,6 @@
   </style>
 </head>
 <body>
-
   <!-- Decorative ambient background for the login screen (no functionality, purely visual) -->
   <div id="auth-fx" aria-hidden="true">
     <div class="auth-fx-glow auth-fx-glow-a"></div>
@@ -456,6 +456,7 @@
     </div>
     <button id="auth-btn" onclick="handleAuth()">Sign In</button>
     <button class="secondary" onclick="toggleAuthMode()">Create an Account</button>
+    <button class="secondary" id="google-auth-btn" onclick="handleGoogleSignIn()">Continue with Google</button>
     <p class="auth-local-note">Local-only demo: accounts, friends, and messages are saved only in this browser. Shared cross-device accounts will require a future backend.</p>
   </div>
 
@@ -1084,6 +1085,36 @@
         DB.saveSession(username);
         loadApp();
       }
+    }
+
+    /* Bridge called by the Firebase module script after a successful
+       Google sign-in (see the type="module" block near the end of the
+       document). Firebase handles authentication/identity; this function
+       just plugs that identity into the existing local-only demo session
+       system (localStorage via DB), the same way handleAuth() does for
+       username/password sign-ups above. No Firestore involved. */
+    function completeGoogleSignIn(profile) {
+      const identity = profile.email || profile.displayName || profile.uid;
+      if (!identity) return authError('Google sign-in did not return a usable account.');
+
+      const users = DB.getUsers();
+      if (!users[identity]) {
+        users[identity] = {
+          password: null,
+          dob: '',
+          nexoraId: generateNexoraId(users),
+          requests: [],
+          friends: [],
+          pfp: profile.photoURL || DEFAULT_AVATAR,
+          frame: '',
+          googleUid: profile.uid
+        };
+        DB.saveUsers(users);
+      }
+
+      currentUser = identity;
+      DB.saveSession(identity);
+      loadApp();
     }
 
     /* Purely decorative: keeps the ambient login background and success flash
@@ -1759,6 +1790,69 @@
       }
     }
   </script>
+  <script type="module">
+  // Firebase connection setup (modular Web SDK, loaded via CDN)
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyA4p_QfkOq58Sf9IwUOqrVCQ9PPUh-BliI",
+    authDomain: "nexora-chat-53c5f.firebaseapp.com",
+    projectId: "nexora-chat-53c5f",
+    storageBucket: "nexora-chat-53c5f.firebasestorage.app",
+    messagingSenderId: "534637827294",
+    appId: "1:534637827294:web:ebfa986681eba48f059e4f",
+    measurementId: "G-5T5PS848D8"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+
+  // Verify the connection
+  console.log("✅ Firebase connected:", app.name, "| project:", app.options.projectId);
+
+  // --- Google Sign-In ---------------------------------------------------
+  // Firebase Authentication only (no Firestore yet). Wired to the existing
+  // "Continue with Google" button in the auth screen via window.handleGoogleSignIn,
+  // since this module script has its own scope separate from the classic
+  // <script> above that holds the local demo auth logic (DB, currentUser, etc).
+  const auth = getAuth(app);
+  const googleProvider = new GoogleAuthProvider();
+
+  window.handleGoogleSignIn = async function () {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      // Retrieve the Firebase user UID after login
+      console.log("✅ Google Sign-In successful. UID:", user.uid);
+
+      // Hand off to the existing local auth/session flow (see completeGoogleSignIn
+      // in the classic <script> block above) so the rest of the app (friends,
+      // sidebar, etc.) works exactly as it does for local accounts.
+      if (typeof window.completeGoogleSignIn === 'function') {
+        window.completeGoogleSignIn({
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL
+        });
+      }
+    } catch (error) {
+      console.error("Google Sign-In error:", error);
+      if (typeof window.authError === 'function') {
+        window.authError('Google sign-in failed. Please try again.');
+      }
+    }
+  };
+</script>
   <script src="script.js"></script>
 </body>
 </html>
