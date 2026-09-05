@@ -464,7 +464,6 @@
   box-shadow: 0 0 0 3px rgba(99,102,241,.22), 0 10px 24px -8px rgba(99,102,241,.5);
 }
 #auth-screen .auth-local-note { color: rgba(178,184,224,.55); }
-#auth-screen .nexora-id { color:#a9b0ff; }
 
 #auth-screen button { border-radius: 12px; font-weight: 700; letter-spacing:.01em; }
 #auth-screen #auth-btn {
