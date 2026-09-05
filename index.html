@@ -81,7 +81,6 @@
     button.secondary:hover { background: var(--input-bg); color: var(--text-main); }
     .hidden { display: none !important; }
     .auth-local-note { margin-top:2px; color:var(--text-muted); font-size:11px; line-height:1.45; text-align:center; }
-    .nexora-id { display:block; margin-top:1px; color:var(--primary); font-size:10px; font-weight:700; letter-spacing:.05em; line-height:1.3; }
     
     /* Layout */
     #app-screen { width: 950px; height: 620px; display: flex; background: var(--bg-card); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px var(--shadow); border: 1px solid var(--border); }
@@ -469,7 +468,7 @@
             <img id="sidebar-avatar" class="avatar" src="" alt="Profile">
             <span id="sidebar-status-badge" class="status-badge online" onclick="toggleQuickStatusPopover(event)" title="Click to set how long this status lasts"></span>
           </div>
-          <div><strong id="user-display"></strong><small id="user-nexora-id" class="nexora-id"></small><small id="quick-status-label" style="display:block;color:var(--text-muted);font-size:11px;line-height:1.3;"></small></div>
+          <div><strong id="user-display"></strong><small id="quick-status-label" style="display:block;color:var(--text-muted);font-size:11px;line-height:1.3;"></small></div>
         </div>
         <div style="display:flex; gap:6px;"><button class="icon-btn" onclick="openHubCreator()" title="Create a Hub">+</button><button class="icon-btn" onclick="openSettings()" title="Settings"><img src="https://i.ibb.co/cX6q2bwF/images-removebg-preview.png" alt="Settings" style="width:22px; height:22px; object-fit:contain;"></button></div>
 
@@ -507,8 +506,6 @@
         <div id="add-friend-menu" class="add-friend-menu hidden">
           <input type="text" id="search-username" placeholder="Search username...">
           <button onclick="sendFriendRequest()">Add Friend</button>
-          <input type="text" id="search-nexora-id" placeholder="Add Friend by Nexora ID (NX-7F42K9)" autocapitalize="characters">
-          <button class="secondary" onclick="sendFriendRequestByNexoraId()">Add Friend by Nexora ID</button>
         </div>
       </div>
 
@@ -657,49 +654,8 @@
       shared backend can later replace these implementations without changing
       authentication, friend, Hub, or message UI code.
     */
-    const NEXORA_ID_PATTERN = /^NX-[A-Z0-9]{6}$/;
-
-    function normalizeNexoraId(value = '') {
-      return value.trim().toUpperCase();
-    }
-
-    function generateNexoraId(users, usedIds = new Set()) {
-      const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      let id = '';
-      do {
-        let suffix = '';
-        for (let index = 0; index < 6; index += 1) {
-          const random = window.crypto?.getRandomValues ? window.crypto.getRandomValues(new Uint32Array(1))[0] : Math.floor(Math.random() * alphabet.length);
-          suffix += alphabet[random % alphabet.length];
-        }
-        id = `NX-${suffix}`;
-      } while (usedIds.has(id) || Object.values(users).some(user => user?.nexoraId === id));
-      return id;
-    }
-
-    function ensureNexoraIds(users) {
-      const usedIds = new Set();
-      let changed = false;
-      Object.values(users).forEach(user => {
-        const id = normalizeNexoraId(user?.nexoraId || '');
-        if (NEXORA_ID_PATTERN.test(id) && !usedIds.has(id)) {
-          if (user.nexoraId !== id) { user.nexoraId = id; changed = true; }
-          usedIds.add(id);
-          return;
-        }
-        user.nexoraId = generateNexoraId(users, usedIds);
-        usedIds.add(user.nexoraId);
-        changed = true;
-      });
-      return changed;
-    }
-
     const DB = {
-      getUsers: () => {
-        const users = JSON.parse(localStorage.getItem('users')) || {};
-        if (ensureNexoraIds(users)) localStorage.setItem('users', JSON.stringify(users));
-        return users;
-      },
+      getUsers: () => JSON.parse(localStorage.getItem('users')) || {},
       saveUsers: (users) => localStorage.setItem('users', JSON.stringify(users)),
       getMessages: () => JSON.parse(localStorage.getItem('messages')) || [],
       saveMessages: (msgs) => localStorage.setItem('messages', JSON.stringify(msgs)),
@@ -1079,7 +1035,7 @@
         if (users[username]) return authError('Username already taken');
         if (!dob) return authError('Select your birthdate');
         
-        users[username] = { password, dob, nexoraId: generateNexoraId(users), requests: [], friends: [], pfp: DEFAULT_AVATAR, frame: '' };
+        users[username] = { password, dob, requests: [], friends: [], pfp: DEFAULT_AVATAR, frame: '' };
         DB.saveUsers(users);
         currentUser = username;
         DB.saveSession(username);
@@ -1102,7 +1058,6 @@
         users[identity] = {
           password: null,
           dob: '',
-          nexoraId: generateNexoraId(users),
           requests: [],
           friends: [],
           pfp: profile.photoURL || DEFAULT_AVATAR,
@@ -1161,7 +1116,6 @@
       
       const users = DB.getUsers();
       const user = users[currentUser];
-      document.getElementById('user-nexora-id').innerText = user?.nexoraId || '';
       const pfpUrl = (user && user.pfp) ? user.pfp : DEFAULT_AVATAR;
       const frameClass = (user && user.frame) ? user.frame : '';
       
@@ -1429,17 +1383,6 @@
     function sendFriendRequest() {
       const targetUser = document.getElementById('search-username').value.trim();
       requestFriendship(targetUser, 'search-username');
-    }
-
-    function sendFriendRequestByNexoraId() {
-      const field = document.getElementById('search-nexora-id');
-      const targetId = normalizeNexoraId(field.value);
-      const users = DB.getUsers();
-
-      if (!NEXORA_ID_PATTERN.test(targetId)) return alert('Enter a valid Nexora ID, for example NX-7F42K9.');
-      const targetUser = Object.keys(users).find(username => users[username]?.nexoraId === targetId);
-      if (!targetUser) return alert('Nexora ID not found in this browser yet.');
-      requestFriendship(targetUser, 'search-nexora-id');
     }
 
     function requestFriendship(targetUser, sourceFieldId) {
