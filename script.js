@@ -170,25 +170,149 @@ function hubImageSource(value) {
   const source = value.trim();
   return /^(?:data:image\/(?:png|jpe?g|webp|gif);base64,|https?:\/\/)/i.test(source) ? source : '';
 }
+/* Hub creation wizard: 7-step guided flow. Data lives in `hubWizard` until the
+   final step commits a single Hub object — no partial/recommended Hubs are ever created. */
+const HUB_CATEGORIES = [
+  { id:'gaming', label:'Gaming', emoji:'🎮' },
+  { id:'study', label:'Study/Productivity', emoji:'📚' },
+  { id:'creator', label:'Creator', emoji:'🎨' },
+  { id:'coding', label:'Coding/Tech', emoji:'💻' },
+  { id:'music', label:'Music', emoji:'🎵' },
+  { id:'sports', label:'Sports', emoji:'🏆' },
+  { id:'community', label:'Community', emoji:'🌐' },
+  { id:'other', label:'Other', emoji:'✨' }
+];
+const HUB_CATEGORY_FEATURES = {
+  gaming: ['LFG board', 'Match schedule', 'Voice hangout callouts', 'Leaderboard'],
+  study: ['Study sessions', 'Shared resources', 'Assignment tracker', 'Focus timer'],
+  creator: ['Showcase feed', 'Feedback threads', 'Collab board', 'Release calendar'],
+  coding: ['Code snippet sharing', 'Bug tracker', 'Pair programming board', 'Changelog'],
+  music: ['Now playing', 'Setlist board', 'Jam session planner', 'Release drops'],
+  sports: ['Match schedule', 'Score tracker', 'Team roster', 'Fan chat'],
+  community: ['Announcements', 'Events calendar', 'Welcome board', 'Polls & feedback'],
+  other: ['Announcements', 'Shared resources', 'Events calendar', 'General chat']
+};
+const HUB_ACCENTS = ['#2563eb', '#8b5cf6', '#ef4444', '#f59e0b', '#22c55e', '#06b6d4', '#ec4899', '#64748b'];
+const HUB_WIZARD_STEP_NAMES = ['Identity', 'Category', 'Experience', 'Permissions', 'Appearance', 'Hub Context', 'Review'];
+let hubWizard = null;
+let hubWizardStep = 1;
+function hubWizardEsc(value = '') { return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+function freshHubWizard() { return { icon:'', banner:'', background:'', name:'', description:'', category:'', features:[], permissions:{ messaging:'everyone', invites:'owner', activities:true, management:'owner' }, accent:'', primaryContext:'' }; }
 function addHubModals() {
   if (document.getElementById('hub-create-modal')) return;
-  document.body.insertAdjacentHTML('beforeend', `<div id="hub-create-modal" class="modal hidden hub-modal"><div class="card"><h3>Create a Hub</h3><label class="hub-form-label">Hub name</label><input id="hub-name" placeholder="Study Squad"><label class="hub-form-label">Description</label><textarea id="hub-description" placeholder="What is this hub for?"></textarea><label class="hub-form-label">Type</label><select id="hub-type"><option>School</option><option>Gaming</option><option>Work</option><option>Productivity</option></select><label class="hub-form-label">Hub icon image (optional)</label><input id="hub-icon-file" type="file" accept="image/png,image/jpeg,image/webp"><label class="hub-form-label">Chat background image (optional)</label><input id="hub-bg-file" type="file" accept="image/png,image/jpeg,image/webp"><label class="hub-form-label">Header banner image (optional)</label><input id="hub-banner-file" type="file" accept="image/png,image/jpeg,image/webp"><label class="hub-form-label">Invite usernames, separated by commas</label><input id="hub-invites" placeholder="alex, sam"><button onclick="createHub()">Create Hub</button><button class="secondary" onclick="closeHubModal('hub-create-modal')">Cancel</button></div></div><div id="hub-settings-modal" class="modal hidden hub-modal"><div class="card"><h3>Hub settings</h3><label class="hub-form-label">Name</label><input id="hub-edit-name"><label class="hub-form-label">Description</label><textarea id="hub-edit-description"></textarea><label class="hub-form-label">Invite member</label><div class="input-row"><input id="hub-add-member" placeholder="Username"><button onclick="inviteToHub()">Invite</button></div><label class="hub-form-label">Members</label><div id="hub-members" class="hub-member-list"></div><button onclick="saveHubSettings()">Save changes</button><button class="secondary" onclick="closeHubModal('hub-settings-modal')">Close</button></div></div>`);
+  document.body.insertAdjacentHTML('beforeend', `<div id="hub-create-modal" class="modal hidden hub-modal"><div class="card hub-wizard-card"><div class="hub-wizard-head"><div><div class="hub-wizard-kicker" id="hub-wizard-kicker">Step 1 of 7</div><h3 id="hub-wizard-title">Identity</h3></div><button type="button" class="icon-btn hub-wizard-close" onclick="closeHubModal('hub-create-modal')" title="Cancel" aria-label="Cancel">×</button></div><div class="hub-wizard-progress" id="hub-wizard-progress" role="list" aria-label="Hub creation steps"></div><div class="hub-wizard-body" id="hub-wizard-body"></div><div class="hub-wizard-footer" id="hub-wizard-footer"></div></div></div><div id="hub-settings-modal" class="modal hidden hub-modal"><div class="card"><h3>Hub settings</h3><label class="hub-form-label">Name</label><input id="hub-edit-name"><label class="hub-form-label">Description</label><textarea id="hub-edit-description"></textarea><label class="hub-form-label">Invite member</label><div class="input-row"><input id="hub-add-member" placeholder="Username"><button onclick="inviteToHub()">Invite</button></div><label class="hub-form-label">Members</label><div id="hub-members" class="hub-member-list"></div><button onclick="saveHubSettings()">Save changes</button><button class="secondary" onclick="closeHubModal('hub-settings-modal')">Close</button></div></div>`);
 }
 function closeHubModal(id) { document.getElementById(id).classList.add('hidden'); }
 function fileAsData(inputId, done) { const file = document.getElementById(inputId)?.files[0]; if (!file) return done(''); if (!file.type.startsWith('image/') || file.size > 900 * 1024) { alert('Use a PNG, JPG, or WebP image under 900 KB for Hub images.'); hubCreationInProgress = false; return; } const reader = new FileReader(); reader.onerror = () => { hubCreationInProgress = false; alert('That image could not be read.'); }; reader.onload = e => done(e.target.result); reader.readAsDataURL(file); }
-function openHubCreator() { addHubModals(); const modal = document.getElementById('hub-create-modal'); if (!modal) return alert('Hub creator could not load. Please refresh the page once.'); modal.classList.remove('hidden'); }
-function createHub() {
-  if (hubCreationInProgress) return;
-  const name = document.getElementById('hub-name').value.trim(), description = document.getElementById('hub-description').value.trim(), type = document.getElementById('hub-type').value;
-  if (!name) return alert('Give your Hub a name.');
-  hubCreationInProgress = true;
-  const users = DB.getUsers(); const rawInvites = document.getElementById('hub-invites').value.split(',').map(x => x.trim()).filter(Boolean); const invites = rawInvites.map(x => Object.keys(users).find(user => user.toLowerCase() === x.toLowerCase())).filter(user => user && user !== currentUser);
-  fileAsData('hub-icon-file', icon => fileAsData('hub-bg-file', background => fileAsData('hub-banner-file', banner => { const hubs = getHubs(); const hub = { id:Date.now(), name, description, type, owner:currentUser, members:[currentUser], invites, icon, background, banner, messages:[] }; hubs.push(hub); try { saveHubs(hubs); } catch (error) { hubCreationInProgress = false; return alert('Hub storage is full. Choose smaller images or remove an old Hub.'); } hubCreationInProgress = false; closeHubModal('hub-create-modal'); selectHub(hub.id); })));
+function openHubCreator() {
+  addHubModals();
+  const modal = document.getElementById('hub-create-modal');
+  if (!modal) return alert('Hub creator could not load. Please refresh the page once.');
+  hubWizard = freshHubWizard();
+  hubWizardStep = 1;
+  hubWizardRender();
+  modal.classList.remove('hidden');
 }
+function hubWizardImagePreview(value, kind) {
+  if (!value) return `<span class="hub-image-preview-empty">${kind === 'round' ? 'No icon' : 'No image'}</span>`;
+  return `<img src="${value}" alt="">`;
+}
+function hubWizardRenderProgress() {
+  const bar = document.getElementById('hub-wizard-progress');
+  if (!bar) return;
+  bar.innerHTML = HUB_WIZARD_STEP_NAMES.map((label, index) => {
+    const num = index + 1, state = num < hubWizardStep ? 'done' : (num === hubWizardStep ? 'active' : '');
+    return `<div class="hub-wizard-dot ${state}" role="listitem" aria-current="${num === hubWizardStep}" title="${hubWizardEsc(label)}"><span>${num < hubWizardStep ? '✓' : num}</span></div>`;
+  }).join('<div class="hub-wizard-line"></div>');
+}
+function hubWizardStepHTML(step) {
+  const w = hubWizard;
+  if (step === 1) {
+    return `<div class="hub-wizard-avatar-row"><div class="hub-image-preview hub-image-preview-round">${hubWizardImagePreview(w.icon, 'round')}</div><div class="hub-wizard-avatar-field"><label class="hub-form-label">Hub icon (optional)</label><input id="hub-icon-file" type="file" accept="image/png,image/jpeg,image/webp" onchange="hubWizardReadImage(this,'icon')"></div></div><label class="hub-form-label">Hub name</label><input id="hub-name" placeholder="Study Squad" value="${hubWizardEsc(w.name)}" oninput="hubWizard.name=this.value"><label class="hub-form-label">Description</label><textarea id="hub-description" placeholder="What is this hub for?" oninput="hubWizard.description=this.value">${hubWizardEsc(w.description)}</textarea><label class="hub-form-label">Header banner (optional)</label><div class="hub-image-preview hub-image-preview-banner">${hubWizardImagePreview(w.banner, 'banner')}</div><input id="hub-banner-file" type="file" accept="image/png,image/jpeg,image/webp" onchange="hubWizardReadImage(this,'banner')">`;
+  }
+  if (step === 2) {
+    return `<p class="hub-wizard-help">Pick the category that best fits this Hub — it shapes which features we suggest next.</p><div class="hub-category-grid">${HUB_CATEGORIES.map(c => `<button type="button" class="hub-category-card${w.category === c.id ? ' selected' : ''}" onclick="hubWizardSelectCategory('${c.id}')"><span class="hub-category-emoji">${c.emoji}</span><span>${hubWizardEsc(c.label)}</span></button>`).join('')}</div>`;
+  }
+  if (step === 3) {
+    const options = HUB_CATEGORY_FEATURES[w.category] || HUB_CATEGORY_FEATURES.other;
+    const label = HUB_CATEGORIES.find(c => c.id === w.category)?.label || 'this';
+    return `<p class="hub-wizard-help">Turn on the Hub features that fit a ${hubWizardEsc(label)} community. You can change these later in Hub settings.</p><div class="hub-feature-list">${options.map(f => `<label class="hub-feature-chip"><input type="checkbox" ${w.features.includes(f) ? 'checked' : ''} onchange="hubWizardToggleFeature('${hubWizardEsc(f)}', this.checked)"><span>${hubWizardEsc(f)}</span></label>`).join('')}</div>`;
+  }
+  if (step === 4) {
+    const p = w.permissions;
+    return `<div class="hub-permission-group"><div class="hub-permission-title">Who can send messages?</div><label class="hub-permission-option"><input type="radio" name="hw-msg" ${p.messaging === 'everyone' ? 'checked' : ''} onchange="hubWizardSetPermission('messaging','everyone')"><span>Everyone in the Hub</span></label><label class="hub-permission-option"><input type="radio" name="hw-msg" ${p.messaging === 'owner' ? 'checked' : ''} onchange="hubWizardSetPermission('messaging','owner')"><span>Only the owner (announcements)</span></label></div><div class="hub-permission-group"><div class="hub-permission-title">Who can invite members?</div><label class="hub-permission-option"><input type="radio" name="hw-invite" ${p.invites === 'owner' ? 'checked' : ''} onchange="hubWizardSetPermission('invites','owner')"><span>Only the owner</span></label><label class="hub-permission-option"><input type="radio" name="hw-invite" ${p.invites === 'members' ? 'checked' : ''} onchange="hubWizardSetPermission('invites','members')"><span>Any member</span></label></div><div class="hub-permission-group"><div class="hub-permission-title">Activities</div><label class="hub-permission-option"><input type="checkbox" ${p.activities ? 'checked' : ''} onchange="hubWizardSetPermission('activities', this.checked)"><span>Allow games &amp; activities in this Hub</span></label></div><div class="hub-permission-group"><div class="hub-permission-title">Who can manage this Hub?</div><label class="hub-permission-option"><input type="radio" name="hw-manage" ${p.management === 'owner' ? 'checked' : ''} onchange="hubWizardSetPermission('management','owner')"><span>Only the owner</span></label><label class="hub-permission-option"><input type="radio" name="hw-manage" ${p.management === 'members' ? 'checked' : ''} onchange="hubWizardSetPermission('management','members')"><span>All members</span></label></div>`;
+  }
+  if (step === 5) {
+    return `<label class="hub-form-label">Icon</label><div class="hub-image-preview hub-image-preview-round">${hubWizardImagePreview(w.icon, 'round')}</div><input id="hub-icon-file-2" type="file" accept="image/png,image/jpeg,image/webp" onchange="hubWizardReadImage(this,'icon')"><label class="hub-form-label">Header banner</label><div class="hub-image-preview hub-image-preview-banner">${hubWizardImagePreview(w.banner, 'banner')}</div><input id="hub-banner-file-2" type="file" accept="image/png,image/jpeg,image/webp" onchange="hubWizardReadImage(this,'banner')"><label class="hub-form-label">Chat background</label><div class="hub-image-preview hub-image-preview-banner">${hubWizardImagePreview(w.background, 'banner')}</div><input id="hub-bg-file" type="file" accept="image/png,image/jpeg,image/webp" onchange="hubWizardReadImage(this,'background')"><label class="hub-form-label">Hub accent theme</label><div class="hub-accent-grid">${HUB_ACCENTS.map(hex => `<button type="button" class="hub-accent-swatch${w.accent === hex ? ' selected' : ''}" style="--accent-color:${hex}" onclick="hubWizardSelectAccent('${hex}')" aria-label="Accent ${hex}"></button>`).join('')}</div>`;
+  }
+  if (step === 6) {
+    return `<p class="hub-wizard-help">Optional. Give members quick context — goals, rules, or what belongs here.</p><label class="hub-form-label">Primary Context</label><textarea id="hub-context" placeholder="e.g. This Hub is for our Calc II study group. Share notes, ask questions, keep it kind." oninput="hubWizard.primaryContext=this.value">${hubWizardEsc(w.primaryContext)}</textarea>`;
+  }
+  const category = HUB_CATEGORIES.find(c => c.id === w.category);
+  const p = w.permissions;
+  return `<div class="hub-review-block"><div class="hub-review-heading">Identity</div><div class="hub-review-identity"><div class="hub-image-preview hub-image-preview-round hub-image-preview-small">${hubWizardImagePreview(w.icon, 'round')}</div><div><strong>${hubWizardEsc(w.name || 'Untitled Hub')}</strong><p>${hubWizardEsc(w.description || 'No description yet.')}</p></div></div></div><div class="hub-review-block"><div class="hub-review-heading">Category</div><div>${category ? `${category.emoji} ${hubWizardEsc(category.label)}` : 'Not set'}</div></div><div class="hub-review-block"><div class="hub-review-heading">Experience</div><div class="hub-review-chips">${w.features.length ? w.features.map(f => `<span class="hub-review-chip">${hubWizardEsc(f)}</span>`).join('') : '<span class="hub-wizard-help">No features selected.</span>'}</div></div><div class="hub-review-block"><div class="hub-review-heading">Permissions</div><ul class="hub-review-list"><li>Messaging: ${p.messaging === 'owner' ? 'Owner only' : 'Everyone'}</li><li>Invites: ${p.invites === 'members' ? 'Any member' : 'Owner only'}</li><li>Activities: ${p.activities ? 'Enabled' : 'Disabled'}</li><li>Management: ${p.management === 'members' ? 'All members' : 'Owner only'}</li></ul></div><div class="hub-review-block"><div class="hub-review-heading">Appearance</div><div class="hub-review-appearance"><div class="hub-image-preview hub-image-preview-round hub-image-preview-small">${hubWizardImagePreview(w.icon, 'round')}</div><div class="hub-image-preview hub-image-preview-banner hub-image-preview-small">${hubWizardImagePreview(w.banner, 'banner')}</div><div class="hub-image-preview hub-image-preview-banner hub-image-preview-small">${hubWizardImagePreview(w.background, 'banner')}</div><span class="hub-accent-swatch small" style="--accent-color:${w.accent || 'var(--primary)'}"></span></div></div><div class="hub-review-block"><div class="hub-review-heading">Hub Context</div><p>${hubWizardEsc(w.primaryContext || 'No additional context added.')}</p></div>`;
+}
+function hubWizardRenderFooter() {
+  const footer = document.getElementById('hub-wizard-footer');
+  if (!footer) return;
+  const back = hubWizardStep > 1 ? `<button type="button" class="secondary" onclick="hubWizardBack()">Back</button>` : `<button type="button" class="secondary" onclick="closeHubModal('hub-create-modal')">Cancel</button>`;
+  const forward = hubWizardStep < HUB_WIZARD_STEP_NAMES.length ? `<button type="button" onclick="hubWizardNext()">Continue</button>` : `<button type="button" onclick="hubWizardFinish()">Create Hub</button>`;
+  footer.innerHTML = `<div class="hub-wizard-footer-inner">${back}${forward}</div>`;
+}
+function hubWizardRender() {
+  hubWizardRenderProgress();
+  const kicker = document.getElementById('hub-wizard-kicker'), title = document.getElementById('hub-wizard-title'), body = document.getElementById('hub-wizard-body');
+  if (kicker) kicker.textContent = `Step ${hubWizardStep} of ${HUB_WIZARD_STEP_NAMES.length}`;
+  if (title) title.textContent = HUB_WIZARD_STEP_NAMES[hubWizardStep - 1];
+  if (body) body.innerHTML = hubWizardStepHTML(hubWizardStep);
+  hubWizardRenderFooter();
+}
+function hubWizardReadImage(inputEl, key) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/') || file.size > 900 * 1024) { alert('Use a PNG, JPG, or WebP image under 900 KB for Hub images.'); inputEl.value = ''; return; }
+  const reader = new FileReader();
+  reader.onerror = () => alert('That image could not be read.');
+  reader.onload = e => { hubWizard[key] = e.target.result; hubWizardRender(); };
+  reader.readAsDataURL(file);
+}
+function hubWizardSelectCategory(id) { hubWizard.category = id; hubWizard.features = (HUB_CATEGORY_FEATURES[id] || []).slice(0, 2); hubWizardRender(); }
+function hubWizardToggleFeature(name, checked) { const set = new Set(hubWizard.features); if (checked) set.add(name); else set.delete(name); hubWizard.features = Array.from(set); }
+function hubWizardSetPermission(key, value) { hubWizard.permissions[key] = value; }
+function hubWizardSelectAccent(hex) { hubWizard.accent = hubWizard.accent === hex ? '' : hex; hubWizardRender(); }
+function hubWizardGoTo(step) { hubWizardStep = step; hubWizardRender(); }
+function hubWizardNext() {
+  if (hubWizardStep === 1 && !hubWizard.name.trim()) return alert('Give your Hub a name.');
+  if (hubWizardStep === 2 && !hubWizard.category) return alert('Choose a category for your Hub.');
+  if (hubWizardStep < HUB_WIZARD_STEP_NAMES.length) { hubWizardStep += 1; hubWizardRender(); }
+}
+function hubWizardBack() { if (hubWizardStep > 1) { hubWizardStep -= 1; hubWizardRender(); } }
+function hubWizardFinish() {
+  if (hubCreationInProgress) return;
+  if (!hubWizard.name.trim()) { hubWizardGoTo(1); return alert('Give your Hub a name.'); }
+  if (!hubWizard.category) { hubWizardGoTo(2); return alert('Choose a category for your Hub.'); }
+  hubCreationInProgress = true;
+  const hubs = getHubs();
+  const category = HUB_CATEGORIES.find(c => c.id === hubWizard.category);
+  const hub = {
+    id: Date.now(), name: hubWizard.name.trim(), description: hubWizard.description.trim(),
+    type: category ? category.label : 'Other', category: hubWizard.category,
+    owner: currentUser, members: [currentUser], invites: [],
+    icon: hubWizard.icon, background: hubWizard.background, banner: hubWizard.banner, accent: hubWizard.accent,
+    features: hubWizard.features.slice(), permissions: { ...hubWizard.permissions },
+    primaryContext: hubWizard.primaryContext.trim(), messages: []
+  };
+  hubs.push(hub);
+  try { saveHubs(hubs); } catch (error) { hubCreationInProgress = false; return alert('Hub storage is full. Choose smaller images or remove an old Hub.'); }
+  hubCreationInProgress = false;
+  closeHubModal('hub-create-modal');
+  selectHub(hub.id);
+}
+const createHub = hubWizardFinish;
 function selectHub(id) {
   const hub = hubById(id); if (!hub || !hub.members.includes(currentUser)) return;
   const icon = hubImageSource(hub.icon), headerImage = hubImageSource(hub.banner), chatImage = hubImageSource(hub.background);
-  activeHub = id; activeFriend = null; ensureHubBanner(); const banner = document.getElementById('hub-banner-info'); const image = icon ? `<img class="hub-banner-icon" src="${icon}" alt="${safeHubText(hub.name)} icon">` : `<div class="hub-banner-icon fallback">${safeHubText(hub.name).charAt(0).toUpperCase()}</div>`; banner.innerHTML = `${image}<div class="hub-banner-copy"><div class="hub-banner-name">${safeHubText(hub.name)}</div><span class="hub-banner-meta">${safeHubText(hub.type)} · ${hub.members.length} member${hub.members.length === 1 ? '' : 's'}</span></div>`; banner.classList.add('visible'); const header=document.getElementById('chat-header'); header.style.backgroundImage = headerImage ? `linear-gradient(rgba(15,23,42,.58),rgba(15,23,42,.58)),url('${headerImage}')` : ''; header.style.backgroundSize = headerImage ? 'cover' : ''; header.style.backgroundPosition = headerImage ? 'center' : ''; document.querySelector('.main-chat').classList.add('hub-active'); document.getElementById('chat-header-avatar-container').classList.add('hidden'); document.getElementById('chat-title').innerHTML = '';
+  activeHub = id; activeFriend = null; ensureHubBanner(); const accentStyle = hub.accent ? ` style="--hub-accent:${hub.accent}"` : ''; const banner = document.getElementById('hub-banner-info'); const image = icon ? `<img class="hub-banner-icon" src="${icon}" alt="${safeHubText(hub.name)} icon"${accentStyle}>` : `<div class="hub-banner-icon fallback"${accentStyle}>${safeHubText(hub.name).charAt(0).toUpperCase()}</div>`; banner.innerHTML = `${image}<div class="hub-banner-copy"><div class="hub-banner-name" title="${safeHubText(hub.primaryContext || '')}">${safeHubText(hub.name)}</div><span class="hub-banner-meta">${safeHubText(hub.type)} · ${hub.members.length} member${hub.members.length === 1 ? '' : 's'}</span></div>`; banner.classList.add('visible'); const header=document.getElementById('chat-header'); header.style.backgroundImage = headerImage ? `linear-gradient(rgba(15,23,42,.58),rgba(15,23,42,.58)),url('${headerImage}')` : ''; header.style.backgroundSize = headerImage ? 'cover' : ''; header.style.backgroundPosition = headerImage ? 'center' : ''; document.querySelector('.main-chat').classList.add('hub-active'); document.getElementById('chat-header-avatar-container').classList.add('hidden'); document.getElementById('chat-title').innerHTML = '';
   document.getElementById('chat-input-container').classList.remove('hidden'); document.getElementById('hub-settings-btn').classList.remove('hidden'); document.getElementById('hub-invite-btn').classList.remove('hidden'); document.getElementById('hub-search-btn').classList.remove('hidden'); document.getElementById('pinned-messages-btn').classList.add('hidden'); const messages = document.getElementById('messages-list'); messages.classList.toggle('hub-chat-bg', !!chatImage); messages.style.backgroundImage = chatImage ? `url('${chatImage}')` : '';
   renderHubMessages(true); renderSidebar(); document.getElementById('app-screen').classList.remove('sidebar-open');
 }
@@ -201,13 +325,30 @@ function renderHubMessages(scroll) {
   if (!visibleMessages.length && query) list.innerHTML = '<div class="hub-search-empty">No Hub messages match your search.</div>';
   visibleMessages.forEach(message => { const sent = message.sender === currentUser; const row = document.createElement('div'); row.className = `message-wrapper ${sent ? 'sent' : 'received'}${scroll ? ' message-arrive' : ''}`; row.dataset.messageId = message.id; row.innerHTML = `<div class="message-body-row"><img class="avatar" src="${(DB.getUsers()[message.sender]?.pfp) || DEFAULT_AVATAR}" style="width:26px;height:26px;"><div class="message ${sent ? 'sent' : 'received'}"><div class="hub-message-name">@${safeHubText(message.sender)}</div>${message.attachment?.type === 'image' ? `<img src="${message.attachment.data}" class="attachment-img">` : ''}${message.text ? `<div>${parseTextLinks(message.text)}</div>` : ''}<div style="font-size:10px;opacity:.7;text-align:right;">${message.timestamp}</div></div></div>`; list.appendChild(row); }); if (scroll) list.scrollTop = list.scrollHeight;
 }
-sendMessage = function() { if (!activeHub) return directSendMessage(); const input = document.getElementById('message-input'), text = input.value.trim(); if (!text && !currentAttachment) return; const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return; hub.messages.push({id:Date.now(),sender:currentUser,text,attachment:currentAttachment,timestamp:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}); saveHubs(hubs); input.value=''; removeAttachment(); renderHubMessages(true); };
-function openHubSettings() { const hub = hubById(activeHub); if (!hub) return; addHubModals(); ensureHubAppearanceSettings(); if (hub.owner !== currentUser) return alert('Only the Hub owner can change settings or manage members.'); document.getElementById('hub-edit-name').value = hub.name; document.getElementById('hub-edit-description').value = hub.description; renderHubMembers(hub); document.getElementById('hub-settings-modal').classList.remove('hidden'); }
-function openHubInvitePanel() { openHubSettings(); window.setTimeout(() => document.getElementById('hub-add-member')?.focus(), 0); }
+sendMessage = function() { if (!activeHub) return directSendMessage(); const input = document.getElementById('message-input'), text = input.value.trim(); if (!text && !currentAttachment) return; const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return; if (hub.permissions?.messaging === 'owner' && hub.owner !== currentUser) return alert('Only the Hub owner can send messages in this Hub.'); hub.messages.push({id:Date.now(),sender:currentUser,text,attachment:currentAttachment,timestamp:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}); saveHubs(hubs); input.value=''; removeAttachment(); renderHubMessages(true); };
+function hubCanManage(hub) { return !!hub && (hub.owner === currentUser || hub.permissions?.management === 'members'); }
+function openHubSettings() { const hub = hubById(activeHub); if (!hub) return; addHubModals(); ensureHubAppearanceSettings(); if (!hubCanManage(hub)) return alert('Only the Hub owner can change settings or manage members.'); document.getElementById('hub-edit-name').value = hub.name; document.getElementById('hub-edit-description').value = hub.description; document.getElementById('hub-edit-context').value = hub.primaryContext || ''; hubEditSelectAccent(hub.accent || ''); renderHubMembers(hub); document.getElementById('hub-settings-modal').classList.remove('hidden'); }
+function openHubInvitePanel() {
+  const hub = hubById(activeHub); if (!hub) return;
+  if (hubCanManage(hub)) { openHubSettings(); window.setTimeout(() => document.getElementById('hub-add-member')?.focus(), 0); return; }
+  if (hub.permissions?.invites !== 'members') return alert('Only the Hub owner can invite new members.');
+  const name = prompt('Invite a Nexora username to this Hub:');
+  if (name === null) return;
+  quickInviteToHub(hub.id, name);
+}
+function quickInviteToHub(hubId, name) {
+  name = (name || '').trim(); if (!name) return;
+  const users = DB.getUsers(); const actual = Object.keys(users).find(user => user.toLowerCase() === name.toLowerCase());
+  const hubs = getHubs(), hub = hubs.find(item => item.id === hubId); if (!hub) return;
+  if (!actual) return alert('User not found.');
+  if (hub.members.includes(actual) || hub.invites.includes(actual)) return alert('That user is already in this Hub or has an invite.');
+  hub.invites.push(actual); saveHubs(hubs); alert(`Invite sent to @${actual}.`);
+}
 function toggleHubSearch() { if (!activeHub) return; const panel = document.getElementById('hub-search-panel'); panel.classList.toggle('hidden'); if (!panel.classList.contains('hidden')) document.getElementById('hub-message-search').focus(); }
 function closeHubSearch() { const panel = document.getElementById('hub-search-panel'); if (!panel) return; panel.classList.add('hidden'); const input = document.getElementById('hub-message-search'); if (input?.value) { input.value = ''; if (activeHub) renderHubMessages(false); } }
 function filterHubMessages() { if (activeHub) renderHubMessages(false); }
-function ensureHubAppearanceSettings() { if (document.getElementById('hub-edit-icon')) return; document.getElementById('hub-members').insertAdjacentHTML('afterend', '<label class="hub-form-label">Change Hub icon</label><input id="hub-edit-icon" type="file" accept="image/png,image/jpeg,image/webp"><label class="hub-form-label">Change chat background</label><input id="hub-edit-background" type="file" accept="image/png,image/jpeg,image/webp"><label class="hub-form-label">Change header banner</label><input id="hub-edit-banner" type="file" accept="image/png,image/jpeg,image/webp">'); }
+function ensureHubAppearanceSettings() { if (document.getElementById('hub-edit-icon')) return; document.getElementById('hub-members').insertAdjacentHTML('afterend', `<label class="hub-form-label">Change Hub icon</label><input id="hub-edit-icon" type="file" accept="image/png,image/jpeg,image/webp"><label class="hub-form-label">Change chat background</label><input id="hub-edit-background" type="file" accept="image/png,image/jpeg,image/webp"><label class="hub-form-label">Change header banner</label><input id="hub-edit-banner" type="file" accept="image/png,image/jpeg,image/webp"><label class="hub-form-label">Hub accent theme</label><div class="hub-accent-grid" id="hub-edit-accent-grid">${HUB_ACCENTS.map(hex => `<button type="button" class="hub-accent-swatch" style="--accent-color:${hex}" onclick="hubEditSelectAccent('${hex}')" aria-label="Accent ${hex}"></button>`).join('')}</div><input type="hidden" id="hub-edit-accent-value"><label class="hub-form-label">Primary Context (optional)</label><textarea id="hub-edit-context" placeholder="Goals, rules, or what belongs here"></textarea>`); }
+function hubEditSelectAccent(hex) { const field = document.getElementById('hub-edit-accent-value'); if (field) field.value = hex; document.querySelectorAll('#hub-edit-accent-grid .hub-accent-swatch').forEach(btn => btn.classList.toggle('selected', hex && btn.style.getPropertyValue('--accent-color') === hex)); }
 function renderHubMembers(hub) { const target = document.getElementById('hub-members'); target.innerHTML = ''; hub.members.forEach(member => { const chip = document.createElement('div'); chip.className='hub-member-chip'; chip.innerHTML = `@${safeHubText(member)}${member !== hub.owner ? `<button title="Remove member" onclick="removeHubMember('${member}')">×</button>` : ' · Owner'}`; target.appendChild(chip); }); }
 function inviteToHub() { const name = document.getElementById('hub-add-member').value.trim(); const users = DB.getUsers(); const actual = Object.keys(users).find(user => user.toLowerCase() === name.toLowerCase()); const hubs=getHubs(), hub=hubs.find(item=>item.id===activeHub); if (!actual) return alert('User not found.'); if (hub.members.includes(actual) || hub.invites.includes(actual)) return alert('That user is already in this Hub or has an invite.'); hub.invites.push(actual); saveHubs(hubs); document.getElementById('hub-add-member').value=''; alert(`Invite sent to @${actual}.`); }
 function removeHubMember(member) { const hubs=getHubs(), hub=hubs.find(item=>item.id===activeHub); if (!hub || member===hub.owner) return; hub.members=hub.members.filter(user=>user!==member); saveHubs(hubs); renderHubMembers(hub); renderSidebar(); }
@@ -215,6 +356,8 @@ function saveHubSettings() {
   const hubs=getHubs(), hub=hubs.find(item=>item.id===activeHub); if (!hub) return;
   hub.name=document.getElementById('hub-edit-name').value.trim() || hub.name;
   hub.description=document.getElementById('hub-edit-description').value.trim();
+  const contextField = document.getElementById('hub-edit-context'); if (contextField) hub.primaryContext = contextField.value.trim();
+  const accentField = document.getElementById('hub-edit-accent-value'); if (accentField) hub.accent = accentField.value || '';
   const updateAppearance = (inputId, property, done) => {
     const file=document.getElementById(inputId)?.files[0];
     if (!file) return done();
@@ -238,7 +381,7 @@ renderSidebar = function() {
   const invites = hubs.filter(hub => hub.invites.includes(currentUser));
   if (visible.length || invites.length) {
     const section=document.createElement('div'); section.id='hub-sidebar-section'; section.className='section'; section.innerHTML='<div class="hub-list-title">Hubs</div><ul class="item-list hub-list"></ul>'; const hubList=section.querySelector('.hub-list'); list.parentElement.parentElement.insertBefore(section,list.parentElement);
-    visible.forEach(hub => { const row=document.createElement('li'); const icon = hubImageSource(hub.icon); row.className=`hub-row ${activeHub===hub.id?'active-friend':''}`; row.innerHTML=`<div class="user-profile-info">${icon ? `<img class="hub-icon" src="${icon}" alt="">` : `<div class="hub-icon">#</div>`}<div><span>${safeHubText(hub.name)}</span><small>${safeHubText(hub.type)} · ${hub.members.length} member${hub.members.length === 1 ? '' : 's'}</small></div></div>`; row.onclick=()=>selectHub(hub.id); hubList.appendChild(row); });
+    visible.forEach(hub => { const row=document.createElement('li'); const icon = hubImageSource(hub.icon); const accentStyle = hub.accent ? ` style="--hub-accent:${hub.accent}"` : ''; row.className=`hub-row ${activeHub===hub.id?'active-friend':''}`; row.innerHTML=`<div class="user-profile-info">${icon ? `<img class="hub-icon" src="${icon}" alt="">` : `<div class="hub-icon"${accentStyle}>#</div>`}<div><span>${safeHubText(hub.name)}</span><small>${safeHubText(hub.type)} · ${hub.members.length} member${hub.members.length === 1 ? '' : 's'}</small></div></div>`; row.onclick=()=>selectHub(hub.id); hubList.appendChild(row); });
     invites.forEach(hub => { const row=document.createElement('li'); row.innerHTML=`<span>Invite: ${safeHubText(hub.name)}</span><button>Join</button>`; row.querySelector('button').onclick=event=>{event.stopPropagation(); acceptHubInvite(hub.id);}; hubList.appendChild(row); });
   }
 };
