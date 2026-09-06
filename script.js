@@ -418,9 +418,18 @@ document.addEventListener('click', event => {
   app.classList.remove('sidebar-open');
 });
 
-/* Search behaves consistently regardless of username capitalization. */
-const originalFriendRequest = sendFriendRequest;
-sendFriendRequest = function() { const field = document.getElementById('search-username'); const users = DB.getUsers(); const actual = Object.keys(users).find(name => name.toLowerCase() === field.value.trim().replace(/^@/, '').toLowerCase()); if (actual) field.value = actual; originalFriendRequest(); };
+/* Add Friend writes to Firebase Firestore (friendRequests collection) — see
+   window.sendFirestoreFriendRequest in the Firebase module script in
+   index.html. No local storage is used for sending requests. */
+sendFriendRequest = function() {
+  const field = document.getElementById('search-username');
+  const identifier = field.value.trim();
+  if (!identifier) return alert('Enter a username or email.');
+  window.sendFirestoreFriendRequest(identifier).then(result => {
+    if (result.ok) { alert('Friend request sent!'); field.value = ''; }
+    else alert(result.message || 'Could not send friend request.');
+  });
+};
 
 /* Pin individual messages and make them easy to find again. */
 function conversationMessages() {
@@ -556,7 +565,7 @@ function replyToMessage(message) {
 }
 function openForwardSheet(message) {
   if (!message || document.getElementById('forward-message-sheet')) return;
-  const users = DB.getUsers(); const friends = (users[currentUser]?.friends || []).filter(friend => friend !== activeFriend);
+  const friends = (window.firestoreFriendUsernames || []).filter(friend => friend !== activeFriend);
   const hubs = getHubs().filter(hub => hub.members.includes(currentUser) && hub.id !== activeHub);
   const options = [...friends.map(friend => `<button onclick="forwardMessageTo('${safeHubText(friend)}','direct')">@${safeHubText(friend)}</button>`), ...hubs.map(hub => `<button onclick="forwardMessageTo('${hub.id}','hub')"># ${safeHubText(hub.name)}</button>`)].join('') || '<p class="forward-empty">No other conversations available.</p>';
   document.body.insertAdjacentHTML('beforeend', `<div id="forward-message-sheet" class="forward-sheet"><div class="forward-card"><div class="forward-sheet-title"><span>Forward message</span><button class="icon-btn" onclick="closeForwardSheet()" aria-label="Close">×</button></div><p class="forward-preview">${safeHubText(pinnedPreview(message)).slice(0, 140)}</p><div class="forward-destinations">${options}</div></div></div>`);

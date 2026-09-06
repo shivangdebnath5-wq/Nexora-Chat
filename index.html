@@ -728,18 +728,18 @@
     let knownMsgCount = 0;
     let typingTimer = null;
     let activePopoverMsgId = null;
+
+    /* Live friend-system state, pushed in by the Firestore onSnapshot
+       listeners in the Firebase module script (real-time — see the "Friend
+       system (Firestore)" block near the end of this file). renderSidebar()
+       below reads these instead of any local-storage friends/requests data. */
+    window.firestoreRequestRows = []; // [{ id: friendRequests doc id, username }]
+    window.firestoreFriendUsernames = [];
+    window.renderFirestoreRequests = function (rows) { window.firestoreRequestRows = rows; if (currentUser) renderSidebar(); };
+    window.renderFirestoreFriends = function (usernames) { window.firestoreFriendUsernames = usernames; if (currentUser) renderSidebar(); };
     let activeMoreMenuMsgId = null;
     let activeExtension = null;
     let lastUserActivity = Date.now();
-
-    // --- Firestore DM sync bookkeeping --------------------------------------
-    // lastSyncedMessages: the last array we mirrored to/from Firestore, used to
-    // diff against whatever DB.saveMessages() is called with next.
-    // applyingRemoteMessages: true while a Firestore snapshot is being written
-    // into localStorage, so that write doesn't get diffed and pushed straight
-    // back to Firestore (see DB.saveMessages and window.mergeRemoteMessages).
-    let lastSyncedMessages = [];
-    let applyingRemoteMessages = false;
 
     /*
       Temporary local data adapter. Keep this public method surface stable so a
@@ -750,16 +750,7 @@
       getUsers: () => JSON.parse(localStorage.getItem('users')) || {},
       saveUsers: (users) => localStorage.setItem('users', JSON.stringify(users)),
       getMessages: () => JSON.parse(localStorage.getItem('messages')) || [],
-      saveMessages: (msgs) => {
-        localStorage.setItem('messages', JSON.stringify(msgs));
-        // Mirror every DM mutation (send, edit, delete, react, extension
-        // update) to Firestore — unless this save is itself just applying a
-        // snapshot that came FROM Firestore (see mergeRemoteMessages below).
-        if (!applyingRemoteMessages && typeof window.syncMessagesToFirestore === 'function') {
-          window.syncMessagesToFirestore(lastSyncedMessages, msgs);
-        }
-        lastSyncedMessages = msgs;
-      },
+      saveMessages: (msgs) => localStorage.setItem('messages', JSON.stringify(msgs)),
       getSession: () => localStorage.getItem('active_session'),
       saveSession: (username) => localStorage.setItem('active_session', username),
       clearSession: () => localStorage.removeItem('active_session'),
@@ -767,31 +758,6 @@
       saveTyping: (data) => localStorage.setItem('typing_data', JSON.stringify(data)),
       getPresence: () => JSON.parse(localStorage.getItem('presence_data')) || {},
       savePresence: (data) => localStorage.setItem('presence_data', JSON.stringify(data))
-    };
-
-    // Bridges the real-time Firestore listener (see the Firebase module
-    // script near the end of this file) into the existing local message
-    // store. Every consumer of DB.getMessages() — rendering, reactions,
-    // quests, Hub-forwarding, mini-games — keeps working completely
-    // unchanged; it just now sees the other person's messages the instant
-    // they arrive, instead of waiting for the polling interval.
-    window.mergeRemoteMessages = function (remoteMessages, userA, userB) {
-      applyingRemoteMessages = true;
-      try {
-        const local = DB.getMessages();
-        const otherConversations = local.filter(m => !(
-          (m.sender === userA && m.receiver === userB) ||
-          (m.sender === userB && m.receiver === userA)
-        ));
-        const merged = [...otherConversations, ...remoteMessages].sort((a, b) => a.id - b.id);
-        DB.saveMessages(merged);
-      } finally {
-        applyingRemoteMessages = false;
-      }
-      if (activeFriend && (activeFriend === userA || activeFriend === userB) &&
-          (currentUser === userA || currentUser === userB)) {
-        renderMessages(false);
-      }
     };
 
     function updatePresenceHeartbeat() {
@@ -1202,7 +1168,7 @@
     function ensureLocalMirror(username, photoURL, dob) {
       const users = DB.getUsers();
       if (!users[username]) {
-        users[username] = { password: null, dob: dob || '', requests: [], friends: [], pfp: photoURL || DEFAULT_AVATAR, frame: '' };
+        users[username] = { password: null, dob: dob || '', pfp: photoURL || DEFAULT_AVATAR, frame: '' };
         DB.saveUsers(users);
       }
     }
@@ -1400,9 +1366,6 @@
     })();
 
     function logout() {
-      if (typeof window.unsubscribeFromConversation === 'function') {
-        window.unsubscribeFromConversation();
-      }
       if (currentUser) {
         const presence = DB.getPresence();
         delete presence[currentUser];
@@ -1724,53 +1687,17 @@
       }
     }
 
-    function sendFriendRequest() {
-      const targetUser = document.getElementById('search-username').value.trim();
-      requestFriendship(targetUser, 'search-username');
+    /* Add Friend / Requests / Accept / Decline / Friends all run on Firestore
+       now — see the "Friend system (Firestore)" block in the Firebase module
+       script below. requestId here is a friendRequests document ID (not a
+       username); the resulting real-time snapshot update re-renders the
+       sidebar automatically, so no manual renderSidebar() call is needed. */
+    function acceptRequest(requestId) {
+      window.acceptFirestoreFriendRequest(requestId).then(result => { if (!result.ok) alert(result.message || 'Could not accept request.'); });
     }
 
-    async function requestFriendship(targetUser, sourceFieldId) {
-      const users = DB.getUsers();
-
-      if (!targetUser || targetUser === currentUser) return alert('User not found');
-
-      let actualUsername = Object.keys(users).find(name => name.toLowerCase() === targetUser.toLowerCase());
-
-      // Not in this browser's local mirror — fall back to the public
-      // usernames/{username} lookup doc (Firestore), the actual source of
-      // truth for whether a username exists, and mirror it locally exactly
-      // like a fresh Google sign-in would.
-      if (!actualUsername && typeof window.lookupUsername === 'function') {
-        const resolved = await window.lookupUsername(targetUser);
-        if (resolved) {
-          ensureLocalMirror(resolved.username, resolved.photoURL);
-          actualUsername = resolved.username;
-        }
-      }
-
-      if (!actualUsername) return alert('User not found');
-
-      const freshUsers = DB.getUsers();
-      const target = freshUsers[actualUsername];
-      const current = freshUsers[currentUser];
-
-      if (current.friends.includes(actualUsername)) return alert('Already friends');
-      if (target.requests.includes(currentUser)) return alert('Request pending');
-
-      target.requests.push(currentUser);
-      DB.saveUsers(freshUsers);
-      alert('Request sent!');
-      const sourceField = document.getElementById(sourceFieldId);
-      if (sourceField) sourceField.value = '';
-    }
-
-    function acceptRequest(sender) {
-      const users = DB.getUsers();
-      users[currentUser].friends.push(sender);
-      users[sender].friends.push(currentUser);
-      users[currentUser].requests = users[currentUser].requests.filter(req => req !== sender);
-      DB.saveUsers(users);
-      renderSidebar();
+    function declineRequest(requestId) {
+      window.declineFirestoreFriendRequest(requestId).then(result => { if (!result.ok) alert(result.message || 'Could not decline request.'); });
     }
 
     function selectFriend(friend) {
@@ -1796,11 +1723,6 @@
       document.getElementById('chat-input-container').classList.remove('hidden');
       renderSidebar();
       renderMessages(true);
-
-      // Stream this conversation's messages/{id} subcollection in real time.
-      if (typeof window.subscribeToConversation === 'function') {
-        window.subscribeToConversation(currentUser, friend);
-      }
     }
 
     function shareLocation() {
@@ -1923,19 +1845,18 @@
 
     function renderSidebar() {
       const users = DB.getUsers();
-      const user = users[currentUser];
 
       const reqList = document.getElementById('requests-list');
       reqList.innerHTML = '';
-      (user.requests || []).forEach(req => {
+      (window.firestoreRequestRows || []).forEach(req => {
         const li = document.createElement('li');
-        li.innerHTML = `<span>@${req}</span> <button onclick="acceptRequest('${req}')">Accept</button>`;
+        li.innerHTML = `<span>@${req.username}</span> <button onclick="acceptRequest('${req.id}')">Accept</button> <button class="secondary" onclick="declineRequest('${req.id}')">Decline</button>`;
         reqList.appendChild(li);
       });
 
       const friendList = document.getElementById('friends-list');
       friendList.innerHTML = '';
-      (user.friends || []).forEach(f => {
+      (window.firestoreFriendUsernames || []).forEach(f => {
         const li = document.createElement('li');
         if (f === activeFriend) li.classList.add('active-friend');
 
@@ -2104,8 +2025,8 @@
   // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, EmailAuthProvider, linkWithCredential } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, runTransaction, serverTimestamp, collection, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, EmailAuthProvider, linkWithCredential, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, where, getDocs, onSnapshot, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -2242,111 +2163,6 @@
     }
   };
 
-  // --- Real-time 1:1 DMs: conversations/{id}/messages ---------------------
-  // id is a deterministic pairing of the two usernames, sorted so it's the
-  // same regardless of who opens the chat first (matches the existing
-  // sender/receiver-by-username model used everywhere else in Nexora).
-  function conversationId(userA, userB) {
-    return [userA, userB].sort().join('__');
-  }
-
-  let unsubscribeCurrentConversation = null;
-
-  // Called from selectFriend() every time the open DM changes. Tears down
-  // any previous listener, then streams this conversation's messages in
-  // real time. Each snapshot is handed to window.mergeRemoteMessages
-  // (defined in the classic script above), which folds it into the same
-  // local `messages` store every other feature already reads from — so
-  // reactions, edits, extensions, quests, and Hub-forwarding all keep
-  // working without any changes.
-  window.subscribeToConversation = function (userA, userB) {
-    if (unsubscribeCurrentConversation) { unsubscribeCurrentConversation(); unsubscribeCurrentConversation = null; }
-    if (!userA || !userB) return;
-
-    const convId = conversationId(userA, userB);
-    const messagesRef = collection(db, 'conversations', convId, 'messages');
-    const q = query(messagesRef, orderBy('updatedAt', 'asc'));
-
-    unsubscribeCurrentConversation = onSnapshot(q, (snapshot) => {
-      const remoteMessages = snapshot.docs.map((d) => {
-        const { updatedAt, ...rest } = d.data();
-        // Doc IDs are the same Date.now() ids the rest of the app already
-        // uses as numbers (see syncMessagesToFirestore) — restore the type.
-        const idNum = Number(d.id);
-        return { ...rest, id: Number.isNaN(idNum) ? d.id : idNum };
-      });
-      if (typeof window.mergeRemoteMessages === 'function') {
-        window.mergeRemoteMessages(remoteMessages, userA, userB);
-      }
-    }, (error) => {
-      console.error("❌ Conversation listener error:", error);
-    });
-  };
-
-  window.unsubscribeFromConversation = function () {
-    if (unsubscribeCurrentConversation) { unsubscribeCurrentConversation(); unsubscribeCurrentConversation = null; }
-  };
-
-  // Called from DB.saveMessages() whenever the local DM store changes for a
-  // reason other than an incoming Firestore snapshot — i.e. sending,
-  // editing, deleting, reacting to, or updating an extension on a message.
-  // Diffs old vs. new arrays and writes/deletes exactly the messages that
-  // changed, keyed by the same numeric id used everywhere else in the app.
-  window.syncMessagesToFirestore = function (prevMessages, nextMessages) {
-    const prevById = new Map(prevMessages.map((m) => [String(m.id), m]));
-    const nextById = new Map(nextMessages.map((m) => [String(m.id), m]));
-
-    nextById.forEach((msg, id) => {
-      if (!msg.sender || !msg.receiver) return; // not a DM (or malformed) — skip
-      const prev = prevById.get(id);
-      if (prev && JSON.stringify(prev) === JSON.stringify(msg)) return; // unchanged
-      const convId = conversationId(msg.sender, msg.receiver);
-      const msgRef = doc(db, 'conversations', convId, 'messages', id);
-      setDoc(msgRef, { ...msg, updatedAt: serverTimestamp() }).catch((error) => {
-        console.error("❌ DM sync failed for message", id, "— attachments over ~700KB can exceed Firestore's 1MB document limit:", error);
-      });
-    });
-
-    prevById.forEach((msg, id) => {
-      if (nextById.has(id)) return; // still present — not a delete
-      const convId = conversationId(msg.sender, msg.receiver);
-      const msgRef = doc(db, 'conversations', convId, 'messages', id);
-      deleteDoc(msgRef).catch((error) => {
-        console.error("❌ DM delete-sync failed for message", id, error);
-      });
-    });
-  };
-
-  // Resolves a username to whether it exists at all, via the public
-  // usernames/{username} lookup doc — the same doc firebaseSignIn already
-  // uses to turn a username into an email. Used by requestFriendship() as a
-  // fallback when a username isn't in this browser's local `users` mirror
-  // (e.g. the account was created on a different device), so friend search
-  // isn't limited to whoever has already used this exact browser.
-  window.lookupUsername = async function (username) {
-    try {
-      const key = (username || '').trim().toLowerCase();
-      if (!key) return null;
-
-      const usernameRef = doc(db, 'usernames', key);
-      const usernameSnap = await getDoc(usernameRef);
-      if (!usernameSnap.exists() || !usernameSnap.data().uid) return null;
-
-      // Resolve the exact-cased username (and photo) from users/{uid}, so
-      // whatever calls this can mirror it locally with the right casing —
-      // same as ensureLocalMirror() does for a fresh Google sign-in.
-      const userRef = doc(db, 'users', usernameSnap.data().uid);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists() && userSnap.data().username) {
-        return { username: userSnap.data().username, photoURL: userSnap.data().photoURL || null };
-      }
-      return { username: key, photoURL: null };
-    } catch (error) {
-      console.error("Username lookup error:", error);
-      return null;
-    }
-  };
-
   // Checks the usernames/{username} reservation collection — the source of
   // truth for global username uniqueness. Separate from the existing local,
   // per-browser demo accounts used by the username/password login.
@@ -2396,6 +2212,144 @@
       return { ok: false, reason: 'unknown' };
     }
   };
+
+  // --- Friend system (Firestore) ------------------------------------------
+  // Single source of truth for Add Friend / Requests / Accept / Decline /
+  // Friends: one `friendRequests` collection, keyed by sender/receiver UID.
+  // A doc's lifecycle is pending -> accepted (kept, status flipped) or
+  // pending -> declined (doc deleted). Real-time via onSnapshot below feeds
+  // window.renderFirestoreRequests/renderFirestoreFriends, which the classic
+  // script's renderSidebar() (index.html) reads to draw the existing
+  // Requests/Friends UI — markup and layout are unchanged.
+  const uidUsernameCache = {};
+  async function usernameForUid(uid) {
+    if (uidUsernameCache[uid]) return uidUsernameCache[uid];
+    try {
+      const snap = await getDoc(doc(db, 'users', uid));
+      const username = snap.exists() ? snap.data().username : null;
+      if (username) uidUsernameCache[uid] = username;
+      return username;
+    } catch (error) {
+      console.error('Username lookup error:', error);
+      return null;
+    }
+  }
+
+  window.sendFirestoreFriendRequest = async function (identifier) {
+    const me = auth.currentUser;
+    if (!me) return { ok: false, message: 'Please sign in again and retry.' };
+
+    const clean = (identifier || '').trim().replace(/^@/, '');
+    if (!clean) return { ok: false, message: 'Enter a username or email.' };
+
+    try {
+      let targetUid = null;
+      if (clean.includes('@')) {
+        const usersSnap = await getDocs(query(collection(db, 'users'), where('email', '==', clean.toLowerCase())));
+        if (!usersSnap.empty) targetUid = usersSnap.docs[0].data().uid;
+      } else {
+        const usernameSnap = await getDoc(doc(db, 'usernames', clean.toLowerCase()));
+        if (usernameSnap.exists()) targetUid = usernameSnap.data().uid;
+      }
+
+      if (!targetUid) return { ok: false, message: 'User not found.' };
+      if (targetUid === me.uid) return { ok: false, message: "You can't add yourself." };
+
+      // Duplicate/existing-relationship checks (single equality filters — no composite index needed).
+      const mineSnap = await getDocs(query(collection(db, 'friendRequests'), where('senderUid', '==', me.uid)));
+      const mine = mineSnap.docs.find(d => d.data().receiverUid === targetUid);
+      if (mine) return { ok: false, message: mine.data().status === 'accepted' ? 'You are already friends.' : 'Request already pending.' };
+
+      const theirsSnap = await getDocs(query(collection(db, 'friendRequests'), where('receiverUid', '==', me.uid)));
+      const theirs = theirsSnap.docs.find(d => d.data().senderUid === targetUid);
+      if (theirs) return { ok: false, message: theirs.data().status === 'accepted' ? 'You are already friends.' : 'This user already sent you a request — check your Requests list.' };
+
+      await addDoc(collection(db, 'friendRequests'), {
+        senderUid: me.uid,
+        receiverUid: targetUid,
+        status: 'pending',
+        timestamp: serverTimestamp()
+      });
+
+      return { ok: true };
+    } catch (error) {
+      console.error('Friend request error:', error);
+      const message = error.code === 'permission-denied'
+        ? 'Permission denied by Firestore security rules (check rules for "users" and "friendRequests").'
+        : (error.message || 'Could not send friend request.');
+      return { ok: false, message };
+    }
+  };
+
+  window.acceptFirestoreFriendRequest = async function (requestId) {
+    try {
+      await updateDoc(doc(db, 'friendRequests', requestId), { status: 'accepted' });
+      return { ok: true };
+    } catch (error) {
+      console.error('Accept request error:', error);
+      const message = error.code === 'permission-denied' ? 'Permission denied by Firestore security rules.' : (error.message || 'Could not accept request.');
+      return { ok: false, message };
+    }
+  };
+
+  window.declineFirestoreFriendRequest = async function (requestId) {
+    try {
+      await deleteDoc(doc(db, 'friendRequests', requestId));
+      return { ok: true };
+    } catch (error) {
+      console.error('Decline request error:', error);
+      const message = error.code === 'permission-denied' ? 'Permission denied by Firestore security rules.' : (error.message || 'Could not decline request.');
+      return { ok: false, message };
+    }
+  };
+
+  // Real-time listeners: incoming pending requests, plus accepted
+  // relationships from either side (a friendship can have been sent by
+  // either party). Torn down on sign-out, (re)started on sign-in — this
+  // never touches Google Sign-In/email-password sign-in themselves.
+  let unsubIncoming = null, unsubAcceptedAsReceiver = null, unsubAcceptedAsSender = null;
+  let acceptedAsReceiverDocs = [], acceptedAsSenderDocs = [];
+
+  function teardownFriendListeners() {
+    [unsubIncoming, unsubAcceptedAsReceiver, unsubAcceptedAsSender].forEach(unsub => unsub && unsub());
+    unsubIncoming = unsubAcceptedAsReceiver = unsubAcceptedAsSender = null;
+    acceptedAsReceiverDocs = []; acceptedAsSenderDocs = [];
+    if (typeof window.renderFirestoreRequests === 'function') window.renderFirestoreRequests([]);
+    if (typeof window.renderFirestoreFriends === 'function') window.renderFirestoreFriends([]);
+  }
+
+  async function recomputeFriends() {
+    const otherUids = [...acceptedAsReceiverDocs.map(d => d.data().senderUid), ...acceptedAsSenderDocs.map(d => d.data().receiverUid)];
+    const usernames = await Promise.all(otherUids.map(usernameForUid));
+    if (typeof window.renderFirestoreFriends === 'function') window.renderFirestoreFriends(usernames.filter(Boolean));
+  }
+
+  function setupFriendListeners(uid) {
+    teardownFriendListeners();
+
+    unsubIncoming = onSnapshot(
+      query(collection(db, 'friendRequests'), where('receiverUid', '==', uid), where('status', '==', 'pending')),
+      async snap => {
+        const rows = await Promise.all(snap.docs.map(async d => ({ id: d.id, username: await usernameForUid(d.data().senderUid) })));
+        if (typeof window.renderFirestoreRequests === 'function') window.renderFirestoreRequests(rows.filter(r => r.username));
+      },
+      error => console.error('Requests listener error:', error)
+    );
+
+    unsubAcceptedAsReceiver = onSnapshot(
+      query(collection(db, 'friendRequests'), where('receiverUid', '==', uid), where('status', '==', 'accepted')),
+      snap => { acceptedAsReceiverDocs = snap.docs; recomputeFriends(); },
+      error => console.error('Friends listener error:', error)
+    );
+
+    unsubAcceptedAsSender = onSnapshot(
+      query(collection(db, 'friendRequests'), where('senderUid', '==', uid), where('status', '==', 'accepted')),
+      snap => { acceptedAsSenderDocs = snap.docs; recomputeFriends(); },
+      error => console.error('Friends listener error:', error)
+    );
+  }
+
+  onAuthStateChanged(auth, user => { if (user) setupFriendListeners(user.uid); else teardownFriendListeners(); });
 </script>
   <script src="script.js"></script>
 </body>
