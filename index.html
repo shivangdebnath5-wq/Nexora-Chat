@@ -458,8 +458,9 @@
   <div id="auth-screen" class="card">
     <img class="brand-logo" src="https://i.ibb.co/Cj76XZz/d5b34859-cdfb-4a7d-9b72-6cea78857d5f.png" alt="Nexora brand">
     <h2 id="auth-title">PulseChat Login</h2>
-    <input type="text" id="username" placeholder="Username">
-    <input type="password" id="password" placeholder="Password">
+    <input type="text" id="username" placeholder="Email or Username">
+    <input type="email" id="signup-email" class="hidden" placeholder="Email" autocomplete="email">
+    <input type="password" id="password" placeholder="Password" autocomplete="current-password">
     <div id="dob-field" class="hidden">
       <label for="dob" style="font-size:14px; display:block; margin-bottom:6px;">Birthday</label>
       <input type="date" id="dob" disabled>
@@ -467,13 +468,13 @@
     <button id="auth-btn" onclick="handleAuth()">Sign In</button>
     <button class="secondary" onclick="toggleAuthMode()">Create an Account</button>
     <button class="secondary" id="google-auth-btn" onclick="handleGoogleSignIn()">Continue with Google</button>
-    <p class="auth-local-note">Local-only demo: accounts, friends, and messages are saved only in this browser. Shared cross-device accounts will require a future backend.</p>
+    <p class="auth-local-note">Accounts are powered by Firebase. Friends and messages are still saved only in this browser for this prototype.</p>
   </div>
 
-  <!-- Account Setup Wizard: shown once, only after a Google sign-in that has
-       no completed Firestore profile yet (see handleGoogleSignIn in the
-       Firebase module script near the end of the document). The existing
-       local username/password auth-screen above is unaffected. -->
+  <!-- Account Setup Wizard: shown once, after any first-time sign-in (Google
+       or email/password) that has no completed Firestore profile yet (see
+       handleGoogleSignIn / handleAuth and the Firebase module script near
+       the end of the document). -->
   <div id="wizard-screen" class="card hidden">
 
     <div class="wizard-step" data-wizard-step="1">
@@ -489,6 +490,10 @@
       <p id="wizard-google-name" class="auth-local-note"></p>
       <input type="text" id="wizard-username" placeholder="Choose a unique username" autocapitalize="none" autocomplete="off" oninput="wizardCheckUsername()">
       <p id="wizard-username-status" class="auth-local-note"></p>
+      <div id="wizard-password-field" class="hidden">
+        <input type="password" id="wizard-password" placeholder="Create a password (optional)" autocomplete="new-password">
+        <p class="auth-local-note">Optional: lets you sign in later with email + password, without Google.</p>
+      </div>
       <div class="wizard-actions">
         <button class="secondary" onclick="wizardBack()">Back</button>
         <button onclick="wizardNext()">Continue</button>
@@ -1060,6 +1065,12 @@
       dobField.classList.toggle('hidden', isLogin);
       dob.disabled = isLogin;
       dob.setAttribute('aria-hidden', String(isLogin));
+
+      const usernameInput = document.getElementById('username');
+      const emailInput = document.getElementById('signup-email');
+      usernameInput.classList.toggle('hidden', !isLogin);
+      emailInput.classList.toggle('hidden', isLogin);
+      emailInput.disabled = isLogin;
     }
 
     function toggleAuthMode() {
@@ -1080,43 +1091,49 @@
       alert(message);
     }
 
-    function handleAuth() {
-      const username = document.getElementById('username').value.trim();
+    /* Real Firebase Authentication now backs sign-in/sign-up (see
+       window.firebaseSignIn / window.firebaseSignUp in the Firebase module
+       script). Sign-in accepts either an email or a username (usernames are
+       resolved to an email via the public usernames/{username} lookup doc).
+       A brand-new account has no username yet — that's chosen afterward in
+       the Setup Wizard, same as the Google sign-in flow. */
+    async function handleAuth() {
       const password = document.getElementById('password').value.trim();
-      const dob = document.getElementById('dob').value;
-      const users = DB.getUsers();
-
-      if (!username || !password) return authError('Fill in all fields');
 
       if (isLogin) {
-        if (users[username] && users[username].password === password) {
-          currentUser = username;
-          DB.saveSession(username);
-          loadApp();
+        const identifier = document.getElementById('username').value.trim();
+        if (!identifier || !password) return authError('Fill in all fields');
+
+        const result = await window.firebaseSignIn(identifier, password);
+        if (!result.ok) return authError(result.message || 'Invalid login credentials');
+
+        if (result.profile && result.profile.setupComplete) {
+          enterNexoraWithProfile(result.profile);
         } else {
-          authError('Invalid login credentials');
+          openSetupWizard({ uid: result.uid, email: result.email, displayName: '', photoURL: '', authMethod: 'password' });
         }
       } else {
-        if (users[username]) return authError('Username already taken');
+        const email = document.getElementById('signup-email').value.trim();
+        const dob = document.getElementById('dob').value;
+        if (!email || !password) return authError('Fill in all fields');
         if (!dob) return authError('Select your birthdate');
-        
-        users[username] = { password, dob, requests: [], friends: [], pfp: DEFAULT_AVATAR, frame: '' };
-        DB.saveUsers(users);
-        currentUser = username;
-        DB.saveSession(username);
-        loadApp();
+
+        const result = await window.firebaseSignUp(email, password);
+        if (!result.ok) return authError(result.message || 'Could not create account');
+
+        openSetupWizard({ uid: result.uid, email: result.email, displayName: '', photoURL: '', dob, authMethod: 'password' });
       }
     }
 
-    /* ---- Google Sign-In / Setup Wizard bridge -----------------------------
+    /* ---- Google Sign-In / Email-Password / Setup Wizard bridge -----------
        Called from the Firebase module script (see type="module" block near
        the end of the document), which owns all Firebase Auth + Firestore
        calls. Firestore users/{uid} — keyed by UID only, never email or a
-       chosen username — is the source of truth for whether a Google account
-       has finished setup. This section just drives the wizard UI and mirrors
+       chosen username — is the source of truth for whether an account has
+       finished setup. This section just drives the wizard UI and mirrors
        the resulting username into the existing local demo session system
        (DB/currentUser/loadApp) so chat, friends, and the sidebar keep
-       working exactly as they do for local accounts. */
+       working exactly as they do before. */
 
     const WIZARD_INTERESTS = ['Gaming', 'Study', 'Coding', 'Creative', 'Music', 'Sports', 'Friends', 'Communities'];
     let wizardProfile = null;
@@ -1125,10 +1142,10 @@
     let wizardStep = 1;
     let wizardUsernameCheckToken = 0;
 
-    function ensureLocalMirror(username, photoURL) {
+    function ensureLocalMirror(username, photoURL, dob) {
       const users = DB.getUsers();
       if (!users[username]) {
-        users[username] = { password: null, dob: '', requests: [], friends: [], pfp: photoURL || DEFAULT_AVATAR, frame: '' };
+        users[username] = { password: null, dob: dob || '', requests: [], friends: [], pfp: photoURL || DEFAULT_AVATAR, frame: '' };
         DB.saveUsers(users);
       }
     }
@@ -1142,6 +1159,7 @@
     }
 
     // Firestore has no profile yet for this UID — collect one.
+    // profile: { uid, email, displayName, photoURL, dob?, authMethod: 'google' | 'password' }
     function openSetupWizard(profile) {
       wizardProfile = profile;
       wizardSelectedInterests = new Set();
@@ -1152,12 +1170,18 @@
       document.getElementById('wizard-screen').classList.remove('hidden');
 
       document.getElementById('wizard-avatar-preview').src = profile.photoURL || DEFAULT_AVATAR;
-      document.getElementById('wizard-google-name').innerText = profile.displayName ? `Signed in as ${profile.displayName}` : '';
+      document.getElementById('wizard-google-name').innerText = (profile.authMethod === 'google' && profile.displayName) ? `Signed in as ${profile.displayName}` : '';
       const usernameInput = document.getElementById('wizard-username');
       usernameInput.value = '';
       const status = document.getElementById('wizard-username-status');
       status.innerText = '';
       status.className = 'auth-local-note';
+
+      // The optional backup-password step only makes sense for Google
+      // sign-ins — email/password accounts already have a password.
+      const pwField = document.getElementById('wizard-password-field');
+      pwField.classList.toggle('hidden', profile.authMethod !== 'google');
+      document.getElementById('wizard-password').value = '';
 
       const grid = document.getElementById('wizard-interests');
       grid.innerHTML = '';
@@ -1222,6 +1246,12 @@
           status.className = 'auth-local-note bad';
           return;
         }
+        if (wizardProfile.authMethod === 'google') {
+          const pwd = document.getElementById('wizard-password').value;
+          if (pwd && pwd.length < 6) {
+            return alert('Backup password must be at least 6 characters (or leave it blank to skip).');
+          }
+        }
       }
       if (wizardStep === 3 && wizardSelectedInterests.size === 0) {
         return alert('Pick at least one interest to continue.');
@@ -1243,6 +1273,7 @@
       const profileData = {
         uid: wizardProfile.uid,
         username,
+        email: wizardProfile.email || '',
         displayName: wizardProfile.displayName || '',
         photoURL: wizardProfile.photoURL || '',
         interests: Array.from(wizardSelectedInterests),
@@ -1268,7 +1299,20 @@
         return;
       }
 
-      ensureLocalMirror(username, profileData.photoURL);
+      // Optional: link an email+password credential as a backup sign-in
+      // method for Google accounts. Best-effort — a failure here shouldn't
+      // block entering the app, since the profile itself already saved.
+      if (wizardProfile.authMethod === 'google') {
+        const pwd = document.getElementById('wizard-password').value;
+        if (pwd) {
+          const linkResult = await window.linkPasswordToAccount(pwd);
+          if (!linkResult.ok) {
+            alert('Profile saved, but the backup password could not be set: ' + (linkResult.message || 'unknown error'));
+          }
+        }
+      }
+
+      ensureLocalMirror(username, profileData.photoURL, wizardProfile.dob);
       currentUser = username;
       DB.saveSession(username);
       document.getElementById('wizard-screen').classList.add('hidden');
@@ -1941,7 +1985,7 @@
   // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, EmailAuthProvider, linkWithCredential } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
@@ -1973,6 +2017,20 @@
   const googleProvider = new GoogleAuthProvider();
   const db = getFirestore(app);
 
+  // Maps common Firebase error codes to short, user-facing messages.
+  function firebaseErrorMessage(error) {
+    const map = {
+      'auth/wrong-password': 'Incorrect password.',
+      'auth/invalid-credential': 'Incorrect email/username or password.',
+      'auth/user-not-found': 'No account found with those details.',
+      'auth/email-already-in-use': 'An account already exists with that email.',
+      'auth/weak-password': 'Password must be at least 6 characters.',
+      'auth/invalid-email': 'That email address looks invalid.',
+      'auth/too-many-requests': 'Too many attempts — please wait a moment and try again.'
+    };
+    return map[error.code] || error.message || 'Something went wrong.';
+  }
+
   window.handleGoogleSignIn = async function () {
     try {
       const result = await signInWithPopup(auth, googleProvider);
@@ -1994,14 +2052,74 @@
           uid: user.uid,
           email: user.email,
           displayName: user.displayName,
-          photoURL: user.photoURL
+          photoURL: user.photoURL,
+          authMethod: 'google'
         });
       }
     } catch (error) {
       console.error("Google Sign-In error:", error);
       if (typeof window.authError === 'function') {
-        window.authError('Google sign-in failed. Please try again.');
+        window.authError('Google sign-in failed: ' + (error.code || error.message || 'unknown error'));
       }
+    }
+  };
+
+  // Creates a new Firebase Authentication account with email + password.
+  // No Firestore profile is written here — that happens once the Setup
+  // Wizard collects a username, interests, and privacy/notification prefs.
+  window.firebaseSignUp = async function (email, password) {
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      console.log("✅ Firebase account created. UID:", cred.user.uid);
+      return { ok: true, uid: cred.user.uid, email: cred.user.email };
+    } catch (error) {
+      console.error("Sign-up error:", error);
+      return { ok: false, message: firebaseErrorMessage(error) };
+    }
+  };
+
+  // Signs in with either an email or a username. A username is resolved to
+  // its email via the public usernames/{username} lookup doc (this lookup
+  // must be readable pre-authentication, since the user isn't signed in
+  // yet — see the "usernames" rule in firestore.rules).
+  window.firebaseSignIn = async function (identifier, password) {
+    try {
+      let email = identifier;
+      if (!identifier.includes('@')) {
+        const usernameRef = doc(db, 'usernames', identifier.toLowerCase());
+        const usernameSnap = await getDoc(usernameRef);
+        if (!usernameSnap.exists() || !usernameSnap.data().email) {
+          return { ok: false, message: 'No account found for that username.' };
+        }
+        email = usernameSnap.data().email;
+      }
+
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      console.log("✅ Firebase sign-in successful. UID:", cred.user.uid);
+
+      const userRef = doc(db, 'users', cred.user.uid);
+      const snap = await getDoc(userRef);
+      return { ok: true, uid: cred.user.uid, email: cred.user.email, profile: snap.exists() ? snap.data() : null };
+    } catch (error) {
+      console.error("Sign-in error:", error);
+      return { ok: false, message: firebaseErrorMessage(error) };
+    }
+  };
+
+  // Links an email+password credential onto the currently signed-in (Google)
+  // user, so they can also sign in later without Google. Best-effort: the
+  // Setup Wizard already saved the profile by the time this runs.
+  window.linkPasswordToAccount = async function (password) {
+    try {
+      const user = auth.currentUser;
+      if (!user || !user.email) return { ok: false, message: 'No signed-in account found.' };
+      const credential = EmailAuthProvider.credential(user.email, password);
+      await linkWithCredential(user, credential);
+      console.log("✅ Password sign-in linked as backup for", user.email);
+      return { ok: true };
+    } catch (error) {
+      console.error("Link password error:", error);
+      return { ok: false, message: firebaseErrorMessage(error) };
     }
   };
 
@@ -2021,6 +2139,8 @@
 
   // Atomically claims the username and writes the completed profile to
   // users/{uid} — keyed by Firebase UID only, never email, never a Nexora ID.
+  // Also stores email on the usernames/{username} doc, so firebaseSignIn can
+  // resolve a username to its email at login time.
   window.saveNexoraProfile = async function (profile) {
     const usernameRef = doc(db, 'usernames', profile.username.toLowerCase());
     const userRef = doc(db, 'users', profile.uid);
@@ -2031,10 +2151,11 @@
         if (usernameSnap.exists() && usernameSnap.data().uid !== profile.uid) {
           throw new Error('username-taken');
         }
-        tx.set(usernameRef, { uid: profile.uid });
+        tx.set(usernameRef, { uid: profile.uid, email: profile.email });
         tx.set(userRef, {
           uid: profile.uid,
           username: profile.username,
+          email: profile.email,
           displayName: profile.displayName,
           photoURL: profile.photoURL,
           interests: profile.interests,
