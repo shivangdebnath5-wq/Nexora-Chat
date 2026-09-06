@@ -2037,7 +2037,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, EmailAuthProvider, linkWithCredential } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, collection, addDoc, query, where, getDocs, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -2221,6 +2221,52 @@
       console.error("Save profile error:", error);
       if (error.message === 'username-taken') return { ok: false, reason: 'username-taken' };
       return { ok: false, reason: 'unknown' };
+    }
+  };
+
+  // --- Add Friend (Firestore) ---------------------------------------------
+  // Looks up a user by username (public usernames/{username} lookup doc) or
+  // by email (query on users.email), then writes a friendRequests doc with
+  // the sender UID, receiver UID, status, and a server timestamp. Wired to
+  // the existing "Add Friend" field via window.sendFirestoreFriendRequest —
+  // see the sendFriendRequest override in script.js. Does not touch the
+  // local friends/requests lists used elsewhere in the app.
+  window.sendFirestoreFriendRequest = async function (identifier) {
+    const me = auth.currentUser;
+    if (!me) return { ok: false, message: 'Please sign in again and retry.' };
+
+    const clean = (identifier || '').trim().replace(/^@/, '');
+    if (!clean) return { ok: false, message: 'Enter a username or email.' };
+
+    try {
+      let targetUid = null;
+      if (clean.includes('@')) {
+        const usersSnap = await getDocs(query(collection(db, 'users'), where('email', '==', clean.toLowerCase())));
+        if (!usersSnap.empty) targetUid = usersSnap.docs[0].data().uid;
+      } else {
+        const usernameSnap = await getDoc(doc(db, 'usernames', clean.toLowerCase()));
+        if (usernameSnap.exists()) targetUid = usernameSnap.data().uid;
+      }
+
+      if (!targetUid) return { ok: false, message: 'User not found.' };
+      if (targetUid === me.uid) return { ok: false, message: "You can't add yourself." };
+
+      // Client-side duplicate check (single equality filter — no composite index needed).
+      const mineSnap = await getDocs(query(collection(db, 'friendRequests'), where('senderUid', '==', me.uid)));
+      const alreadyPending = mineSnap.docs.some(d => d.data().receiverUid === targetUid && d.data().status === 'pending');
+      if (alreadyPending) return { ok: false, message: 'Request already pending.' };
+
+      await addDoc(collection(db, 'friendRequests'), {
+        senderUid: me.uid,
+        receiverUid: targetUid,
+        status: 'pending',
+        timestamp: serverTimestamp()
+      });
+
+      return { ok: true };
+    } catch (error) {
+      console.error('Friend request error:', error);
+      return { ok: false, message: 'Could not send friend request.' };
     }
   };
 </script>

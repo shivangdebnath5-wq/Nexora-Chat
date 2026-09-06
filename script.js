@@ -418,9 +418,19 @@ document.addEventListener('click', event => {
   app.classList.remove('sidebar-open');
 });
 
-/* Search behaves consistently regardless of username capitalization. */
-const originalFriendRequest = sendFriendRequest;
-sendFriendRequest = function() { const field = document.getElementById('search-username'); const users = DB.getUsers(); const actual = Object.keys(users).find(name => name.toLowerCase() === field.value.trim().replace(/^@/, '').toLowerCase()); if (actual) field.value = actual; originalFriendRequest(); };
+/* Add Friend now writes to Firebase Firestore (friendRequests collection)
+   instead of the local demo user store — see window.sendFirestoreFriendRequest
+   in the Firebase module script in index.html. Username lookup is case-
+   insensitive there too, so no local resolution step is needed here. */
+sendFriendRequest = function() {
+  const field = document.getElementById('search-username');
+  const identifier = field.value.trim();
+  if (!identifier) return alert('Enter a username or email.');
+  window.sendFirestoreFriendRequest(identifier).then(result => {
+    if (result.ok) { alert('Friend request sent!'); field.value = ''; }
+    else alert(result.message || 'Could not send friend request.');
+  });
+};
 
 /* Pin individual messages and make them easy to find again. */
 function conversationMessages() {
