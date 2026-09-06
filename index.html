@@ -741,6 +741,15 @@
     let activeExtension = null;
     let lastUserActivity = Date.now();
 
+    // --- Firestore DM sync bookkeeping --------------------------------------
+    // lastSyncedMessages: the last array we mirrored to/from Firestore, used to
+    // diff against whatever DB.saveMessages() is called with next.
+    // applyingRemoteMessages: true while a Firestore snapshot is being written
+    // into localStorage, so that write doesn't get diffed and pushed straight
+    // back to Firestore (see DB.saveMessages and window.mergeRemoteMessages).
+    let lastSyncedMessages = [];
+    let applyingRemoteMessages = false;
+
     /*
       Temporary local data adapter. Keep this public method surface stable so a
       shared backend can later replace these implementations without changing
@@ -750,7 +759,16 @@
       getUsers: () => JSON.parse(localStorage.getItem('users')) || {},
       saveUsers: (users) => localStorage.setItem('users', JSON.stringify(users)),
       getMessages: () => JSON.parse(localStorage.getItem('messages')) || [],
-      saveMessages: (msgs) => localStorage.setItem('messages', JSON.stringify(msgs)),
+      saveMessages: (msgs) => {
+        localStorage.setItem('messages', JSON.stringify(msgs));
+        // Mirror every DM mutation (send, edit, delete, react, extension
+        // update) to Firestore — unless this save is itself just applying a
+        // snapshot that came FROM Firestore (see mergeRemoteMessages below).
+        if (!applyingRemoteMessages && typeof window.syncMessagesToFirestore === 'function') {
+          window.syncMessagesToFirestore(lastSyncedMessages, msgs);
+        }
+        lastSyncedMessages = msgs;
+      },
       getSession: () => localStorage.getItem('active_session'),
       saveSession: (username) => localStorage.setItem('active_session', username),
       clearSession: () => localStorage.removeItem('active_session'),
@@ -758,6 +776,31 @@
       saveTyping: (data) => localStorage.setItem('typing_data', JSON.stringify(data)),
       getPresence: () => JSON.parse(localStorage.getItem('presence_data')) || {},
       savePresence: (data) => localStorage.setItem('presence_data', JSON.stringify(data))
+    };
+
+    // Bridges the real-time Firestore listener (see the Firebase module
+    // script near the end of this file) into the existing local message
+    // store. Every consumer of DB.getMessages() — rendering, reactions,
+    // quests, Hub-forwarding, mini-games — keeps working completely
+    // unchanged; it just now sees the other person's messages the instant
+    // they arrive, instead of waiting for the polling interval.
+    window.mergeRemoteMessages = function (remoteMessages, userA, userB) {
+      applyingRemoteMessages = true;
+      try {
+        const local = DB.getMessages();
+        const otherConversations = local.filter(m => !(
+          (m.sender === userA && m.receiver === userB) ||
+          (m.sender === userB && m.receiver === userA)
+        ));
+        const merged = [...otherConversations, ...remoteMessages].sort((a, b) => a.id - b.id);
+        DB.saveMessages(merged);
+      } finally {
+        applyingRemoteMessages = false;
+      }
+      if (activeFriend && (activeFriend === userA || activeFriend === userB) &&
+          (currentUser === userA || currentUser === userB)) {
+        renderMessages(false);
+      }
     };
 
     function updatePresenceHeartbeat() {
@@ -1366,6 +1409,9 @@
     })();
 
     function logout() {
+      if (typeof window.unsubscribeFromConversation === 'function') {
+        window.unsubscribeFromConversation();
+      }
       if (currentUser) {
         const presence = DB.getPresence();
         delete presence[currentUser];
@@ -1723,6 +1769,11 @@
       document.getElementById('chat-input-container').classList.remove('hidden');
       renderSidebar();
       renderMessages(true);
+
+      // Stream this conversation's messages/{id} subcollection in real time.
+      if (typeof window.subscribeToConversation === 'function') {
+        window.subscribeToConversation(currentUser, friend);
+      }
     }
 
     function shareLocation() {
@@ -2026,7 +2077,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, EmailAuthProvider, linkWithCredential, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, where, getDocs, onSnapshot, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, collection, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, getDocs, onSnapshot, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -2211,6 +2262,81 @@
       if (error.message === 'username-taken') return { ok: false, reason: 'username-taken' };
       return { ok: false, reason: 'unknown' };
     }
+  };
+
+  // --- Real-time 1:1 DMs: conversations/{id}/messages ---------------------
+  // id is a deterministic pairing of the two usernames, sorted so it's the
+  // same regardless of who opens the chat first (matches the existing
+  // sender/receiver-by-username model used everywhere else in Nexora).
+  function conversationId(userA, userB) {
+    return [userA, userB].sort().join('__');
+  }
+
+  let unsubscribeCurrentConversation = null;
+
+  // Called from selectFriend() every time the open DM changes. Tears down
+  // any previous listener, then streams this conversation's messages in
+  // real time. Each snapshot is handed to window.mergeRemoteMessages
+  // (defined in the classic script above), which folds it into the same
+  // local `messages` store every other feature already reads from — so
+  // reactions, edits, extensions, quests, and Hub-forwarding all keep
+  // working without any changes.
+  window.subscribeToConversation = function (userA, userB) {
+    if (unsubscribeCurrentConversation) { unsubscribeCurrentConversation(); unsubscribeCurrentConversation = null; }
+    if (!userA || !userB) return;
+
+    const convId = conversationId(userA, userB);
+    const messagesRef = collection(db, 'conversations', convId, 'messages');
+    const q = query(messagesRef, orderBy('updatedAt', 'asc'));
+
+    unsubscribeCurrentConversation = onSnapshot(q, (snapshot) => {
+      const remoteMessages = snapshot.docs.map((d) => {
+        const { updatedAt, ...rest } = d.data();
+        // Doc IDs are the same Date.now() ids the rest of the app already
+        // uses as numbers (see syncMessagesToFirestore) — restore the type.
+        const idNum = Number(d.id);
+        return { ...rest, id: Number.isNaN(idNum) ? d.id : idNum };
+      });
+      if (typeof window.mergeRemoteMessages === 'function') {
+        window.mergeRemoteMessages(remoteMessages, userA, userB);
+      }
+    }, (error) => {
+      console.error("❌ Conversation listener error:", error);
+    });
+  };
+
+  window.unsubscribeFromConversation = function () {
+    if (unsubscribeCurrentConversation) { unsubscribeCurrentConversation(); unsubscribeCurrentConversation = null; }
+  };
+
+  // Called from DB.saveMessages() whenever the local DM store changes for a
+  // reason other than an incoming Firestore snapshot — i.e. sending,
+  // editing, deleting, reacting to, or updating an extension on a message.
+  // Diffs old vs. new arrays and writes/deletes exactly the messages that
+  // changed, keyed by the same numeric id used everywhere else in the app.
+  window.syncMessagesToFirestore = function (prevMessages, nextMessages) {
+    const prevById = new Map(prevMessages.map((m) => [String(m.id), m]));
+    const nextById = new Map(nextMessages.map((m) => [String(m.id), m]));
+
+    nextById.forEach((msg, id) => {
+      if (!msg.sender || !msg.receiver) return; // not a DM (or malformed) — skip
+      const prev = prevById.get(id);
+      if (prev && JSON.stringify(prev) === JSON.stringify(msg)) return; // unchanged
+      const convId = conversationId(msg.sender, msg.receiver);
+      const msgRef = doc(db, 'conversations', convId, 'messages', id);
+      setDoc(msgRef, { ...msg, updatedAt: serverTimestamp() }).catch((error) => {
+        console.error("❌ DM sync failed for message", id, "— attachments over ~700KB can exceed Firestore's 1MB document limit:", error);
+      });
+    });
+
+    prevById.forEach((msg, id) => {
+      if (nextById.has(id)) return; // still present — not a delete
+      const convId = conversationId(msg.sender, msg.receiver);
+      const msgRef = doc(db, 'conversations', convId, 'messages', id);
+      deleteDoc(msgRef).catch((error) => {
+        console.error("❌ DM delete-sync failed for message", id, error);
+      });
+    });
   };
 
   // --- Friend system (Firestore) ------------------------------------------
