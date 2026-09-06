@@ -1729,19 +1729,36 @@
       requestFriendship(targetUser, 'search-username');
     }
 
-    function requestFriendship(targetUser, sourceFieldId) {
+    async function requestFriendship(targetUser, sourceFieldId) {
       const users = DB.getUsers();
 
-      if (!targetUser || targetUser === currentUser || !users[targetUser]) return alert('User not found');
-      
-      const target = users[targetUser];
-      const current = users[currentUser];
+      if (!targetUser || targetUser === currentUser) return alert('User not found');
 
-      if (current.friends.includes(targetUser)) return alert('Already friends');
+      let actualUsername = Object.keys(users).find(name => name.toLowerCase() === targetUser.toLowerCase());
+
+      // Not in this browser's local mirror — fall back to the public
+      // usernames/{username} lookup doc (Firestore), the actual source of
+      // truth for whether a username exists, and mirror it locally exactly
+      // like a fresh Google sign-in would.
+      if (!actualUsername && typeof window.lookupUsername === 'function') {
+        const resolved = await window.lookupUsername(targetUser);
+        if (resolved) {
+          ensureLocalMirror(resolved.username, resolved.photoURL);
+          actualUsername = resolved.username;
+        }
+      }
+
+      if (!actualUsername) return alert('User not found');
+
+      const freshUsers = DB.getUsers();
+      const target = freshUsers[actualUsername];
+      const current = freshUsers[currentUser];
+
+      if (current.friends.includes(actualUsername)) return alert('Already friends');
       if (target.requests.includes(currentUser)) return alert('Request pending');
 
       target.requests.push(currentUser);
-      DB.saveUsers(users);
+      DB.saveUsers(freshUsers);
       alert('Request sent!');
       const sourceField = document.getElementById(sourceFieldId);
       if (sourceField) sourceField.value = '';
@@ -2298,6 +2315,36 @@
         console.error("❌ DM delete-sync failed for message", id, error);
       });
     });
+  };
+
+  // Resolves a username to whether it exists at all, via the public
+  // usernames/{username} lookup doc — the same doc firebaseSignIn already
+  // uses to turn a username into an email. Used by requestFriendship() as a
+  // fallback when a username isn't in this browser's local `users` mirror
+  // (e.g. the account was created on a different device), so friend search
+  // isn't limited to whoever has already used this exact browser.
+  window.lookupUsername = async function (username) {
+    try {
+      const key = (username || '').trim().toLowerCase();
+      if (!key) return null;
+
+      const usernameRef = doc(db, 'usernames', key);
+      const usernameSnap = await getDoc(usernameRef);
+      if (!usernameSnap.exists() || !usernameSnap.data().uid) return null;
+
+      // Resolve the exact-cased username (and photo) from users/{uid}, so
+      // whatever calls this can mirror it locally with the right casing —
+      // same as ensureLocalMirror() does for a fresh Google sign-in.
+      const userRef = doc(db, 'users', usernameSnap.data().uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists() && userSnap.data().username) {
+        return { username: userSnap.data().username, photoURL: userSnap.data().photoURL || null };
+      }
+      return { username: key, photoURL: null };
+    } catch (error) {
+      console.error("Username lookup error:", error);
+      return null;
+    }
   };
 
   // Checks the usernames/{username} reservation collection — the source of
