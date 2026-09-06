@@ -81,6 +81,17 @@
     button.secondary:hover { background: var(--input-bg); color: var(--text-main); }
     .hidden { display: none !important; }
     .auth-local-note { margin-top:2px; color:var(--text-muted); font-size:11px; line-height:1.45; text-align:center; }
+
+    /* Account Setup Wizard (new, appears once after a first-time Google sign-in) */
+    .wizard-chip-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:14px 0; }
+    .wizard-chip { padding:10px 8px; border:1px solid var(--border); border-radius:10px; background:var(--input-bg); color:var(--text-main); text-align:center; font-size:13px; cursor:pointer; user-select:none; }
+    .wizard-chip.selected { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .wizard-toggle-row { display:flex; align-items:center; gap:10px; padding:9px 0; font-size:14px; color:var(--text-main); cursor:pointer; text-align:left; }
+    .wizard-toggle-row input { width:auto; margin:0; }
+    .wizard-actions { display:flex; gap:8px; margin-top:10px; }
+    .wizard-actions button { margin:0; }
+    #wizard-username-status.ok { color:#22c55e; }
+    #wizard-username-status.bad { color:#ef4444; }
     
     /* Layout */
     #app-screen { width: 950px; height: 620px; display: flex; background: var(--bg-card); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px var(--shadow); border: 1px solid var(--border); }
@@ -457,6 +468,60 @@
     <button class="secondary" onclick="toggleAuthMode()">Create an Account</button>
     <button class="secondary" id="google-auth-btn" onclick="handleGoogleSignIn()">Continue with Google</button>
     <p class="auth-local-note">Local-only demo: accounts, friends, and messages are saved only in this browser. Shared cross-device accounts will require a future backend.</p>
+  </div>
+
+  <!-- Account Setup Wizard: shown once, only after a Google sign-in that has
+       no completed Firestore profile yet (see handleGoogleSignIn in the
+       Firebase module script near the end of the document). The existing
+       local username/password auth-screen above is unaffected. -->
+  <div id="wizard-screen" class="card hidden">
+
+    <div class="wizard-step" data-wizard-step="1">
+      <img class="brand-logo" src="https://i.ibb.co/Cj76XZz/d5b34859-cdfb-4a7d-9b72-6cea78857d5f.png" alt="Nexora brand">
+      <h2>Welcome to Nexora</h2>
+      <p class="auth-local-note">Let's finish setting up your account — it only takes a minute.</p>
+      <div class="wizard-actions"><button onclick="wizardNext()">Get Started</button></div>
+    </div>
+
+    <div class="wizard-step hidden" data-wizard-step="2">
+      <h2>Your Profile</h2>
+      <img id="wizard-avatar-preview" class="avatar-large" src="" alt="Profile photo">
+      <p id="wizard-google-name" class="auth-local-note"></p>
+      <input type="text" id="wizard-username" placeholder="Choose a unique username" autocapitalize="none" autocomplete="off" oninput="wizardCheckUsername()">
+      <p id="wizard-username-status" class="auth-local-note"></p>
+      <div class="wizard-actions">
+        <button class="secondary" onclick="wizardBack()">Back</button>
+        <button onclick="wizardNext()">Continue</button>
+      </div>
+    </div>
+
+    <div class="wizard-step hidden" data-wizard-step="3">
+      <h2>What are you into?</h2>
+      <p class="auth-local-note">Pick a few interests to personalize Nexora.</p>
+      <div id="wizard-interests" class="wizard-chip-grid"></div>
+      <div class="wizard-actions">
+        <button class="secondary" onclick="wizardBack()">Back</button>
+        <button onclick="wizardNext()">Continue</button>
+      </div>
+    </div>
+
+    <div class="wizard-step hidden" data-wizard-step="4">
+      <h2>Privacy &amp; Notifications</h2>
+      <label class="wizard-toggle-row"><input type="checkbox" id="wizard-privacy-status" checked> Show my online status to friends</label>
+      <label class="wizard-toggle-row"><input type="checkbox" id="wizard-privacy-requests" checked> Allow friend requests from anyone</label>
+      <label class="wizard-toggle-row"><input type="checkbox" id="wizard-notifications" checked> Enable notifications</label>
+      <div class="wizard-actions">
+        <button class="secondary" onclick="wizardBack()">Back</button>
+        <button onclick="wizardNext()">Continue</button>
+      </div>
+    </div>
+
+    <div class="wizard-step hidden" data-wizard-step="5">
+      <h2>You're all set!</h2>
+      <p class="auth-local-note">Welcome to Nexora, <span id="wizard-finish-name"></span>.</p>
+      <div class="wizard-actions"><button onclick="wizardFinish()">Enter Nexora</button></div>
+    </div>
+
   </div>
 
   <!-- Main App Screen -->
@@ -1043,32 +1108,170 @@
       }
     }
 
-    /* Bridge called by the Firebase module script after a successful
-       Google sign-in (see the type="module" block near the end of the
-       document). Firebase handles authentication/identity; this function
-       just plugs that identity into the existing local-only demo session
-       system (localStorage via DB), the same way handleAuth() does for
-       username/password sign-ups above. No Firestore involved. */
-    function completeGoogleSignIn(profile) {
-      const identity = profile.email || profile.displayName || profile.uid;
-      if (!identity) return authError('Google sign-in did not return a usable account.');
+    /* ---- Google Sign-In / Setup Wizard bridge -----------------------------
+       Called from the Firebase module script (see type="module" block near
+       the end of the document), which owns all Firebase Auth + Firestore
+       calls. Firestore users/{uid} — keyed by UID only, never email or a
+       chosen username — is the source of truth for whether a Google account
+       has finished setup. This section just drives the wizard UI and mirrors
+       the resulting username into the existing local demo session system
+       (DB/currentUser/loadApp) so chat, friends, and the sidebar keep
+       working exactly as they do for local accounts. */
 
+    const WIZARD_INTERESTS = ['Gaming', 'Study', 'Coding', 'Creative', 'Music', 'Sports', 'Friends', 'Communities'];
+    let wizardProfile = null;
+    let wizardSelectedInterests = new Set();
+    let wizardUsernameAvailable = false;
+    let wizardStep = 1;
+    let wizardUsernameCheckToken = 0;
+
+    function ensureLocalMirror(username, photoURL) {
       const users = DB.getUsers();
-      if (!users[identity]) {
-        users[identity] = {
-          password: null,
-          dob: '',
-          requests: [],
-          friends: [],
-          pfp: profile.photoURL || DEFAULT_AVATAR,
-          frame: '',
-          googleUid: profile.uid
-        };
+      if (!users[username]) {
+        users[username] = { password: null, dob: '', requests: [], friends: [], pfp: photoURL || DEFAULT_AVATAR, frame: '' };
         DB.saveUsers(users);
       }
+    }
 
-      currentUser = identity;
-      DB.saveSession(identity);
+    // Firestore already has a completed profile for this UID — no wizard needed.
+    function enterNexoraWithProfile(profile) {
+      ensureLocalMirror(profile.username, profile.photoURL);
+      currentUser = profile.username;
+      DB.saveSession(profile.username);
+      loadApp();
+    }
+
+    // Firestore has no profile yet for this UID — collect one.
+    function openSetupWizard(profile) {
+      wizardProfile = profile;
+      wizardSelectedInterests = new Set();
+      wizardUsernameAvailable = false;
+
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('app-screen').classList.add('hidden');
+      document.getElementById('wizard-screen').classList.remove('hidden');
+
+      document.getElementById('wizard-avatar-preview').src = profile.photoURL || DEFAULT_AVATAR;
+      document.getElementById('wizard-google-name').innerText = profile.displayName ? `Signed in as ${profile.displayName}` : '';
+      const usernameInput = document.getElementById('wizard-username');
+      usernameInput.value = '';
+      const status = document.getElementById('wizard-username-status');
+      status.innerText = '';
+      status.className = 'auth-local-note';
+
+      const grid = document.getElementById('wizard-interests');
+      grid.innerHTML = '';
+      WIZARD_INTERESTS.forEach(tag => {
+        const chip = document.createElement('div');
+        chip.className = 'wizard-chip';
+        chip.innerText = tag;
+        chip.onclick = () => {
+          if (wizardSelectedInterests.has(tag)) { wizardSelectedInterests.delete(tag); chip.classList.remove('selected'); }
+          else { wizardSelectedInterests.add(tag); chip.classList.add('selected'); }
+        };
+        grid.appendChild(chip);
+      });
+
+      document.getElementById('wizard-privacy-status').checked = true;
+      document.getElementById('wizard-privacy-requests').checked = true;
+      document.getElementById('wizard-notifications').checked = true;
+
+      showWizardStep(1);
+    }
+
+    function showWizardStep(step) {
+      wizardStep = step;
+      document.querySelectorAll('#wizard-screen .wizard-step').forEach(el => {
+        el.classList.toggle('hidden', Number(el.dataset.wizardStep) !== step);
+      });
+    }
+
+    async function wizardCheckUsername() {
+      const raw = document.getElementById('wizard-username').value.trim();
+      const status = document.getElementById('wizard-username-status');
+      wizardUsernameAvailable = false;
+      status.className = 'auth-local-note';
+
+      if (!raw) { status.innerText = ''; return; }
+      if (raw.length < 3 || /[@\s]/.test(raw)) {
+        status.innerText = 'Use 3+ characters, no spaces or @.';
+        status.classList.add('bad');
+        return;
+      }
+      if (wizardProfile.email && raw.toLowerCase() === wizardProfile.email.toLowerCase()) {
+        status.innerText = 'Choose something other than your email.';
+        status.classList.add('bad');
+        return;
+      }
+
+      status.innerText = 'Checking availability…';
+      const token = ++wizardUsernameCheckToken;
+      const available = await window.checkUsernameAvailable(raw);
+      if (token !== wizardUsernameCheckToken) return; // superseded by a newer keystroke
+      wizardUsernameAvailable = available;
+      status.innerText = available ? 'Username available ✓' : 'That username is taken.';
+      status.classList.add(available ? 'ok' : 'bad');
+    }
+
+    function wizardNext() {
+      if (wizardStep === 2) {
+        const username = document.getElementById('wizard-username').value.trim();
+        if (!username || !wizardUsernameAvailable) {
+          const status = document.getElementById('wizard-username-status');
+          status.innerText = 'Pick an available username first.';
+          status.className = 'auth-local-note bad';
+          return;
+        }
+      }
+      if (wizardStep === 3 && wizardSelectedInterests.size === 0) {
+        return alert('Pick at least one interest to continue.');
+      }
+      const next = wizardStep + 1;
+      showWizardStep(next);
+      if (next === 5) {
+        document.getElementById('wizard-finish-name').innerText = document.getElementById('wizard-username').value.trim();
+      }
+    }
+
+    function wizardBack() {
+      if (wizardStep === 1) return;
+      showWizardStep(wizardStep - 1);
+    }
+
+    async function wizardFinish() {
+      const username = document.getElementById('wizard-username').value.trim();
+      const profileData = {
+        uid: wizardProfile.uid,
+        username,
+        displayName: wizardProfile.displayName || '',
+        photoURL: wizardProfile.photoURL || '',
+        interests: Array.from(wizardSelectedInterests),
+        privacy: {
+          showOnlineStatus: document.getElementById('wizard-privacy-status').checked,
+          allowFriendRequests: document.getElementById('wizard-privacy-requests').checked
+        },
+        notifications: {
+          enabled: document.getElementById('wizard-notifications').checked
+        }
+      };
+
+      const result = await window.saveNexoraProfile(profileData);
+      if (!result.ok) {
+        if (result.reason === 'username-taken') {
+          showWizardStep(2);
+          const status = document.getElementById('wizard-username-status');
+          status.innerText = 'That username was just taken — try another.';
+          status.className = 'auth-local-note bad';
+        } else {
+          alert('Could not save your profile. Please try again.');
+        }
+        return;
+      }
+
+      ensureLocalMirror(username, profileData.photoURL);
+      currentUser = username;
+      DB.saveSession(username);
+      document.getElementById('wizard-screen').classList.add('hidden');
       loadApp();
     }
 
@@ -1739,6 +1942,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -1761,13 +1965,13 @@
   // Verify the connection
   console.log("✅ Firebase connected:", app.name, "| project:", app.options.projectId);
 
-  // --- Google Sign-In ---------------------------------------------------
-  // Firebase Authentication only (no Firestore yet). Wired to the existing
-  // "Continue with Google" button in the auth screen via window.handleGoogleSignIn,
+  // --- Google Sign-In + Firestore profile check --------------------------
+  // Wired to the existing "Continue with Google" button via window.handleGoogleSignIn,
   // since this module script has its own scope separate from the classic
-  // <script> above that holds the local demo auth logic (DB, currentUser, etc).
+  // <script> above that holds the local demo auth/wizard logic (DB, currentUser, etc).
   const auth = getAuth(app);
   const googleProvider = new GoogleAuthProvider();
+  const db = getFirestore(app);
 
   window.handleGoogleSignIn = async function () {
     try {
@@ -1777,11 +1981,16 @@
       // Retrieve the Firebase user UID after login
       console.log("✅ Google Sign-In successful. UID:", user.uid);
 
-      // Hand off to the existing local auth/session flow (see completeGoogleSignIn
-      // in the classic <script> block above) so the rest of the app (friends,
-      // sidebar, etc.) works exactly as it does for local accounts.
-      if (typeof window.completeGoogleSignIn === 'function') {
-        window.completeGoogleSignIn({
+      // UID is the only internal user ID: check Firestore users/{uid} for a
+      // completed profile before deciding whether to show the Setup Wizard
+      // or drop the user straight into Nexora.
+      const userRef = doc(db, 'users', user.uid);
+      const snap = await getDoc(userRef);
+
+      if (snap.exists() && snap.data().setupComplete) {
+        window.enterNexoraWithProfile(snap.data());
+      } else {
+        window.openSetupWizard({
           uid: user.uid,
           email: user.email,
           displayName: user.displayName,
@@ -1793,6 +2002,53 @@
       if (typeof window.authError === 'function') {
         window.authError('Google sign-in failed. Please try again.');
       }
+    }
+  };
+
+  // Checks the usernames/{username} reservation collection — the source of
+  // truth for global username uniqueness. Separate from the existing local,
+  // per-browser demo accounts used by the username/password login.
+  window.checkUsernameAvailable = async function (username) {
+    try {
+      const ref = doc(db, 'usernames', username.toLowerCase());
+      const snap = await getDoc(ref);
+      return !snap.exists();
+    } catch (error) {
+      console.error("Username check error:", error);
+      return false;
+    }
+  };
+
+  // Atomically claims the username and writes the completed profile to
+  // users/{uid} — keyed by Firebase UID only, never email, never a Nexora ID.
+  window.saveNexoraProfile = async function (profile) {
+    const usernameRef = doc(db, 'usernames', profile.username.toLowerCase());
+    const userRef = doc(db, 'users', profile.uid);
+
+    try {
+      await runTransaction(db, async (tx) => {
+        const usernameSnap = await tx.get(usernameRef);
+        if (usernameSnap.exists() && usernameSnap.data().uid !== profile.uid) {
+          throw new Error('username-taken');
+        }
+        tx.set(usernameRef, { uid: profile.uid });
+        tx.set(userRef, {
+          uid: profile.uid,
+          username: profile.username,
+          displayName: profile.displayName,
+          photoURL: profile.photoURL,
+          interests: profile.interests,
+          privacy: profile.privacy,
+          notifications: profile.notifications,
+          setupComplete: true,
+          createdAt: serverTimestamp()
+        });
+      });
+      return { ok: true };
+    } catch (error) {
+      console.error("Save profile error:", error);
+      if (error.message === 'username-taken') return { ok: false, reason: 'username-taken' };
+      return { ok: false, reason: 'unknown' };
     }
   };
 </script>
