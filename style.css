@@ -117,6 +117,7 @@
   body { display:block; min-height:100dvh; overflow:hidden; }
   #app-screen { width:100vw; height:100dvh; max-height:none; border:0; border-radius:0; position:relative; }
   .sidebar { position:absolute; z-index:20; inset:0 auto 0 0; width:min(88vw, 360px); box-shadow:12px 0 30px var(--shadow); transform:translateX(-105%); transition:transform .25s ease; }
+  #sidebar-resize-handle { display:none; }
   #app-screen.sidebar-open .sidebar { transform:translateX(0); }
   .main-chat { min-width:0; width:100%; }
   .chat-header { padding:12px; gap:10px; }
@@ -155,6 +156,7 @@
   .attachment-preview { min-width:0; padding:7px 9px; }.attachment-preview span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .emoji-picker, .extension-menu { position:fixed; z-index:900; left:8px; right:8px; bottom:calc(66px + env(safe-area-inset-bottom)); width:auto; max-width:none; max-height:min(45dvh,360px); border-radius:18px; padding:12px; box-shadow:0 -8px 30px rgba(15,23,42,.25); }.emoji-picker { grid-template-columns:repeat(6,1fr); }.emoji-picker span { min-height:38px; display:grid; place-items:center; }.extension-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }.extension-option { min-height:48px; font-size:14px; }
   .sidebar { z-index:1001; width:min(88vw,360px); height:var(--mobile-app-height); max-height:none; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); overflow-y:auto; overscroll-behavior:contain; border-right:1px solid var(--border); } #app-screen.sidebar-open::after { content:''; position:absolute; inset:0; z-index:1000; background:rgba(15,23,42,.38); backdrop-filter:blur(1px); } #app-screen.sidebar-open .sidebar { z-index:1002; transform:translateX(0); }
+  #sidebar-resize-handle { display:none; }
   .sidebar-header { position:sticky; top:0; z-index:3; min-height:62px; padding:10px 12px; background:var(--bg-sidebar); }.sidebar-header .icon-btn { width:40px; height:40px; border-radius:12px; }.sidebar .section { padding:11px 12px; }.sidebar .section input, .sidebar .section button { min-height:42px; margin-bottom:8px; }.sidebar .item-list { max-height:none; overflow:visible; }.sidebar .item-list li { min-height:52px; padding:8px; margin-bottom:5px; }.hub-list-title { margin:4px 0 8px; }
   .status-menu { position:fixed; top:calc(env(safe-area-inset-top) + 66px); left:12px; width:min(280px,calc(100vw - 24px)); z-index:1100; border-radius:14px; }.status-option { min-height:46px; font-size:14px; }
   .quick-status-popover { position:fixed; top:calc(env(safe-area-inset-top) + 66px); left:12px; width:min(300px,calc(100vw - 24px)); z-index:1100; border-radius:16px; padding:14px; }.qsp-option { min-height:44px; font-size:14px; }.qsp-custom input[type="datetime-local"] { min-height:42px; font-size:14px; }.qsp-custom button { min-height:42px; }
