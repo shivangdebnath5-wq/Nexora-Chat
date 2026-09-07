@@ -428,6 +428,16 @@
     .extension-dialog .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
     .extension-dialog .dialog-actions button { width:auto; margin:0; }
     .settings-section { margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
+    .settings-section input[readonly] { color: var(--text-muted); cursor: default; background: var(--bg-main); }
+
+    /* Settings tabs (General / Appearance / Notifications / Privacy & Security /
+       Friends & Social / Chat / Hubs / About) — reorganizes the existing
+       settings controls into sections without changing any of them. */
+    .settings-tabs { display:flex; flex-wrap:wrap; gap:6px; margin:12px 0 6px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+    .settings-tab { width:auto; margin:0; padding:7px 12px; font-size:12px; background:transparent; color:var(--text-muted); border:1px solid var(--border); border-radius:20px; cursor:pointer; }
+    .settings-tab:hover { background:var(--input-bg); color:var(--text-main); }
+    .settings-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .settings-panel .settings-section:first-child { margin-top:0; padding-top:0; border-top:none; }
     .status-pills { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
     .status-pills button { margin:0; padding:8px 5px; font-size:11px; background:var(--input-bg); color:var(--text-main); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
     .status-pills button .qs-pill-dot { width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
@@ -668,49 +678,127 @@
 
   <!-- Settings Modal -->
   <div id="settings-modal" class="modal hidden">
-    <div class="card" style="max-width:380px; max-height: 90vh; overflow-y: auto;">
+    <div class="card" style="max-width:480px; max-height: 90vh; overflow-y: auto;">
       <h2>Settings</h2>
-      
-      <!-- Profile Picture Uploader -->
-      <img id="settings-avatar-preview" class="avatar-large" src="" alt="Profile Picture">
-      <label style="font-size:14px; display:block; margin-bottom:6px; text-align:center;">Change Profile Picture</label>
-      <input type="file" id="pfp-input" accept="image/*" onchange="handlePfpChange(event)" style="font-size:12px;">
 
-      <!-- Profile Frame Selector -->
-      <label style="font-size:14px; display:block; margin-bottom:6px; margin-top:10px;">Profile Frame</label>
-      <select id="frame-select" onchange="changeProfileFrame(this.value)">
-        <option value="">None</option>
-        <option value="frame-gold">Golden Halo</option>
-        <option value="frame-neon">Neon Cyan</option>
-        <option value="frame-rose">Rose Quartz</option>
-        <option value="frame-void">Void Purple</option>
-      </select>
-
-      <div class="settings-section theme-settings">
-        <label class="theme-selector-label">App theme</label>
-        <p class="theme-selector-help">Choose a look for the complete Nexora interface.</p>
-        <select id="theme-select" class="theme-native-select" onchange="changeTheme(this.value)" aria-label="App theme">
-          <option value="light">Light Mode</option><option value="dark">Dark Mode</option>
-          <option value="onyx">Onyx</option><option value="starlight-nova">Starlight Nova</option>
-          <option value="midnight-aurora">Midnight Aurora</option><option value="nebula-violet">Nebula Violet</option>
-          <option value="cyber-cyan">Cyber Cyan</option><option value="ember-glow">Ember Glow</option>
-          <option value="oceanic">Oceanic</option><option value="sakura-mist">Sakura Mist</option>
-          <option value="forest-pulse">Forest Pulse</option><option value="solar-flare">Solar Flare</option>
-          <option value="arctic-frost">Arctic Frost</option><option value="royal-eclipse">Royal Eclipse</option>
-        </select>
-        <div id="theme-preview-grid" class="theme-preview-grid" role="radiogroup" aria-label="Choose app theme"></div>
+      <div class="settings-tabs" role="tablist" aria-label="Settings sections">
+        <button type="button" class="settings-tab active" data-tab="general" onclick="switchSettingsTab('general')">General</button>
+        <button type="button" class="settings-tab" data-tab="appearance" onclick="switchSettingsTab('appearance')">Appearance</button>
+        <button type="button" class="settings-tab" data-tab="notifications" onclick="switchSettingsTab('notifications')">Notifications</button>
+        <button type="button" class="settings-tab" data-tab="privacy" onclick="switchSettingsTab('privacy')">Privacy &amp; Security</button>
+        <button type="button" class="settings-tab" data-tab="social" onclick="switchSettingsTab('social')">Friends &amp; Social</button>
+        <button type="button" class="settings-tab" data-tab="chat" onclick="switchSettingsTab('chat')">Chat</button>
+        <button type="button" class="settings-tab" data-tab="hubs" onclick="switchSettingsTab('hubs')">Hubs</button>
+        <button type="button" class="settings-tab" data-tab="about" onclick="switchSettingsTab('about')">About</button>
       </div>
 
-      <div class="settings-section"><label style="font-size:14px; display:block; margin-bottom:8px;">Quick status</label><div class="status-pills" id="quick-status-pills"></div><small style="display:block;margin-top:8px;color:var(--text-muted);">After 10 minutes without activity, your status changes to Studying. Tap your status badge to set how long it should last.</small></div>
+      <!-- General -->
+      <div class="settings-panel" data-panel="general">
+        <!-- Profile Picture Uploader -->
+        <img id="settings-avatar-preview" class="avatar-large" src="" alt="Profile Picture">
+        <label style="font-size:14px; display:block; margin-bottom:6px; text-align:center;">Change Profile Picture</label>
+        <input type="file" id="pfp-input" accept="image/*" onchange="handlePfpChange(event)" style="font-size:12px;">
 
-      <!-- Custom Wallpaper Controls -->
-      <label style="font-size:14px; display:block; margin-bottom:6px; margin-top:10px;">Chat Background Wallpaper</label>
-      <input type="file" id="wallpaper-file" accept="image/*" onchange="handleWallpaperUpload(event)" style="font-size:12px;">
-      <input type="text" id="wallpaper-url" placeholder="Or enter Image URL..." onchange="handleWallpaperUrl(this.value)" style="font-size:12px;">
-      <button onclick="clearWallpaper()" class="secondary" style="font-size:12px; padding:8px;">Reset Default Wallpaper</button>
+        <div class="settings-section">
+          <label style="font-size:14px; display:block; margin-bottom:6px;">Username</label>
+          <input type="text" id="settings-username-display" readonly disabled>
+        </div>
+
+        <div class="settings-section">
+          <label style="font-size:14px; display:block; margin-bottom:6px;">Connected Email</label>
+          <input type="text" id="settings-email-display" readonly disabled>
+        </div>
+
+        <div class="settings-section">
+          <label style="font-size:14px; display:block; margin-bottom:6px;">Account Provider</label>
+          <input type="text" id="settings-provider-display" readonly disabled>
+        </div>
+
+        <div class="settings-section" id="settings-password-section" data-has-password="false">
+          <label style="font-size:14px; display:block; margin-bottom:6px;" id="settings-password-label">Set a Password</label>
+          <input type="password" id="settings-current-password" class="hidden" placeholder="Current password" autocomplete="current-password">
+          <input type="password" id="settings-new-password" placeholder="New password (6+ characters)" autocomplete="new-password">
+          <button type="button" class="secondary" id="settings-password-btn" onclick="handlePasswordUpdate()" style="font-size:12px; padding:8px;">Set Password</button>
+          <p id="settings-password-note" class="auth-local-note"></p>
+        </div>
+
+        <div class="settings-section">
+          <button onclick="logout()" style="background:#ef4444;">Sign Out</button>
+          <button type="button" class="secondary" onclick="handleDeleteAccount()" style="margin-top:8px; color:#ef4444; border-color:#ef4444;">Delete Account</button>
+        </div>
+      </div>
+
+      <!-- Appearance: Themes, Profile Frames, Chat Appearance (wallpaper) -->
+      <div class="settings-panel hidden" data-panel="appearance">
+        <!-- Profile Frame Selector -->
+        <label style="font-size:14px; display:block; margin-bottom:6px;">Profile Frame</label>
+        <select id="frame-select" onchange="changeProfileFrame(this.value)">
+          <option value="">None</option>
+          <option value="frame-gold">Golden Halo</option>
+          <option value="frame-neon">Neon Cyan</option>
+          <option value="frame-rose">Rose Quartz</option>
+          <option value="frame-void">Void Purple</option>
+        </select>
+
+        <div class="settings-section theme-settings">
+          <label class="theme-selector-label">App theme</label>
+          <p class="theme-selector-help">Choose a look for the complete Nexora interface.</p>
+          <select id="theme-select" class="theme-native-select" onchange="changeTheme(this.value)" aria-label="App theme">
+            <option value="light">Light Mode</option><option value="dark">Dark Mode</option>
+            <option value="onyx">Onyx</option><option value="starlight-nova">Starlight Nova</option>
+            <option value="midnight-aurora">Midnight Aurora</option><option value="nebula-violet">Nebula Violet</option>
+            <option value="cyber-cyan">Cyber Cyan</option><option value="ember-glow">Ember Glow</option>
+            <option value="oceanic">Oceanic</option><option value="sakura-mist">Sakura Mist</option>
+            <option value="forest-pulse">Forest Pulse</option><option value="solar-flare">Solar Flare</option>
+            <option value="arctic-frost">Arctic Frost</option><option value="royal-eclipse">Royal Eclipse</option>
+          </select>
+          <div id="theme-preview-grid" class="theme-preview-grid" role="radiogroup" aria-label="Choose app theme"></div>
+        </div>
+
+        <!-- Custom Wallpaper Controls (Chat Appearance) -->
+        <div class="settings-section">
+          <label style="font-size:14px; display:block; margin-bottom:6px;">Chat Background Wallpaper</label>
+          <input type="file" id="wallpaper-file" accept="image/*" onchange="handleWallpaperUpload(event)" style="font-size:12px;">
+          <input type="text" id="wallpaper-url" placeholder="Or enter Image URL..." onchange="handleWallpaperUrl(this.value)" style="font-size:12px;">
+          <button onclick="clearWallpaper()" class="secondary" style="font-size:12px; padding:8px;">Reset Default Wallpaper</button>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="settings-panel hidden" data-panel="notifications">
+        <div class="settings-section">
+          <label style="font-size:14px; display:block; margin-bottom:6px;">Desktop Notifications</label>
+          <p id="settings-notif-status" class="auth-local-note"></p>
+          <button type="button" class="secondary" onclick="requestBrowserNotifications()" style="font-size:12px; padding:8px;">Enable Browser Notifications</button>
+        </div>
+      </div>
+
+      <!-- Privacy & Security -->
+      <div class="settings-panel hidden" data-panel="privacy">
+        <p class="auth-local-note">No additional privacy or security settings yet.</p>
+      </div>
+
+      <!-- Friends & Social -->
+      <div class="settings-panel hidden" data-panel="social">
+        <div class="settings-section"><label style="font-size:14px; display:block; margin-bottom:8px;">Quick status</label><div class="status-pills" id="quick-status-pills"></div><small style="display:block;margin-top:8px;color:var(--text-muted);">After 10 minutes without activity, your status changes to Studying. Tap your status badge to set how long it should last.</small></div>
+      </div>
+
+      <!-- Chat -->
+      <div class="settings-panel hidden" data-panel="chat">
+        <p class="auth-local-note">No additional chat settings yet.</p>
+      </div>
+
+      <!-- Hubs -->
+      <div class="settings-panel hidden" data-panel="hubs">
+        <p class="auth-local-note">No global Hub settings yet — manage an individual Hub's name, description, members, and invite link from that Hub's own settings button.</p>
+      </div>
+
+      <!-- About -->
+      <div class="settings-panel hidden" data-panel="about">
+        <p class="auth-local-note">Nexora — a real-time chat prototype built with Firebase.</p>
+      </div>
 
       <button onclick="closeSettings()" class="secondary" style="margin-top:14px;">Close</button>
-      <button onclick="logout()" style="background:#ef4444; margin-top:8px;">Log Out</button>
     </div>
   </div>
 
@@ -722,6 +810,7 @@
 
     let isLogin = true;
     let currentUser = null;
+    let currentUserEmail = null;
     let activeFriend = null;
     let currentAttachment = null;
     let editingMsgId = null;
@@ -1110,6 +1199,7 @@
         } catch (e) {
           currentUser = rawSession;
         }
+        currentUserEmail = localStorage.getItem('active_session_email') || '';
         loadApp();
       }
 
@@ -1220,7 +1310,9 @@
     function enterNexoraWithProfile(profile) {
       ensureLocalMirror(profile.username, profile.photoURL);
       currentUser = profile.username;
+      currentUserEmail = profile.email || '';
       DB.saveSession(profile.username);
+      localStorage.setItem('active_session_email', currentUserEmail);
       loadApp();
     }
 
@@ -1380,7 +1472,9 @@
 
       ensureLocalMirror(username, profileData.photoURL, wizardProfile.dob);
       currentUser = username;
+      currentUserEmail = profileData.email || '';
       DB.saveSession(username);
+      localStorage.setItem('active_session_email', currentUserEmail);
       document.getElementById('wizard-screen').classList.add('hidden');
       loadApp();
     }
@@ -1420,9 +1514,14 @@
         delete presence[currentUser];
         DB.savePresence(presence);
       }
+      if (typeof window.firebaseSignOut === 'function') {
+        window.firebaseSignOut();
+      }
       currentUser = null;
+      currentUserEmail = null;
       activeFriend = null;
       DB.clearSession();
+      localStorage.removeItem('active_session_email');
       closeSettings();
       document.getElementById('app-screen').classList.add('hidden');
       document.getElementById('auth-screen').classList.remove('hidden');
@@ -1619,11 +1718,129 @@
       settingsPreview.className = `avatar-large ${frameClass}`;
       document.getElementById('frame-select').value = frameClass;
       refreshQuickStatus();
+      refreshNotificationsTab();
+      refreshGeneralTab();
+      switchSettingsTab('general');
 
       document.getElementById('settings-modal').classList.remove('hidden'); 
     }
     
     function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
+
+    function switchSettingsTab(tab) {
+      document.querySelectorAll('.settings-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+      document.querySelectorAll('.settings-panel').forEach(panel => panel.classList.toggle('hidden', panel.dataset.panel !== tab));
+    }
+
+    /* General tab: read-only Username/Email, Account Provider, and Password
+       management. Username/Email are never editable here — only displayed.
+       Provider info and password state come from the Firebase module script
+       (see window.getAuthProviders / window.changePassword /
+       window.linkPasswordToAccount / window.deleteNexoraAccount). */
+    async function refreshGeneralTab() {
+      if (!currentUser) return;
+      document.getElementById('settings-username-display').value = currentUser || '';
+      document.getElementById('settings-email-display').value = currentUserEmail || '';
+
+      const providers = (typeof window.getAuthProviders === 'function') ? await window.getAuthProviders() : [];
+      const hasGoogle = providers.includes('google.com');
+      const hasPassword = providers.includes('password');
+
+      let providerLabel = 'Unknown';
+      if (hasGoogle && hasPassword) providerLabel = 'Google + Email/Password';
+      else if (hasGoogle) providerLabel = 'Google';
+      else if (hasPassword) providerLabel = 'Email & Password';
+      document.getElementById('settings-provider-display').value = providerLabel;
+
+      const pwSection = document.getElementById('settings-password-section');
+      pwSection.dataset.hasPassword = hasPassword ? 'true' : 'false';
+      document.getElementById('settings-password-label').innerText = hasPassword ? 'Change Password' : 'Set a Password';
+      document.getElementById('settings-current-password').classList.toggle('hidden', !hasPassword);
+      document.getElementById('settings-password-btn').innerText = hasPassword ? 'Update Password' : 'Set Password';
+      const note = document.getElementById('settings-password-note');
+      note.innerText = '';
+      note.className = 'auth-local-note';
+    }
+
+    async function handlePasswordUpdate() {
+      const newPw = document.getElementById('settings-new-password').value;
+      const curPw = document.getElementById('settings-current-password').value;
+      const note = document.getElementById('settings-password-note');
+      const hasPassword = document.getElementById('settings-password-section').dataset.hasPassword === 'true';
+
+      if (!newPw || newPw.length < 6) {
+        note.innerText = 'New password must be at least 6 characters.';
+        note.className = 'auth-local-note bad';
+        return;
+      }
+      if (hasPassword && !curPw) {
+        note.innerText = 'Enter your current password to confirm.';
+        note.className = 'auth-local-note bad';
+        return;
+      }
+
+      note.innerText = 'Saving…';
+      note.className = 'auth-local-note';
+
+      const result = hasPassword
+        ? await window.changePassword(curPw, newPw)
+        : await window.linkPasswordToAccount(newPw);
+
+      if (!result.ok) {
+        note.innerText = result.message || 'Could not update password.';
+        note.className = 'auth-local-note bad';
+        return;
+      }
+
+      note.innerText = 'Password updated.';
+      note.className = 'auth-local-note ok';
+      document.getElementById('settings-new-password').value = '';
+      document.getElementById('settings-current-password').value = '';
+      refreshGeneralTab();
+    }
+
+    async function handleDeleteAccount() {
+      const sure = confirm('Delete your Nexora account? This permanently removes your sign-in and profile — it cannot be undone. Friends and messages saved in this browser will remain locally, but you\'ll need a new account to use Nexora again.');
+      if (!sure) return;
+
+      let result = await window.deleteNexoraAccount();
+      if (!result.ok && result.reason === 'requires-recent-login') {
+        const pwd = prompt('For your security, please re-enter your password to confirm account deletion:');
+        if (!pwd) return;
+        result = await window.deleteNexoraAccount(pwd);
+      }
+
+      if (!result.ok) {
+        alert(result.message || 'Could not delete account. Please try again.');
+        return;
+      }
+
+      currentUser = null;
+      currentUserEmail = null;
+      activeFriend = null;
+      DB.clearSession();
+      localStorage.removeItem('active_session_email');
+      closeSettings();
+      document.getElementById('app-screen').classList.add('hidden');
+      document.getElementById('auth-screen').classList.remove('hidden');
+    }
+
+    /* Notifications tab: surfaces the existing browser-notification permission
+       flow (already used by showBrowserNotification/window.onload above) as
+       a visible setting instead of only firing silently on page load. */
+    function refreshNotificationsTab() {
+      const el = document.getElementById('settings-notif-status');
+      if (!el) return;
+      if (!('Notification' in window)) { el.innerText = 'Your browser does not support notifications.'; return; }
+      const state = Notification.permission;
+      el.innerText = state === 'granted' ? 'Notifications are enabled.' : state === 'denied' ? 'Notifications are blocked — enable them in your browser settings.' : 'Notifications are not yet enabled.';
+    }
+
+    function requestBrowserNotifications() {
+      if (!('Notification' in window)) { refreshNotificationsTab(); return; }
+      if (Notification.permission === 'granted') { refreshNotificationsTab(); return; }
+      Notification.requestPermission().then(refreshNotificationsTab);
+    }
 
     function toggleExtensionMenu() { document.getElementById('extension-menu').classList.toggle('hidden'); document.getElementById('emoji-picker').classList.add('hidden'); }
     function closeExtension() { document.getElementById('extension-modal').classList.add('hidden'); activeExtension = null; }
@@ -2089,7 +2306,7 @@
   // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, EmailAuthProvider, linkWithCredential, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, EmailAuthProvider, linkWithCredential, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, reauthenticateWithPopup, deleteUser } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, collection, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, getDocs, onSnapshot, runTransaction, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
@@ -2224,6 +2441,96 @@
     } catch (error) {
       console.error("Link password error:", error);
       return { ok: false, message: firebaseErrorMessage(error) };
+    }
+  };
+
+  // Settings → General: read-only display of which sign-in methods are on
+  // this account (Google, email/password, or both).
+  window.getAuthProviders = function () {
+    const user = auth.currentUser;
+    if (!user) return [];
+    return user.providerData.map(p => p.providerId);
+  };
+
+  // Settings → General → Password management: changes an existing password.
+  // Requires the current password to re-authenticate first (Firebase's own
+  // security requirement for sensitive account changes).
+  window.changePassword = async function (currentPassword, newPassword) {
+    try {
+      const user = auth.currentUser;
+      if (!user || !user.email) return { ok: false, message: 'No signed-in account found.' };
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPassword);
+      console.log("✅ Password updated for", user.email);
+      return { ok: true };
+    } catch (error) {
+      console.error("Change password error:", error);
+      return { ok: false, message: firebaseErrorMessage(error) };
+    }
+  };
+
+  // Settings → General: signs out of Firebase (in addition to the existing
+  // local session clear in logout()).
+  window.firebaseSignOut = async function () {
+    try {
+      await signOut(auth);
+      console.log("✅ Firebase sign-out complete.");
+    } catch (error) {
+      console.error("Sign-out error:", error);
+    }
+  };
+
+  // Settings → General → Delete Account. Firebase requires a "recent" sign-in
+  // for this; if the current session is stale it throws requires-recent-login,
+  // which we handle by silently re-authenticating via Google popup (no typed
+  // password needed) or, for password accounts, returning a reason so the
+  // classic-script prompt can collect the password and retry.
+  async function performAccountDeletion(user) {
+    const uid = user.uid;
+    try {
+      const userRef = doc(db, 'users', uid);
+      const snap = await getDoc(userRef);
+      if (snap.exists()) {
+        const username = snap.data().username;
+        await deleteDoc(userRef);
+        if (username) await deleteDoc(doc(db, 'usernames', username.toLowerCase()));
+      }
+    } catch (cleanupError) {
+      console.error("Firestore cleanup error (continuing with account deletion):", cleanupError);
+    }
+    await deleteUser(user);
+    console.log("✅ Account deleted. UID was:", uid);
+  }
+
+  window.deleteNexoraAccount = async function (password) {
+    const user = auth.currentUser;
+    if (!user) return { ok: false, message: 'No signed-in account found.' };
+
+    try {
+      await performAccountDeletion(user);
+      return { ok: true };
+    } catch (error) {
+      if (error.code !== 'auth/requires-recent-login') {
+        console.error("Delete account error:", error);
+        return { ok: false, message: firebaseErrorMessage(error) };
+      }
+      const hasGoogle = user.providerData.some(p => p.providerId === 'google.com');
+      try {
+        if (hasGoogle) {
+          await reauthenticateWithPopup(user, googleProvider);
+        } else if (password) {
+          const credential = EmailAuthProvider.credential(user.email, password);
+          await reauthenticateWithCredential(user, credential);
+        } else {
+          return { ok: false, reason: 'requires-recent-login', message: 'Please confirm your password to continue.' };
+        }
+        await performAccountDeletion(user);
+        return { ok: true };
+      } catch (reauthError) {
+        console.error("Re-authentication error:", reauthError);
+        return { ok: false, message: firebaseErrorMessage(reauthError) };
+      }
     }
   };
 
