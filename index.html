@@ -721,11 +721,6 @@
           <button type="button" class="secondary" id="settings-password-btn" onclick="handlePasswordUpdate()" style="font-size:12px; padding:8px;">Set Password</button>
           <p id="settings-password-note" class="auth-local-note"></p>
         </div>
-
-        <div class="settings-section">
-          <button onclick="logout()" style="background:#ef4444;">Sign Out</button>
-          <button type="button" class="secondary" onclick="handleDeleteAccount()" style="margin-top:8px; color:#ef4444; border-color:#ef4444;">Delete Account</button>
-        </div>
       </div>
 
       <!-- Appearance: Themes, Profile Frames, Chat Appearance (wallpaper) -->
@@ -799,6 +794,7 @@
       </div>
 
       <button onclick="closeSettings()" class="secondary" style="margin-top:14px;">Close</button>
+      <button onclick="logout()" style="background:#ef4444; margin-top:8px;">Sign Out</button>
     </div>
   </div>
 
@@ -1736,7 +1732,7 @@
        management. Username/Email are never editable here — only displayed.
        Provider info and password state come from the Firebase module script
        (see window.getAuthProviders / window.changePassword /
-       window.linkPasswordToAccount / window.deleteNexoraAccount). */
+       window.linkPasswordToAccount). */
     async function refreshGeneralTab() {
       if (!currentUser) return;
       document.getElementById('settings-username-display').value = currentUser || '';
@@ -1799,31 +1795,6 @@
       refreshGeneralTab();
     }
 
-    async function handleDeleteAccount() {
-      const sure = confirm('Delete your Nexora account? This permanently removes your sign-in and profile — it cannot be undone. Friends and messages saved in this browser will remain locally, but you\'ll need a new account to use Nexora again.');
-      if (!sure) return;
-
-      let result = await window.deleteNexoraAccount();
-      if (!result.ok && result.reason === 'requires-recent-login') {
-        const pwd = prompt('For your security, please re-enter your password to confirm account deletion:');
-        if (!pwd) return;
-        result = await window.deleteNexoraAccount(pwd);
-      }
-
-      if (!result.ok) {
-        alert(result.message || 'Could not delete account. Please try again.');
-        return;
-      }
-
-      currentUser = null;
-      currentUserEmail = null;
-      activeFriend = null;
-      DB.clearSession();
-      localStorage.removeItem('active_session_email');
-      closeSettings();
-      document.getElementById('app-screen').classList.add('hidden');
-      document.getElementById('auth-screen').classList.remove('hidden');
-    }
 
     /* Notifications tab: surfaces the existing browser-notification permission
        flow (already used by showBrowserNotification/window.onload above) as
@@ -2306,7 +2277,7 @@
   // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, EmailAuthProvider, linkWithCredential, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, reauthenticateWithPopup, deleteUser } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, EmailAuthProvider, linkWithCredential, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, collection, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, getDocs, onSnapshot, runTransaction, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
@@ -2478,59 +2449,6 @@
       console.log("✅ Firebase sign-out complete.");
     } catch (error) {
       console.error("Sign-out error:", error);
-    }
-  };
-
-  // Settings → General → Delete Account. Firebase requires a "recent" sign-in
-  // for this; if the current session is stale it throws requires-recent-login,
-  // which we handle by silently re-authenticating via Google popup (no typed
-  // password needed) or, for password accounts, returning a reason so the
-  // classic-script prompt can collect the password and retry.
-  async function performAccountDeletion(user) {
-    const uid = user.uid;
-    try {
-      const userRef = doc(db, 'users', uid);
-      const snap = await getDoc(userRef);
-      if (snap.exists()) {
-        const username = snap.data().username;
-        await deleteDoc(userRef);
-        if (username) await deleteDoc(doc(db, 'usernames', username.toLowerCase()));
-      }
-    } catch (cleanupError) {
-      console.error("Firestore cleanup error (continuing with account deletion):", cleanupError);
-    }
-    await deleteUser(user);
-    console.log("✅ Account deleted. UID was:", uid);
-  }
-
-  window.deleteNexoraAccount = async function (password) {
-    const user = auth.currentUser;
-    if (!user) return { ok: false, message: 'No signed-in account found.' };
-
-    try {
-      await performAccountDeletion(user);
-      return { ok: true };
-    } catch (error) {
-      if (error.code !== 'auth/requires-recent-login') {
-        console.error("Delete account error:", error);
-        return { ok: false, message: firebaseErrorMessage(error) };
-      }
-      const hasGoogle = user.providerData.some(p => p.providerId === 'google.com');
-      try {
-        if (hasGoogle) {
-          await reauthenticateWithPopup(user, googleProvider);
-        } else if (password) {
-          const credential = EmailAuthProvider.credential(user.email, password);
-          await reauthenticateWithCredential(user, credential);
-        } else {
-          return { ok: false, reason: 'requires-recent-login', message: 'Please confirm your password to continue.' };
-        }
-        await performAccountDeletion(user);
-        return { ok: true };
-      } catch (reauthError) {
-        console.error("Re-authentication error:", reauthError);
-        return { ok: false, message: firebaseErrorMessage(reauthError) };
-      }
     }
   };
 
