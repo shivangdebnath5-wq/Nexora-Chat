@@ -1412,6 +1412,9 @@
       if (typeof window.unsubscribeFromConversation === 'function') {
         window.unsubscribeFromConversation();
       }
+      if (typeof window.unsubscribeFromHub === 'function') {
+        window.unsubscribeFromHub();
+      }
       if (currentUser) {
         const presence = DB.getPresence();
         delete presence[currentUser];
@@ -1658,6 +1661,7 @@
       if (e.type === 'todo') return `<div class="extension-card"><div class="extension-title">To-do · ${escapeHTML(e.title)}</div>${e.items.map((item,i) => `<label class="todo-item ${e.checked[i]?'done':''}"><input type="checkbox" ${e.checked[i]?'checked':''} onchange="updateExtension(${m.id},'check',${i})"><span>${escapeHTML(item)}</span></label>`).join('')}<div class="extension-meta">${e.date ? `Due ${new Date(e.date).toLocaleDateString()}` : 'Shared and editable'}</div></div>`;
       if (e.type === 'shopping') return `<div class="extension-card shopping-card"><div class="extension-title">Shopping list · ${escapeHTML(e.title)}</div>${e.items.map((item,i) => `<label class="shopping-item ${e.checked[i]?'done':''}"><input type="checkbox" ${e.checked[i]?'checked':''} onchange="updateExtension(${m.id},'check',${i})"><span>${escapeHTML(item)}</span></label>`).join('')}<div class="extension-meta">${e.date ? `Due ${new Date(e.date).toLocaleDateString()}` : 'Shared and editable'}</div></div>`;
       if (e.type === 'calendar') return `<div class="extension-card"><div class="extension-title">Calendar event · ${escapeHTML(e.title)}</div><div>${new Date(e.date).toLocaleString()}</div>${e.link ? `<a class="map-link" href="${escapeHTML(e.link)}" target="_blank">Join Google Meet</a>` : ''}</div>`;
+      if (e.type === 'hub_invite') { const isRecipient = m.receiver === currentUser; return `<div class="extension-card"><div class="extension-title">Hub invite · ${escapeHTML(e.hubName || 'Hub')}</div><div>${isRecipient ? "You've been invited to join this Hub." : `Invite sent to @${escapeHTML(m.receiver)}.`}</div>${isRecipient ? `<button class="poll-option" onclick="joinHubFromInvite(${e.hubId})">Join Hub</button>` : ''}</div>`; }
       return `<div class="extension-card"><div class="extension-title">Game · ${escapeHTML(e.title)}</div><div>${e.mode === 'solo' ? 'Solo game ready to play.' : (e.accepted ? 'Challenge accepted — game ready!' : 'Challenge sent — waiting for your friend.')}</div>${e.mode !== 'solo' && !e.accepted && m.receiver === currentUser ? `<button class="poll-option" onclick="updateExtension(${m.id},'accept')">Accept challenge</button>` : ''}</div>`;
     }
     function refreshCountdowns() { document.querySelectorAll('.countdown-card').forEach(card => { const diff = Math.max(0, new Date(card.dataset.end).getTime() - Date.now()); const h = Math.floor(diff/3600000); const min = Math.floor(diff%3600000/60000); const s = Math.floor(diff%60000/1000); card.querySelector('.timer-display').textContent = diff ? `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}` : 'Time is up!'; }); }
@@ -2077,7 +2081,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, EmailAuthProvider, linkWithCredential, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, collection, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, getDocs, onSnapshot, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, collection, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, getDocs, onSnapshot, runTransaction, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -2337,6 +2341,123 @@
         console.error("❌ DM delete-sync failed for message", id, error);
       });
     });
+  };
+
+  // --- Real-time multi-user Hub/room chats: hubs/{hubId} + hubs/{hubId}/messages
+  // hubs/{hubId} stores just enough metadata (name, owner, members, type,
+  // category, description) for membership-based security rules AND so a
+  // friend invited via DM can preview/join a Hub they don't have locally
+  // yet. It deliberately does NOT mirror icon/banner/background — those are
+  // base64 images that can individually approach Firestore's 1MB document
+  // cap, so a Hub joined on a new device keeps working with the same UI,
+  // just without those images until someone re-uploads them there.
+  let unsubscribeCurrentHub = null;
+
+  // Called from selectHub() (script.js) every time the open Hub changes.
+  // Streams hubs/{hubId}/messages in real time, same shape as
+  // subscribeToConversation above, so multiple members see each other's
+  // messages instantly. Handed to window.mergeRemoteHubMessages (script.js),
+  // which folds it into the same local `hubs_data` every Hub feature
+  // (rendering, search, sidebar) already reads from.
+  window.subscribeToHub = function (hubId) {
+    if (unsubscribeCurrentHub) { unsubscribeCurrentHub(); unsubscribeCurrentHub = null; }
+    if (!hubId) return;
+
+    const messagesRef = collection(db, 'hubs', String(hubId), 'messages');
+    const q = query(messagesRef, orderBy('updatedAt', 'asc'));
+
+    unsubscribeCurrentHub = onSnapshot(q, (snapshot) => {
+      const remoteMessages = snapshot.docs.map((d) => {
+        const { updatedAt, ...rest } = d.data();
+        const idNum = Number(d.id);
+        return { ...rest, id: Number.isNaN(idNum) ? d.id : idNum };
+      });
+      if (typeof window.mergeRemoteHubMessages === 'function') {
+        window.mergeRemoteHubMessages(hubId, remoteMessages);
+      }
+    }, (error) => {
+      console.error("❌ Hub listener error:", error);
+    });
+  };
+
+  window.unsubscribeFromHub = function () {
+    if (unsubscribeCurrentHub) { unsubscribeCurrentHub(); unsubscribeCurrentHub = null; }
+  };
+
+  // Called from saveHubs() (script.js) whenever local Hub data changes for a
+  // reason other than an incoming Firestore snapshot — creating a Hub,
+  // sending/editing/deleting a Hub message, inviting or removing a member,
+  // editing settings. Mirrors each Hub's lightweight membership metadata to
+  // hubs/{id}, and diffs+syncs each Hub's `messages` array to
+  // hubs/{id}/messages/{msgId} — same diff-and-sync pattern as DMs, with a
+  // real senderUid stamped on at write time for proper sender identity.
+  window.syncHubsToFirestore = function (prevHubs, nextHubs) {
+    const prevById = new Map(prevHubs.map((h) => [String(h.id), h]));
+
+    nextHubs.forEach((hub) => {
+      const id = String(hub.id);
+      const prev = prevById.get(id);
+
+      const meta = {
+        name: hub.name, owner: hub.owner, members: hub.members || [],
+        type: hub.type || '', category: hub.category || '', description: hub.description || ''
+      };
+      const prevMeta = prev && {
+        name: prev.name, owner: prev.owner, members: prev.members || [],
+        type: prev.type || '', category: prev.category || '', description: prev.description || ''
+      };
+      if (!prevMeta || JSON.stringify(prevMeta) !== JSON.stringify(meta)) {
+        setDoc(doc(db, 'hubs', id), { ...meta, updatedAt: serverTimestamp() }, { merge: true }).catch((error) => {
+          console.error("❌ Hub metadata sync failed for", id, error);
+        });
+      }
+
+      const prevMsgById = new Map((prev ? prev.messages || [] : []).map((m) => [String(m.id), m]));
+      const nextMsgById = new Map((hub.messages || []).map((m) => [String(m.id), m]));
+
+      nextMsgById.forEach((msg, msgId) => {
+        if (!msg.sender) return; // malformed — skip
+        const prevMsg = prevMsgById.get(msgId);
+        if (prevMsg && JSON.stringify(prevMsg) === JSON.stringify(msg)) return; // unchanged
+        setDoc(doc(db, 'hubs', id, 'messages', msgId), {
+          ...msg,
+          senderUid: auth.currentUser ? auth.currentUser.uid : null,
+          updatedAt: serverTimestamp()
+        }).catch((error) => {
+          console.error("❌ Hub message sync failed for", msgId, "— attachments over ~700KB can exceed Firestore's 1MB document limit:", error);
+        });
+      });
+
+      prevMsgById.forEach((msg, msgId) => {
+        if (nextMsgById.has(msgId)) return; // still present — not a delete
+        deleteDoc(doc(db, 'hubs', id, 'messages', msgId)).catch((error) => {
+          console.error("❌ Hub message delete-sync failed for", msgId, error);
+        });
+      });
+    });
+  };
+
+  // Used by the "Join Hub" button on a Hub-invite DM card (see the
+  // `hub_invite` case in extensionHTML, and joinHubFromInvite in script.js).
+  // Adds the caller to hubs/{hubId}.members in Firestore and returns the
+  // Hub's lightweight metadata so the caller can mirror a local Hub entry —
+  // this is what makes a Hub invite usable from a device that has never
+  // seen that Hub before.
+  window.joinFirestoreHub = async function (hubId, username) {
+    try {
+      const hubRef = doc(db, 'hubs', String(hubId));
+      const snap = await getDoc(hubRef);
+      if (!snap.exists()) return { ok: false, message: 'This Hub no longer exists.' };
+      await updateDoc(hubRef, { members: arrayUnion(username) });
+      const updated = await getDoc(hubRef);
+      return { ok: true, hub: updated.data() };
+    } catch (error) {
+      console.error("❌ Join Hub error:", error);
+      const message = error.code === 'permission-denied'
+        ? 'Permission denied by Firestore security rules (check the "hubs" rule).'
+        : (error.message || 'Could not join this Hub.');
+      return { ok: false, message };
+    }
   };
 
   // --- Friend system (Firestore) ------------------------------------------

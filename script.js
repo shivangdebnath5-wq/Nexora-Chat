@@ -162,7 +162,42 @@ let activeHub = null;
 let hubCreationInProgress = false;
 const directSendMessage = sendMessage;
 function getHubs() { return JSON.parse(localStorage.getItem('hubs_data') || '[]'); }
-function saveHubs(hubs) { localStorage.setItem('hubs_data', JSON.stringify(hubs)); }
+
+// --- Firestore Hub sync bookkeeping -----------------------------------
+// Same diff-and-mirror pattern used for DMs (see DB.saveMessages in
+// index.html): lastSyncedHubs is the last array we mirrored to/from
+// Firestore; applyingRemoteHubData guards against re-pushing a snapshot
+// that just came FROM Firestore back into Firestore.
+let lastSyncedHubs = [];
+let applyingRemoteHubData = false;
+
+function saveHubs(hubs) {
+  localStorage.setItem('hubs_data', JSON.stringify(hubs));
+  if (!applyingRemoteHubData && typeof window.syncHubsToFirestore === 'function') {
+    window.syncHubsToFirestore(lastSyncedHubs, hubs);
+  }
+  lastSyncedHubs = hubs;
+}
+
+// Bridges the real-time Firestore Hub listener (see window.subscribeToHub
+// in the Firebase module script) into the existing local `hubs_data` store,
+// so renderHubMessages(), search, and everything else keep working
+// unchanged — they just see other members' messages instantly.
+window.mergeRemoteHubMessages = function (hubId, remoteMessages) {
+  applyingRemoteHubData = true;
+  try {
+    const hubs = getHubs();
+    const hub = hubs.find(h => h.id === hubId);
+    if (hub) {
+      hub.messages = remoteMessages.slice().sort((a, b) => a.id - b.id);
+      saveHubs(hubs);
+    }
+  } finally {
+    applyingRemoteHubData = false;
+  }
+  if (activeHub === hubId) renderHubMessages(false);
+};
+
 function hubById(id) { return getHubs().find(hub => hub.id === id); }
 function safeHubText(value='') { const el = document.createElement('div'); el.textContent = value; return el.innerHTML; }
 function hubImageSource(value) {
@@ -315,10 +350,11 @@ function selectHub(id) {
   activeHub = id; activeFriend = null; ensureHubBanner(); const accentStyle = hub.accent ? ` style="--hub-accent:${hub.accent}"` : ''; const banner = document.getElementById('hub-banner-info'); const image = icon ? `<img class="hub-banner-icon" src="${icon}" alt="${safeHubText(hub.name)} icon"${accentStyle}>` : `<div class="hub-banner-icon fallback"${accentStyle}>${safeHubText(hub.name).charAt(0).toUpperCase()}</div>`; banner.innerHTML = `${image}<div class="hub-banner-copy"><div class="hub-banner-name" title="${safeHubText(hub.primaryContext || '')}">${safeHubText(hub.name)}</div><span class="hub-banner-meta">${safeHubText(hub.type)} · ${hub.members.length} member${hub.members.length === 1 ? '' : 's'}</span></div>`; banner.classList.add('visible'); const header=document.getElementById('chat-header'); header.style.backgroundImage = headerImage ? `linear-gradient(rgba(15,23,42,.58),rgba(15,23,42,.58)),url('${headerImage}')` : ''; header.style.backgroundSize = headerImage ? 'cover' : ''; header.style.backgroundPosition = headerImage ? 'center' : ''; document.querySelector('.main-chat').classList.add('hub-active'); document.getElementById('chat-header-avatar-container').classList.add('hidden'); document.getElementById('chat-title').innerHTML = '';
   document.getElementById('chat-input-container').classList.remove('hidden'); document.getElementById('hub-settings-btn').classList.remove('hidden'); document.getElementById('hub-invite-btn').classList.remove('hidden'); document.getElementById('hub-search-btn').classList.remove('hidden'); document.getElementById('pinned-messages-btn').classList.add('hidden'); const messages = document.getElementById('messages-list'); messages.classList.toggle('hub-chat-bg', !!chatImage); messages.style.backgroundImage = chatImage ? `url('${chatImage}')` : '';
   renderHubMessages(true); renderSidebar(); document.getElementById('app-screen').classList.remove('sidebar-open');
+  if (typeof window.subscribeToHub === 'function') window.subscribeToHub(id);
 }
 function ensureHubBanner() { if (document.getElementById('hub-banner-info')) return; const banner=document.createElement('div'); banner.id='hub-banner-info'; banner.className='hub-banner-info'; document.getElementById('mobile-conversations').insertAdjacentElement('afterend', banner); }
 const selectFriendWithHubBanner = selectFriend;
-selectFriend = function(friend) { activeHub = null; const banner = document.getElementById('hub-banner-info'); if (banner) banner.classList.remove('visible'); document.querySelector('.main-chat').classList.remove('hub-active'); const header = document.getElementById('chat-header'); header.style.backgroundImage = ''; header.style.backgroundSize = ''; header.style.backgroundPosition = ''; const messages = document.getElementById('messages-list'); messages.classList.remove('hub-chat-bg'); applyWallpaper(localStorage.getItem('wallpaper') || ''); document.getElementById('hub-settings-btn').classList.add('hidden'); document.getElementById('hub-invite-btn').classList.add('hidden'); document.getElementById('hub-search-btn').classList.add('hidden'); closeHubSearch(); document.getElementById('pinned-messages-btn').classList.remove('hidden'); selectFriendWithHubBanner(friend); };
+selectFriend = function(friend) { if (typeof window.unsubscribeFromHub === 'function') window.unsubscribeFromHub(); activeHub = null; const banner = document.getElementById('hub-banner-info'); if (banner) banner.classList.remove('visible'); document.querySelector('.main-chat').classList.remove('hub-active'); const header = document.getElementById('chat-header'); header.style.backgroundImage = ''; header.style.backgroundSize = ''; header.style.backgroundPosition = ''; const messages = document.getElementById('messages-list'); messages.classList.remove('hub-chat-bg'); applyWallpaper(localStorage.getItem('wallpaper') || ''); document.getElementById('hub-settings-btn').classList.add('hidden'); document.getElementById('hub-invite-btn').classList.add('hidden'); document.getElementById('hub-search-btn').classList.add('hidden'); closeHubSearch(); document.getElementById('pinned-messages-btn').classList.remove('hidden'); selectFriendWithHubBanner(friend); };
 function renderHubMessages(scroll) {
   const hub = hubById(activeHub); if (!hub) return; const list = document.getElementById('messages-list'); const query = document.getElementById('hub-message-search')?.value.trim().toLowerCase() || ''; list.innerHTML = '';
   const visibleMessages = hub.messages.filter(message => !query || `${message.sender} ${message.text || ''}`.toLowerCase().includes(query));
@@ -336,13 +372,30 @@ function openHubInvitePanel() {
   if (name === null) return;
   quickInviteToHub(hub.id, name);
 }
+// Drops a hub_invite card into the existing DM thread with `toUsername` —
+// reuses the exact same DB.getMessages()/DB.saveMessages() path every other
+// DM already goes through (already Firestore-synced), so no new sync code
+// is needed for the invite message itself.
+function sendHubInviteMessage(hub, toUsername) {
+  const messages = DB.getMessages();
+  messages.push({
+    id: Date.now(), sender: currentUser, receiver: toUsername,
+    text: '', attachment: null, reactions: {},
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    extension: { type: 'hub_invite', hubId: hub.id, hubName: hub.name }
+  });
+  DB.saveMessages(messages);
+}
+
 function quickInviteToHub(hubId, name) {
   name = (name || '').trim(); if (!name) return;
   const users = DB.getUsers(); const actual = Object.keys(users).find(user => user.toLowerCase() === name.toLowerCase());
   const hubs = getHubs(), hub = hubs.find(item => item.id === hubId); if (!hub) return;
   if (!actual) return alert('User not found.');
   if (hub.members.includes(actual) || hub.invites.includes(actual)) return alert('That user is already in this Hub or has an invite.');
-  hub.invites.push(actual); saveHubs(hubs); alert(`Invite sent to @${actual}.`);
+  hub.invites.push(actual); saveHubs(hubs);
+  sendHubInviteMessage(hub, actual);
+  alert(`Invite sent to @${actual}.`);
 }
 function toggleHubSearch() { if (!activeHub) return; const panel = document.getElementById('hub-search-panel'); panel.classList.toggle('hidden'); if (!panel.classList.contains('hidden')) document.getElementById('hub-message-search').focus(); }
 function closeHubSearch() { const panel = document.getElementById('hub-search-panel'); if (!panel) return; panel.classList.add('hidden'); const input = document.getElementById('hub-message-search'); if (input?.value) { input.value = ''; if (activeHub) renderHubMessages(false); } }
@@ -350,7 +403,7 @@ function filterHubMessages() { if (activeHub) renderHubMessages(false); }
 function ensureHubAppearanceSettings() { if (document.getElementById('hub-edit-icon')) return; document.getElementById('hub-members').insertAdjacentHTML('afterend', `<label class="hub-form-label">Change Hub icon</label><input id="hub-edit-icon" type="file" accept="image/png,image/jpeg,image/webp"><label class="hub-form-label">Change chat background</label><input id="hub-edit-background" type="file" accept="image/png,image/jpeg,image/webp"><label class="hub-form-label">Change header banner</label><input id="hub-edit-banner" type="file" accept="image/png,image/jpeg,image/webp"><label class="hub-form-label">Hub accent theme</label><div class="hub-accent-grid" id="hub-edit-accent-grid">${HUB_ACCENTS.map(hex => `<button type="button" class="hub-accent-swatch" style="--accent-color:${hex}" onclick="hubEditSelectAccent('${hex}')" aria-label="Accent ${hex}"></button>`).join('')}</div><input type="hidden" id="hub-edit-accent-value"><label class="hub-form-label">Primary Context (optional)</label><textarea id="hub-edit-context" placeholder="Goals, rules, or what belongs here"></textarea>`); }
 function hubEditSelectAccent(hex) { const field = document.getElementById('hub-edit-accent-value'); if (field) field.value = hex; document.querySelectorAll('#hub-edit-accent-grid .hub-accent-swatch').forEach(btn => btn.classList.toggle('selected', hex && btn.style.getPropertyValue('--accent-color') === hex)); }
 function renderHubMembers(hub) { const target = document.getElementById('hub-members'); target.innerHTML = ''; hub.members.forEach(member => { const chip = document.createElement('div'); chip.className='hub-member-chip'; chip.innerHTML = `@${safeHubText(member)}${member !== hub.owner ? `<button title="Remove member" onclick="removeHubMember('${member}')">×</button>` : ' · Owner'}`; target.appendChild(chip); }); }
-function inviteToHub() { const name = document.getElementById('hub-add-member').value.trim(); const users = DB.getUsers(); const actual = Object.keys(users).find(user => user.toLowerCase() === name.toLowerCase()); const hubs=getHubs(), hub=hubs.find(item=>item.id===activeHub); if (!actual) return alert('User not found.'); if (hub.members.includes(actual) || hub.invites.includes(actual)) return alert('That user is already in this Hub or has an invite.'); hub.invites.push(actual); saveHubs(hubs); document.getElementById('hub-add-member').value=''; alert(`Invite sent to @${actual}.`); }
+function inviteToHub() { const name = document.getElementById('hub-add-member').value.trim(); const users = DB.getUsers(); const actual = Object.keys(users).find(user => user.toLowerCase() === name.toLowerCase()); const hubs=getHubs(), hub=hubs.find(item=>item.id===activeHub); if (!actual) return alert('User not found.'); if (hub.members.includes(actual) || hub.invites.includes(actual)) return alert('That user is already in this Hub or has an invite.'); hub.invites.push(actual); saveHubs(hubs); sendHubInviteMessage(hub, actual); document.getElementById('hub-add-member').value=''; alert(`Invite sent to @${actual}.`); }
 function removeHubMember(member) { const hubs=getHubs(), hub=hubs.find(item=>item.id===activeHub); if (!hub || member===hub.owner) return; hub.members=hub.members.filter(user=>user!==member); saveHubs(hubs); renderHubMembers(hub); renderSidebar(); }
 function saveHubSettings() {
   const hubs=getHubs(), hub=hubs.find(item=>item.id===activeHub); if (!hub) return;
@@ -386,6 +439,40 @@ renderSidebar = function() {
   }
 };
 function acceptHubInvite(id) { const hubs=getHubs(), hub=hubs.find(item=>item.id===id); if (!hub) return; hub.invites=hub.invites.filter(user=>user!==currentUser); if (!hub.members.includes(currentUser)) hub.members.push(currentUser); saveHubs(hubs); selectHub(id); }
+
+// Called from the "Join Hub" button on a hub_invite DM card (see the
+// hub_invite case in extensionHTML, index.html). Unlike acceptHubInvite
+// above, this doesn't assume the Hub already exists in this browser's
+// local `hubs_data` — the invite may have come from a friend on a
+// different device — so it fetches the Hub's Firestore mirror first and
+// creates a local copy if needed. Icon/banner/background aren't part of
+// that mirror (see window.syncHubsToFirestore), so a Hub joined this way
+// starts with no custom images until someone uploads them on this device.
+async function joinHubFromInvite(hubId) {
+  if (typeof window.joinFirestoreHub !== 'function') return alert('Hub sync is not available right now.');
+  const result = await window.joinFirestoreHub(hubId, currentUser);
+  if (!result.ok) return alert(result.message || 'Could not join this Hub.');
+
+  const hubs = getHubs();
+  let hub = hubs.find(h => h.id === hubId);
+  if (!hub) {
+    hub = {
+      id: hubId, name: result.hub.name || 'Hub', description: result.hub.description || '',
+      type: result.hub.type || 'Other', category: result.hub.category || '',
+      owner: result.hub.owner, members: result.hub.members || [currentUser], invites: [],
+      icon: '', background: '', banner: '', accent: '', features: [],
+      permissions: { messaging: 'everyone', invites: 'owner', activities: true, management: 'owner' },
+      primaryContext: '', messages: []
+    };
+    hubs.push(hub);
+  } else if (!hub.members.includes(currentUser)) {
+    hub.members.push(currentUser);
+  }
+  hub.invites = (hub.invites || []).filter(u => u !== currentUser);
+  saveHubs(hubs);
+  selectHub(hubId);
+}
+window.joinHubFromInvite = joinHubFromInvite;
 addHubModals();
 if (currentUser) renderSidebar();
 window.openHubCreator = openHubCreator;
