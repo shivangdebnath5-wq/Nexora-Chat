@@ -235,7 +235,7 @@ function hubWizardEsc(value = '') { return String(value).replace(/&/g, '&amp;').
 function freshHubWizard() { return { icon:'', banner:'', background:'', name:'', description:'', category:'', features:[], permissions:{ messaging:'everyone', invites:'owner', activities:true, management:'owner' }, accent:'', primaryContext:'' }; }
 function addHubModals() {
   if (document.getElementById('hub-create-modal')) return;
-  document.body.insertAdjacentHTML('beforeend', `<div id="hub-create-modal" class="modal hidden hub-modal"><div class="card hub-wizard-card"><div class="hub-wizard-head"><div><div class="hub-wizard-kicker" id="hub-wizard-kicker">Step 1 of 7</div><h3 id="hub-wizard-title">Identity</h3></div><button type="button" class="icon-btn hub-wizard-close" onclick="closeHubModal('hub-create-modal')" title="Cancel" aria-label="Cancel">×</button></div><div class="hub-wizard-progress" id="hub-wizard-progress" role="list" aria-label="Hub creation steps"></div><div class="hub-wizard-body" id="hub-wizard-body"></div><div class="hub-wizard-footer" id="hub-wizard-footer"></div></div></div><div id="hub-settings-modal" class="modal hidden hub-modal"><div class="card"><h3>Hub settings</h3><label class="hub-form-label">Name</label><input id="hub-edit-name"><label class="hub-form-label">Description</label><textarea id="hub-edit-description"></textarea><label class="hub-form-label">Invite member</label><div class="input-row"><input id="hub-add-member" placeholder="Username"><button onclick="inviteToHub()">Invite</button></div><label class="hub-form-label">Members</label><div id="hub-members" class="hub-member-list"></div><button onclick="saveHubSettings()">Save changes</button><button class="secondary" onclick="closeHubModal('hub-settings-modal')">Close</button></div></div>`);
+  document.body.insertAdjacentHTML('beforeend', `<div id="hub-create-modal" class="modal hidden hub-modal"><div class="card hub-wizard-card"><div class="hub-wizard-head"><div><div class="hub-wizard-kicker" id="hub-wizard-kicker">Step 1 of 7</div><h3 id="hub-wizard-title">Identity</h3></div><button type="button" class="icon-btn hub-wizard-close" onclick="closeHubModal('hub-create-modal')" title="Cancel" aria-label="Cancel">×</button></div><div class="hub-wizard-progress" id="hub-wizard-progress" role="list" aria-label="Hub creation steps"></div><div class="hub-wizard-body" id="hub-wizard-body"></div><div class="hub-wizard-footer" id="hub-wizard-footer"></div></div></div><div id="hub-settings-modal" class="modal hidden hub-modal"><div class="card"><h3>Hub settings</h3><label class="hub-form-label">Name</label><input id="hub-edit-name"><label class="hub-form-label">Description</label><textarea id="hub-edit-description"></textarea><label class="hub-form-label">Invite member</label><div class="input-row"><input id="hub-add-member" placeholder="Username"><button onclick="inviteToHub()">Invite</button></div><button type="button" class="secondary" onclick="copyHubInviteLink(activeHub)">Copy invite link</button><label class="hub-form-label">Members</label><div id="hub-members" class="hub-member-list"></div><button onclick="saveHubSettings()">Save changes</button><button class="secondary" onclick="closeHubModal('hub-settings-modal')">Close</button></div></div>`);
 }
 function closeHubModal(id) { document.getElementById(id).classList.add('hidden'); }
 function fileAsData(inputId, done) { const file = document.getElementById(inputId)?.files[0]; if (!file) return done(''); if (!file.type.startsWith('image/') || file.size > 900 * 1024) { alert('Use a PNG, JPG, or WebP image under 900 KB for Hub images.'); hubCreationInProgress = false; return; } const reader = new FileReader(); reader.onerror = () => { hubCreationInProgress = false; alert('That image could not be read.'); }; reader.onload = e => done(e.target.result); reader.readAsDataURL(file); }
@@ -387,9 +387,30 @@ function sendHubInviteMessage(hub, toUsername) {
   DB.saveMessages(messages);
 }
 
-function quickInviteToHub(hubId, name) {
+// Falls back to the public usernames/{username} Firestore lookup — the same
+// one requestFriendship() (index.html) already uses — when a username isn't
+// in this browser's local mirror yet, e.g. the account was created on a
+// different device. Mirrors it locally via ensureLocalMirror() on success,
+// so the rest of the Hub invite flow (hub.invites, member lists) is
+// unchanged from here on.
+async function resolveHubInviteTarget(name) {
+  name = (name || '').trim();
+  if (!name) return null;
+  const users = DB.getUsers();
+  let actual = Object.keys(users).find(user => user.toLowerCase() === name.toLowerCase());
+  if (!actual && typeof window.lookupUsername === 'function') {
+    const resolved = await window.lookupUsername(name);
+    if (resolved) {
+      ensureLocalMirror(resolved.username, resolved.photoURL);
+      actual = resolved.username;
+    }
+  }
+  return actual || null;
+}
+
+async function quickInviteToHub(hubId, name) {
   name = (name || '').trim(); if (!name) return;
-  const users = DB.getUsers(); const actual = Object.keys(users).find(user => user.toLowerCase() === name.toLowerCase());
+  const actual = await resolveHubInviteTarget(name);
   const hubs = getHubs(), hub = hubs.find(item => item.id === hubId); if (!hub) return;
   if (!actual) return alert('User not found.');
   if (hub.members.includes(actual) || hub.invites.includes(actual)) return alert('That user is already in this Hub or has an invite.');
@@ -403,8 +424,24 @@ function filterHubMessages() { if (activeHub) renderHubMessages(false); }
 function ensureHubAppearanceSettings() { if (document.getElementById('hub-edit-icon')) return; document.getElementById('hub-members').insertAdjacentHTML('afterend', `<label class="hub-form-label">Change Hub icon</label><input id="hub-edit-icon" type="file" accept="image/png,image/jpeg,image/webp"><label class="hub-form-label">Change chat background</label><input id="hub-edit-background" type="file" accept="image/png,image/jpeg,image/webp"><label class="hub-form-label">Change header banner</label><input id="hub-edit-banner" type="file" accept="image/png,image/jpeg,image/webp"><label class="hub-form-label">Hub accent theme</label><div class="hub-accent-grid" id="hub-edit-accent-grid">${HUB_ACCENTS.map(hex => `<button type="button" class="hub-accent-swatch" style="--accent-color:${hex}" onclick="hubEditSelectAccent('${hex}')" aria-label="Accent ${hex}"></button>`).join('')}</div><input type="hidden" id="hub-edit-accent-value"><label class="hub-form-label">Primary Context (optional)</label><textarea id="hub-edit-context" placeholder="Goals, rules, or what belongs here"></textarea>`); }
 function hubEditSelectAccent(hex) { const field = document.getElementById('hub-edit-accent-value'); if (field) field.value = hex; document.querySelectorAll('#hub-edit-accent-grid .hub-accent-swatch').forEach(btn => btn.classList.toggle('selected', hex && btn.style.getPropertyValue('--accent-color') === hex)); }
 function renderHubMembers(hub) { const target = document.getElementById('hub-members'); target.innerHTML = ''; hub.members.forEach(member => { const chip = document.createElement('div'); chip.className='hub-member-chip'; chip.innerHTML = `@${safeHubText(member)}${member !== hub.owner ? `<button title="Remove member" onclick="removeHubMember('${member}')">×</button>` : ' · Owner'}`; target.appendChild(chip); }); }
-function inviteToHub() { const name = document.getElementById('hub-add-member').value.trim(); const users = DB.getUsers(); const actual = Object.keys(users).find(user => user.toLowerCase() === name.toLowerCase()); const hubs=getHubs(), hub=hubs.find(item=>item.id===activeHub); if (!actual) return alert('User not found.'); if (hub.members.includes(actual) || hub.invites.includes(actual)) return alert('That user is already in this Hub or has an invite.'); hub.invites.push(actual); saveHubs(hubs); sendHubInviteMessage(hub, actual); document.getElementById('hub-add-member').value=''; alert(`Invite sent to @${actual}.`); }
+async function inviteToHub() { const name = document.getElementById('hub-add-member').value.trim(); const actual = await resolveHubInviteTarget(name); const hubs=getHubs(), hub=hubs.find(item=>item.id===activeHub); if (!actual) return alert('User not found.'); if (hub.members.includes(actual) || hub.invites.includes(actual)) return alert('That user is already in this Hub or has an invite.'); hub.invites.push(actual); saveHubs(hubs); sendHubInviteMessage(hub, actual); document.getElementById('hub-add-member').value=''; alert(`Invite sent to @${actual}.`); }
 function removeHubMember(member) { const hubs=getHubs(), hub=hubs.find(item=>item.id===activeHub); if (!hub || member===hub.owner) return; hub.members=hub.members.filter(user=>user!==member); saveHubs(hubs); renderHubMembers(hub); renderSidebar(); }
+
+// Shareable "join this Hub" link — anyone signed in to Nexora who opens it
+// joins the Hub automatically (see the ?joinHub= handling in loadApp(),
+// index.html), same underlying join as joinHubFromInvite() above. Useful
+// for invites outside of DMs (e.g. pasted into a group chat elsewhere).
+function copyHubInviteLink(hubId) {
+  const hub = hubById(hubId); if (!hub) return;
+  const url = `${location.origin}${location.pathname}?joinHub=${hub.id}`;
+  const done = () => alert(`Invite link copied!\n\n${url}\n\nAnyone signed in to Nexora who opens it will join "${hub.name}".`);
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(url).then(done).catch(() => prompt('Copy this invite link:', url));
+  } else {
+    prompt('Copy this invite link:', url);
+  }
+}
+window.copyHubInviteLink = copyHubInviteLink;
 function saveHubSettings() {
   const hubs=getHubs(), hub=hubs.find(item=>item.id===activeHub); if (!hub) return;
   hub.name=document.getElementById('hub-edit-name').value.trim() || hub.name;

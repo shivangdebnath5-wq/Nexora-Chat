@@ -1453,6 +1453,15 @@
       refreshQuickStatus();
 
       renderSidebar();
+
+      // A Hub invite link (see copyHubInviteLink in script.js) looks like
+      // ?joinHub=<hubId>. Consume it once we know who's signed in, then
+      // strip it from the URL so refreshing doesn't re-trigger the join.
+      const pendingHubId = new URLSearchParams(location.search).get('joinHub');
+      if (pendingHubId) {
+        history.replaceState(null, '', location.pathname);
+        if (typeof joinHubFromInvite === 'function') joinHubFromInvite(Number(pendingHubId));
+      }
     }
 
     function changeProfileFrame(frameClass) {
