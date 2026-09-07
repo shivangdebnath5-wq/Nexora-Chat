@@ -440,6 +440,10 @@
     .settings-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
     .settings-content { flex:1 1 auto; min-width:0; }
     .settings-panel .settings-section:first-child { margin-top:0; padding-top:0; border-top:none; }
+    .modal-close-btn { position:absolute; top:14px; right:14px; width:30px; height:30px; padding:0; margin:0; background:transparent; color:var(--text-muted); border:1px solid var(--border); border-radius:50%; font-size:18px; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+    .modal-close-btn:hover { background:var(--input-bg); color:var(--text-main); }
+    .settings-signout-btn { width:100%; margin:10px 0 0; padding:8px 12px; font-size:12px; font-weight:600; background:#ef4444; color:#fff; border:none; border-radius:8px; cursor:pointer; text-align:left; justify-content:flex-start; }
+    .settings-signout-btn:hover { background:#dc2626; }
     .status-pills { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
     .status-pills button { margin:0; padding:8px 5px; font-size:11px; background:var(--input-bg); color:var(--text-main); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
     .status-pills button .qs-pill-dot { width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
@@ -680,7 +684,8 @@
 
   <!-- Settings Modal -->
   <div id="settings-modal" class="modal hidden">
-    <div class="card" style="max-width:640px; max-height: 90vh; overflow-y: auto;">
+    <div class="card" style="max-width:640px; max-height: 90vh; overflow-y: auto; position:relative;">
+      <button type="button" class="modal-close-btn" onclick="closeSettings()" aria-label="Close settings">&times;</button>
       <h2>Settings</h2>
 
       <div class="settings-body">
@@ -693,6 +698,7 @@
         <button type="button" class="settings-tab" data-tab="chat" onclick="switchSettingsTab('chat')">Chat</button>
         <button type="button" class="settings-tab" data-tab="hubs" onclick="switchSettingsTab('hubs')">Hubs</button>
         <button type="button" class="settings-tab" data-tab="about" onclick="switchSettingsTab('about')">About</button>
+        <button type="button" class="settings-signout-btn" onclick="logout()">Sign Out</button>
       </div>
 
       <div class="settings-content">
@@ -798,9 +804,6 @@
       </div>
       </div>
       </div>
-
-      <button onclick="closeSettings()" class="secondary" style="margin-top:14px;">Close</button>
-      <button onclick="logout()" style="background:#ef4444; margin-top:8px;">Sign Out</button>
     </div>
   </div>
 
