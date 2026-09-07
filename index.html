@@ -63,12 +63,11 @@
     [data-theme="cyber-cyan"] { --bg-main:#08272c; --bg-card:#10383d; --bg-sidebar:#0a2d32; --text-main:#efffff; --text-muted:#a7d9dc; --border:#27676e; --primary:rgb(35,190,205); --primary-hover:#5bd9e5; --msg-sent:#138e9c; --msg-sent-text:#fff; --msg-received:#174b52; --msg-received-text:#efffff; --input-bg:#1b5056; --shadow:rgba(0,19,22,.62); }
     [data-theme="ember-glow"] { --bg-main:#301713; --bg-card:#47221c; --bg-sidebar:#371914; --text-main:#fff7f3; --text-muted:#efb8aa; --border:#804235; --primary:rgb(225,92,65); --primary-hover:#f58c72; --msg-sent:#b94632; --msg-sent-text:#fff; --msg-received:#5b2a22; --msg-received-text:#fff7f3; --input-bg:#5a2b24; --shadow:rgba(30,6,2,.6); }
     [data-theme="oceanic"] { --bg-main:#0a2933; --bg-card:#123d4a; --bg-sidebar:#0d303b; --text-main:#f0fbff; --text-muted:#acd1da; --border:#347286; --primary:rgb(32,126,150); --primary-hover:#3da4bd; --msg-sent:#17677d; --msg-sent-text:#fff; --msg-received:#1a4c5a; --msg-received-text:#f0fbff; --input-bg:#1c5060; --shadow:rgba(0,20,28,.6); }
-    [data-theme="sakura-mist"] { --bg-main:#351b2a; --bg-card:#51283d; --bg-sidebar:#401f32; --text-main:#fff7fb; --text-muted:#edb7cf; --border:#91516f; --primary:#E69AC3; --primary-hover:#f0a5c9; --msg-sent:#b85f8c; --msg-sent-text:#fff; --msg-received:#64314c; --msg-received-text:#fff7fb; --input-bg:#63334c; --shadow:rgba(35,5,19,.57); }
+    [data-theme="sakura-mist"] { --bg-main:#fff3fc; --bg-card:#ffffff; --bg-sidebar:#FAC3F4; --text-main:#4a1942; --text-muted:#8b5680; --border:#f0a8e8; --primary:rgb(232,95,199); --primary-hover:#d94db5; --msg-sent:#e85fc7; --msg-sent-text:#fff; --msg-received:#fadcf5; --msg-received-text:#4a1942; --input-bg:#fdeafb; --shadow:rgba(212,100,180,.22); }
     [data-theme="forest-pulse"] { --bg-main:#0d291d; --bg-card:#17432f; --bg-sidebar:#103624; --text-main:#f1fff7; --text-muted:#b0dac2; --border:#3b795b; --primary:rgb(48,125,88); --primary-hover:#58a876; --msg-sent:#246943; --msg-sent-text:#fff; --msg-received:#20533a; --msg-received-text:#f1fff7; --input-bg:#245b40; --shadow:rgba(2,24,13,.62); }
     [data-theme="solar-flare"] { --bg-main:#39290d; --bg-card:#513b13; --bg-sidebar:#43300e; --text-main:#fff9e9; --text-muted:#f0d69a; --border:#8e6b27; --primary:rgb(235,170,55); --primary-hover:#ffd06e; --msg-sent:#b87a19; --msg-sent-text:#fff; --msg-received:#664c18; --msg-received-text:#fff9e9; --input-bg:#694f1a; --shadow:rgba(34,23,1,.62); }
     [data-theme="arctic-frost"] { --bg-main:#102d3b; --bg-card:#1b4658; --bg-sidebar:#153646; --text-main:#f3fcff; --text-muted:#bddde8; --border:#52899e; --primary:rgb(125,190,220); --primary-hover:#afe2f6; --msg-sent:#4a91af; --msg-sent-text:#fff; --msg-received:#28576a; --msg-received-text:#f3fcff; --input-bg:#2c6074; --shadow:rgba(0,22,32,.58); }
     [data-theme="royal-eclipse"] { --bg-main:#19132d; --bg-card:#292044; --bg-sidebar:#201832; --text-main:#f9f6ff; --text-muted:#c9bee5; --border:#554176; --primary:rgb(73,55,115); --primary-hover:#8e78c4; --msg-sent:#59458b; --msg-sent-text:#fff; --msg-received:#352855; --msg-received-text:#f9f6ff; --input-bg:#392c5b; --shadow:rgba(10,5,24,.63); }
-    [data-theme="sage-green"] { --bg-main:#eef1e9; --bg-card:#f8faf6; --bg-sidebar:#e5eadf; --text-main:#243126; --text-muted:#637063; --border:#cbd5c3; --primary:rgb(156,175,136); --primary-hover:#879d72; --msg-sent:#9caf88; --msg-sent-text:#243126; --msg-received:#dce5d6; --msg-received-text:#243126; --input-bg:#e8eee3; --shadow:rgba(55,70,45,.18); }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
     body { background-color: var(--bg-main); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; }
@@ -201,7 +200,6 @@
     [data-theme="cyber-cyan"] .qsp-custom input[type="datetime-local"],
     [data-theme="ember-glow"] .qsp-custom input[type="datetime-local"],
     [data-theme="oceanic"] .qsp-custom input[type="datetime-local"],
-    [data-theme="sakura-mist"] .qsp-custom input[type="datetime-local"],
     [data-theme="forest-pulse"] .qsp-custom input[type="datetime-local"],
     [data-theme="solar-flare"] .qsp-custom input[type="datetime-local"],
     [data-theme="arctic-frost"] .qsp-custom input[type="datetime-local"],
@@ -757,7 +755,6 @@
             <option value="oceanic">Oceanic</option><option value="sakura-mist">Sakura Mist</option>
             <option value="forest-pulse">Forest Pulse</option><option value="solar-flare">Solar Flare</option>
             <option value="arctic-frost">Arctic Frost</option><option value="royal-eclipse">Royal Eclipse</option>
-            <option value="sage-green">Sage Green</option>
           </select>
           <div id="theme-preview-grid" class="theme-preview-grid" role="radiogroup" aria-label="Choose app theme"></div>
         </div>
@@ -1617,12 +1614,11 @@
       { id: 'cyber-cyan', name: 'Cyber Cyan', colors: ['#08272c', '#10383d', 'rgb(35, 190, 205)'] },
       { id: 'ember-glow', name: 'Ember Glow', colors: ['#301713', '#47221c', 'rgb(225, 92, 65)'] },
       { id: 'oceanic', name: 'Oceanic', colors: ['#0a2933', '#123d4a', 'rgb(32, 126, 150)'] },
-      { id: 'sakura-mist', name: 'Sakura Mist', colors: ['#351b2a', '#51283d', '#E69AC3'] },
+      { id: 'sakura-mist', name: 'Sakura Mist', colors: ['#fff3fc', '#ffffff', 'rgb(232, 95, 199)'] },
       { id: 'forest-pulse', name: 'Forest Pulse', colors: ['#0d291d', '#17432f', 'rgb(48, 125, 88)'] },
       { id: 'solar-flare', name: 'Solar Flare', colors: ['#39290d', '#513b13', 'rgb(235, 170, 55)'] },
       { id: 'arctic-frost', name: 'Arctic Frost', colors: ['#102d3b', '#1b4658', 'rgb(125, 190, 220)'] },
-      { id: 'royal-eclipse', name: 'Royal Eclipse', colors: ['#19132d', '#292044', 'rgb(73, 55, 115)'] },
-      { id: 'sage-green', name: 'Sage Green', colors: ['#eef1e9', '#f8faf6', 'rgb(156, 175, 136)'] }
+      { id: 'royal-eclipse', name: 'Royal Eclipse', colors: ['#19132d', '#292044', 'rgb(73, 55, 115)'] }
     ];
 
     function renderThemeSelector() {
