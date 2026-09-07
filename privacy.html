@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — NexoraChat</title>
+<link rel="icon" type="image/png" href="https://i.ibb.co/Cj76XZz/d5b34859-cdfb-4a7d-9b72-6cea78857d5f.png">
+<link rel="stylesheet" href="style.css">
+<style>
+  /* Same semantic color tokens as index.html, copied (not shared by edit) so
+     this page never depends on — and can never break — the app's own file. */
+  :root {
+    --bg-main: #f3f4f6;
+    --bg-card: #ffffff;
+    --bg-sidebar: #f8fafc;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --input-bg: #f1f5f9;
+    --shadow: rgba(0, 0, 0, 0.15);
+  }
+  [data-theme="dark"] { --bg-main:#0f172a; --bg-card:#1e293b; --bg-sidebar:#0f172a; --text-main:#f8fafc; --text-muted:#94a3b8; --border:#334155; --primary:#3b82f6; --primary-hover:#2563eb; --input-bg:#334155; --shadow:rgba(0,0,0,.4); }
+  [data-theme="onyx"] { --bg-main:#0a0a0c; --bg-card:#17171b; --bg-sidebar:#101014; --text-main:#f4f4f5; --text-muted:#a1a1aa; --border:#303038; --primary:#8b93a1; --primary-hover:#a6afbe; --input-bg:#24242a; --shadow:rgba(0,0,0,.58); }
+  [data-theme="starlight-nova"] { --bg-main:#1a1f38; --bg-card:#252b4a; --bg-sidebar:#1d2240; --text-main:#f7f8ff; --text-muted:#b9c2f5; --border:#4d5b91; --primary:rgb(147,164,236); --primary-hover:#b4c1ff; --input-bg:#30385e; --shadow:rgba(12,16,42,.5); }
+  [data-theme="midnight-aurora"] { --bg-main:rgb(18,30,48); --bg-card:#1c314c; --bg-sidebar:#14273f; --text-main:#eff8ff; --text-muted:#a7c5de; --border:#365675; --primary:#4eb5d8; --primary-hover:#71cbed; --input-bg:#29445f; --shadow:rgba(2,12,28,.55); }
+  [data-theme="nebula-violet"] { --bg-main:#201938; --bg-card:#2d2450; --bg-sidebar:#251d43; --text-main:#faf7ff; --text-muted:#c7bdea; --border:#554589; --primary:rgb(92,72,160); --primary-hover:#8069ca; --input-bg:#3a3062; --shadow:rgba(18,9,43,.58); }
+  [data-theme="cyber-cyan"] { --bg-main:#08272c; --bg-card:#10383d; --bg-sidebar:#0a2d32; --text-main:#efffff; --text-muted:#a7d9dc; --border:#27676e; --primary:rgb(35,190,205); --primary-hover:#5bd9e5; --input-bg:#1b5056; --shadow:rgba(0,19,22,.62); }
+  [data-theme="ember-glow"] { --bg-main:#301713; --bg-card:#47221c; --bg-sidebar:#371914; --text-main:#fff7f3; --text-muted:#efb8aa; --border:#804235; --primary:rgb(225,92,65); --primary-hover:#f58c72; --input-bg:#5a2b24; --shadow:rgba(30,6,2,.6); }
+  [data-theme="oceanic"] { --bg-main:#0a2933; --bg-card:#123d4a; --bg-sidebar:#0d303b; --text-main:#f0fbff; --text-muted:#acd1da; --border:#347286; --primary:rgb(32,126,150); --primary-hover:#3da4bd; --input-bg:#1c5060; --shadow:rgba(0,20,28,.6); }
+  [data-theme="sakura-mist"] { --bg-main:#351b2a; --bg-card:#51283d; --bg-sidebar:#401f32; --text-main:#fff7fb; --text-muted:#edb7cf; --border:#91516f; --primary:rgb(220,130,170); --primary-hover:#f0a5c9; --input-bg:#63334c; --shadow:rgba(35,5,19,.57); }
+  [data-theme="forest-pulse"] { --bg-main:#0d291d; --bg-card:#17432f; --bg-sidebar:#103624; --text-main:#f1fff7; --text-muted:#b0dac2; --border:#3b795b; --primary:rgb(48,125,88); --primary-hover:#58a876; --input-bg:#245b40; --shadow:rgba(2,24,13,.62); }
+  [data-theme="solar-flare"] { --bg-main:#39290d; --bg-card:#513b13; --bg-sidebar:#43300e; --text-main:#fff9e9; --text-muted:#f0d69a; --border:#8e6b27; --primary:rgb(235,170,55); --primary-hover:#ffd06e; --input-bg:#694f1a; --shadow:rgba(34,23,1,.62); }
+  [data-theme="arctic-frost"] { --bg-main:#102d3b; --bg-card:#1b4658; --bg-sidebar:#153646; --text-main:#f3fcff; --text-muted:#bddde8; --border:#52899e; --primary:rgb(125,190,220); --primary-hover:#afe2f6; --input-bg:#2c6074; --shadow:rgba(0,22,32,.58); }
+  [data-theme="royal-eclipse"] { --bg-main:#19132d; --bg-card:#292044; --bg-sidebar:#201832; --text-main:#f9f6ff; --text-muted:#c9bee5; --border:#554176; --primary:rgb(73,55,115); --primary-hover:#8e78c4; --input-bg:#392c5b; --shadow:rgba(10,5,24,.63); }
+
+  * { box-sizing:border-box; }
+  html, body { margin:0; padding:0; }
+  body.privacy-page {
+    background:var(--bg-main); color:var(--text-main); min-height:100vh;
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height:1.6; transition:background-color .2s, color .2s;
+  }
+  .privacy-topbar { display:flex; align-items:center; gap:12px; padding:14px 20px; background:var(--bg-card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:5; }
+  .privacy-topbar img { width:34px; height:34px; border-radius:9px; object-fit:contain; background:#000; padding:4px; }
+  .privacy-topbar strong { font-size:15px; }
+  .privacy-topbar a.back-link { margin-left:auto; color:var(--primary); text-decoration:none; font-size:13.5px; font-weight:600; padding:8px 14px; border:1px solid var(--border); border-radius:8px; }
+  .privacy-topbar a.back-link:hover { background:var(--input-bg); }
+
+  .privacy-hero { max-width:820px; margin:0 auto; padding:38px 20px 6px; text-align:center; }
+  .privacy-hero h1 { margin:0 0 8px; font-size:clamp(24px,4vw,32px); }
+  .privacy-hero p { color:var(--text-muted); font-size:14px; margin:0; }
+
+  .privacy-shell { max-width:820px; margin:0 auto; padding:24px 20px 64px; display:flex; gap:24px; align-items:flex-start; }
+  .privacy-toc { flex:0 0 200px; position:sticky; top:78px; background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:16px; }
+  .privacy-toc h2 { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); margin:0 0 10px; }
+  .privacy-toc ol { margin:0; padding-left:18px; font-size:13px; }
+  .privacy-toc li { margin-bottom:7px; }
+  .privacy-toc a { color:var(--text-main); text-decoration:none; }
+  .privacy-toc a:hover { color:var(--primary); }
+
+  .privacy-content { flex:1 1 auto; min-width:0; }
+  .privacy-section { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:22px 24px; margin-bottom:16px; box-shadow:0 2px 10px var(--shadow); scroll-margin-top:78px; }
+  .privacy-section h2 { font-size:18px; margin:0 0 12px; display:flex; align-items:center; gap:8px; }
+  .privacy-section h3 { font-size:14.5px; margin:16px 0 6px; color:var(--text-main); }
+  .privacy-section p, .privacy-section li { font-size:14px; color:var(--text-main); }
+  .privacy-section ul { margin:6px 0 6px 18px; padding:0; }
+  .privacy-section li { margin-bottom:6px; }
+  .privacy-section a { color:var(--primary); }
+  .badge-upcoming { display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#fff; background:var(--primary); padding:3px 8px; border-radius:99px; vertical-align:middle; }
+  .privacy-note { background:var(--input-bg); border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-size:13px; color:var(--text-muted); margin-top:10px; }
+  .privacy-updated { color:var(--text-muted); font-size:12.5px; margin-top:-4px; margin-bottom:18px; }
+
+  .privacy-footer { text-align:center; color:var(--text-muted); font-size:12.5px; padding:0 20px 40px; }
+  .privacy-footer a { color:var(--primary); text-decoration:none; }
+
+  @media (max-width:760px) {
+    .privacy-shell { flex-direction:column; }
+    .privacy-toc { position:static; width:100%; flex:1 1 auto; }
+  }
+  @media (max-width:480px) {
+    .privacy-topbar { padding:12px 14px; }
+    .privacy-topbar strong { font-size:13.5px; }
+    .privacy-hero { padding:26px 16px 4px; }
+    .privacy-shell { padding:18px 14px 48px; gap:16px; }
+    .privacy-section { padding:18px 16px; }
+  }
+</style>
+</head>
+<body class="privacy-page">
+
+  <div class="privacy-topbar">
+    <img src="https://i.ibb.co/Cj76XZz/d5b34859-cdfb-4a7d-9b72-6cea78857d5f.png" alt="Nexora brand">
+    <strong>NexoraChat</strong>
+    <a class="back-link" href="index.html">← Back to Nexora</a>
+  </div>
+
+  <div class="privacy-hero">
+    <h1>Privacy Policy</h1>
+    <p>How Nexora collects, uses, and protects your information.</p>
+  </div>
+
+  <div class="privacy-shell">
+    <nav class="privacy-toc" aria-label="Table of contents">
+      <h2>On this page</h2>
+      <ol>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#info-we-collect">Information we collect</a></li>
+        <li><a href="#google-signin">Google Sign-In</a></li>
+        <li><a href="#messages-hubs">Messages &amp; Hubs</a></li>
+        <li><a href="#how-we-use">How we use information</a></li>
+        <li><a href="#storage-security">Storage &amp; security</a></li>
+        <li><a href="#third-party">Third-party services</a></li>
+        <li><a href="#pinterest">Pinterest integration</a></li>
+        <li><a href="#retention-deletion">Retention &amp; deletion</a></li>
+        <li><a href="#your-rights">Your rights &amp; choices</a></li>
+        <li><a href="#children">Children's privacy</a></li>
+        <li><a href="#changes">Changes to this policy</a></li>
+        <li><a href="#contact">Contact us</a></li>
+      </ol>
+    </nav>
+
+    <main class="privacy-content">
+
+      <section class="privacy-section" id="overview">
+        <h2>1. Overview</h2>
+        <p class="privacy-updated">Last updated: <span id="last-updated-date"></span></p>
+        <p>Nexora ("Nexora", "we", "our") is a chat application that lets you create a profile, add friends, message people directly, and join or create community "Hubs." This policy explains what information Nexora collects through Firebase (Google's app-development platform), how that information is used and stored, and the choices you have. By using Nexora, you agree to the practices described here.</p>
+      </section>
+
+      <section class="privacy-section" id="info-we-collect">
+        <h2>2. Information we collect</h2>
+        <h3>Account &amp; authentication data</h3>
+        <p>Nexora uses <strong>Firebase Authentication</strong> to create and sign you into your account. Depending on how you sign up, we receive:</p>
+        <ul>
+          <li>Your email address and a securely hashed password (Firebase never shares your raw password with us), or</li>
+          <li>Your name, email address, and profile photo if you choose <strong>Sign in with Google</strong>.</li>
+          <li>A unique account identifier (UID) that Firebase assigns and that Nexora uses internally to link your profile, friends, and messages together — this UID is never shown to other users.</li>
+        </ul>
+        <h3>Profile information</h3>
+        <p>Information you add to your profile, such as your username, avatar image, date of birth, chosen interests, status, and interface theme preference.</p>
+        <h3>Friends &amp; social graph</h3>
+        <p>When you send, accept, or decline a friend request, we store the sender's and receiver's account IDs, the request status (pending or accepted), and the time the request was created, so both people can see the current state of the relationship in real time.</p>
+        <h3>Messages, attachments &amp; Hubs</h3>
+        <p>The content of direct messages and Hub messages you send, including text and any files or images you attach, plus metadata like timestamps, edit history, reactions, and pinned status. See <a href="#messages-hubs">Section 4</a> for details.</p>
+        <h3>Device &amp; usage information</h3>
+        <p>Basic technical information such as your general online/away/offline status, typing indicators while composing a message, and local preferences (like your selected theme) stored in your browser so the app looks and feels the same the next time you visit.</p>
+      </section>
+
+      <section class="privacy-section" id="google-signin">
+        <h2>3. Google Sign-In</h2>
+        <p>If you choose to sign in with Google, Nexora uses Firebase Authentication's Google provider to request only your basic profile information (name, email address, and profile photo) — enough to create your Nexora account and pre-fill your profile. Nexora does not request access to your Gmail, Google Drive, Google contacts, or any other Google service, and does not post to your Google account on your behalf. Your use of Google Sign-In is also subject to <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's own Privacy Policy</a>.</p>
+      </section>
+
+      <section class="privacy-section" id="messages-hubs">
+        <h2>4. Messages &amp; Hubs</h2>
+        <p>Nexora stores conversations in <strong>Cloud Firestore</strong>, Firebase's real-time database:</p>
+        <ul>
+          <li><strong>Direct messages</strong> are stored under a conversation record shared only by the two people in that conversation, so messages appear instantly on both ends without needing to refresh the page.</li>
+          <li><strong>Hub messages</strong> are stored with the Hub they belong to, and are visible to that Hub's members according to the permissions the Hub's owner has configured (for example, who can post messages or invite new members).</li>
+          <li>Message data can include text, attached images or files, reactions, edit history, and pinned/forwarded status.</li>
+        </ul>
+        <p>Because messaging is real-time, messages you send are typically visible to the recipient(s) immediately. Deleting a message removes it from the conversation view, but we cannot guarantee removal from a device where it was already downloaded, cached, or forwarded before deletion.</p>
+      </section>
+
+      <section class="privacy-section" id="how-we-use">
+        <h2>5. How we use your information</h2>
+        <ul>
+          <li>To create and secure your account, and to keep you signed in.</li>
+          <li>To operate core features: profiles, friend requests, real-time direct messaging, and Hubs.</li>
+          <li>To show accurate presence information (such as whether a friend is online) and delivery of messages in real time.</li>
+          <li>To personalize your experience, such as remembering your selected theme.</li>
+          <li>To maintain the safety, security, and reliability of Nexora, including detecting abuse of the platform.</li>
+        </ul>
+        <p>We do not sell your personal information, and we do not use your messages or profile data for third-party advertising.</p>
+      </section>
+
+      <section class="privacy-section" id="storage-security">
+        <h2>6. Storage &amp; security</h2>
+        <p>Your data is stored on <strong>Google Firebase</strong> infrastructure (Cloud Firestore and Firebase Authentication), which encrypts data in transit. Access to Firestore data is restricted using Firestore Security Rules, which are configured so that, for example, only the two participants in a direct conversation can read its messages, and only a Hub's members can read that Hub's messages. No method of electronic storage is 100% secure, and we cannot guarantee absolute security.</p>
+      </section>
+
+      <section class="privacy-section" id="third-party">
+        <h2>7. Third-party services</h2>
+        <p>Nexora is built on the following third-party services, each of which processes data on our behalf under their own terms:</p>
+        <ul>
+          <li><strong>Firebase Authentication</strong> (Google) — account creation and sign-in.</li>
+          <li><strong>Cloud Firestore</strong> (Google) — storage of profiles, friend requests, messages, and Hubs.</li>
+          <li><strong>Google Sign-In</strong> (Google) — optional one-tap sign-in using your Google account.</li>
+        </ul>
+        <p>These providers may process data outside your country of residence. Their use of data is governed by <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a> in addition to this policy.</p>
+      </section>
+
+      <section class="privacy-section" id="pinterest">
+        <h2>8. Pinterest integration <span class="badge-upcoming">Upcoming</span></h2>
+        <p>We are planning a future integration that will let you optionally connect a Pinterest account to Nexora — for example, to share pins or images from Pinterest into a chat or Hub. This feature is <strong>not yet available</strong>.</p>
+        <p>When it launches, connecting Pinterest will be entirely optional and will require you to explicitly authorize access via Pinterest's own sign-in flow. We expect the integration to request only the minimum access needed (such as basic profile information and the specific boards/pins you choose to share), and we will not access your Pinterest account unless you connect it yourself.</p>
+        <div class="privacy-note">Before this feature is released, we will update this policy with the exact data accessed, the permissions requested, and how to disconnect your Pinterest account at any time.</div>
+      </section>
+
+      <section class="privacy-section" id="retention-deletion">
+        <h2>9. Data retention &amp; deletion</h2>
+        <p>We keep your account information, friends list, and messages for as long as your account is active, so that features like conversation history and Hub context continue to work. If you stop using Nexora, your data remains stored until you request deletion.</p>
+        <h3>Requesting deletion</h3>
+        <p>To request deletion of your account and associated data (profile, friend connections, and messages you've sent), contact us using the details in <a href="#contact">Section 13</a>. Please note that messages you've sent to another person or Hub may remain visible to those recipients even after your account is deleted, since deleting your account removes your ability to access that content but does not retract copies already delivered to others.</p>
+      </section>
+
+      <section class="privacy-section" id="your-rights">
+        <h2>10. Your rights &amp; choices</h2>
+        <ul>
+          <li><strong>Access &amp; correction</strong> — you can review and update most of your profile information directly within the app's settings.</li>
+          <li><strong>Friend requests</strong> — you can decline incoming requests or choose who can send them, where that setting is available.</li>
+          <li><strong>Deletion</strong> — you may request deletion of your account as described in Section 9.</li>
+          <li><strong>Sign-out</strong> — you can sign out of Nexora at any time, which ends your active session.</li>
+        </ul>
+        <p>Depending on where you live, you may have additional rights under laws such as the GDPR or CCPA, including the right to request a copy of your data. Contact us to exercise these rights.</p>
+      </section>
+
+      <section class="privacy-section" id="children">
+        <h2>11. Children's privacy</h2>
+        <p>Nexora is not directed to children under the age of 13 (or the minimum age required in your country), and we do not knowingly collect personal information from children under that age. If you believe a child has provided us with personal information, please contact us so we can remove it.</p>
+      </section>
+
+      <section class="privacy-section" id="changes">
+        <h2>12. Changes to this policy</h2>
+        <p>We may update this Privacy Policy from time to time, including as we roll out new features like the Pinterest integration described above. We will update the "Last updated" date at the top of this page when we make changes, and significant changes may also be announced within the app.</p>
+      </section>
+
+      <section class="privacy-section" id="contact">
+        <h2>13. Contact us</h2>
+        <p>If you have questions about this Privacy Policy, or would like to exercise any of the rights described above, contact us at:</p>
+        <p><a href="mailto:privacy@nexorachat.app">privacy@nexorachat.app</a></p>
+      </section>
+
+    </main>
+  </div>
+
+  <p class="privacy-footer">© <span id="privacy-year"></span> NexoraChat · <a href="index.html">Return to the app</a></p>
+
+  <script>
+    // Match whatever theme the person last chose inside the app (same
+    // localStorage key index.html uses), without touching index.html itself.
+    (function () {
+      var saved = localStorage.getItem('theme');
+      if (saved) document.documentElement.setAttribute('data-theme', saved);
+    })();
+    document.getElementById('privacy-year').textContent = new Date().getFullYear();
+    document.getElementById('last-updated-date').textContent = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  </script>
+</body>
+</html>
