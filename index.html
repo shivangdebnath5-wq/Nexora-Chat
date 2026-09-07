@@ -430,13 +430,15 @@
     .settings-section { margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
     .settings-section input[readonly] { color: var(--text-muted); cursor: default; background: var(--bg-main); }
 
-    /* Settings tabs (General / Appearance / Notifications / Privacy & Security /
-       Friends & Social / Chat / Hubs / About) — reorganizes the existing
-       settings controls into sections without changing any of them. */
-    .settings-tabs { display:flex; flex-wrap:wrap; gap:6px; margin:12px 0 6px; padding-bottom:12px; border-bottom:1px solid var(--border); }
-    .settings-tab { width:auto; margin:0; padding:7px 12px; font-size:12px; background:transparent; color:var(--text-muted); border:1px solid var(--border); border-radius:20px; cursor:pointer; }
+    /* Settings navigation (General / Appearance / Notifications / Privacy & Security /
+       Friends & Social / Chat / Hubs / About) — left sidebar menu that reorganizes the
+       existing settings controls into sections without changing any of them. */
+    .settings-body { display:flex; align-items:flex-start; gap:18px; margin-top:14px; }
+    .settings-tabs { display:flex; flex-direction:column; flex:0 0 168px; gap:2px; margin:0; padding-right:14px; border-right:1px solid var(--border); align-self:stretch; overflow-y:auto; }
+    .settings-tab { width:100%; margin:0; padding:9px 12px; font-size:13px; background:transparent; color:var(--text-muted); border:1px solid transparent; border-radius:8px; cursor:pointer; text-align:left; justify-content:flex-start; }
     .settings-tab:hover { background:var(--input-bg); color:var(--text-main); }
     .settings-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .settings-content { flex:1 1 auto; min-width:0; }
     .settings-panel .settings-section:first-child { margin-top:0; padding-top:0; border-top:none; }
     .status-pills { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
     .status-pills button { margin:0; padding:8px 5px; font-size:11px; background:var(--input-bg); color:var(--text-main); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
@@ -678,10 +680,11 @@
 
   <!-- Settings Modal -->
   <div id="settings-modal" class="modal hidden">
-    <div class="card" style="max-width:480px; max-height: 90vh; overflow-y: auto;">
+    <div class="card" style="max-width:640px; max-height: 90vh; overflow-y: auto;">
       <h2>Settings</h2>
 
-      <div class="settings-tabs" role="tablist" aria-label="Settings sections">
+      <div class="settings-body">
+      <div class="settings-tabs" role="tablist" aria-label="Settings sections" aria-orientation="vertical">
         <button type="button" class="settings-tab active" data-tab="general" onclick="switchSettingsTab('general')">General</button>
         <button type="button" class="settings-tab" data-tab="appearance" onclick="switchSettingsTab('appearance')">Appearance</button>
         <button type="button" class="settings-tab" data-tab="notifications" onclick="switchSettingsTab('notifications')">Notifications</button>
@@ -692,6 +695,7 @@
         <button type="button" class="settings-tab" data-tab="about" onclick="switchSettingsTab('about')">About</button>
       </div>
 
+      <div class="settings-content">
       <!-- General -->
       <div class="settings-panel" data-panel="general">
         <!-- Profile Picture Uploader -->
@@ -791,6 +795,8 @@
       <!-- About -->
       <div class="settings-panel hidden" data-panel="about">
         <p class="auth-local-note">Nexora — a real-time chat prototype built with Firebase.</p>
+      </div>
+      </div>
       </div>
 
       <button onclick="closeSettings()" class="secondary" style="margin-top:14px;">Close</button>
