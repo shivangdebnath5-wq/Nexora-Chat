@@ -539,3 +539,12 @@
   .auth-fx-glow-a { width:280px; height:280px; }
   .auth-fx-glow-b { width:300px; height:300px; }
 }
+/* Hub invite menu (people-plus icon beside Hub search) — reuses existing
+   hub-modal/card/poll-option/secondary tokens, just lays out a friend list. */
+.hub-invite-card { max-width: 380px; }
+.hub-invite-friends-list { display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto; margin:6px 0 10px; }
+.hub-invite-friend-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid var(--border); border-radius:10px; background:var(--input-bg); }
+.hub-invite-friend-row .user-profile-info { gap:8px; }
+.hub-invite-friend-row button { width:auto; padding:6px 12px; margin:0; }
+.hub-invite-friend-row button:disabled { opacity:.55; cursor:default; }
+.hub-invite-empty { color:var(--text-muted); font-size:13px; padding:10px 0; }

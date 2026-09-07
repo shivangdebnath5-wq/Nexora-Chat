@@ -364,13 +364,60 @@ function renderHubMessages(scroll) {
 sendMessage = function() { if (!activeHub) return directSendMessage(); const input = document.getElementById('message-input'), text = input.value.trim(); if (!text && !currentAttachment) return; const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return; if (hub.permissions?.messaging === 'owner' && hub.owner !== currentUser) return alert('Only the Hub owner can send messages in this Hub.'); hub.messages.push({id:Date.now(),sender:currentUser,text,attachment:currentAttachment,timestamp:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}); saveHubs(hubs); input.value=''; removeAttachment(); renderHubMessages(true); };
 function hubCanManage(hub) { return !!hub && (hub.owner === currentUser || hub.permissions?.management === 'members'); }
 function openHubSettings() { const hub = hubById(activeHub); if (!hub) return; addHubModals(); ensureHubAppearanceSettings(); if (!hubCanManage(hub)) return alert('Only the Hub owner can change settings or manage members.'); document.getElementById('hub-edit-name').value = hub.name; document.getElementById('hub-edit-description').value = hub.description; document.getElementById('hub-edit-context').value = hub.primaryContext || ''; hubEditSelectAccent(hub.accent || ''); renderHubMembers(hub); document.getElementById('hub-settings-modal').classList.remove('hidden'); }
+// Small, focused "Invite to Hub" menu — opened by the people-plus icon
+// beside the Hub search icon. Shows the current user's real Firestore
+// friends (window.firestoreFriendUsernames) with a one-tap Invite button
+// each, plus the "Copy invite link" option. Inviting from this list can
+// never hit "User not found": these usernames already came from a real,
+// Firestore-verified friendship, unlike a freshly-typed username which may
+// belong to an account this browser has never mirrored locally.
+function ensureHubInviteModal() {
+  if (document.getElementById('hub-invite-modal')) return;
+  document.body.insertAdjacentHTML('beforeend', `<div id="hub-invite-modal" class="modal hidden hub-modal"><div class="card hub-invite-card"><h3>Invite to Hub</h3><label class="hub-form-label">Friends</label><div id="hub-invite-friends-list" class="hub-invite-friends-list"></div><label class="hub-form-label">Or share a link</label><button type="button" class="secondary" onclick="copyHubInviteLink(activeHub)">Copy invite link</button><button type="button" class="secondary" onclick="closeHubModal('hub-invite-modal')">Close</button></div></div>`);
+}
+
+function renderHubInviteFriends(hub) {
+  const container = document.getElementById('hub-invite-friends-list');
+  if (!container) return;
+  const friends = window.firestoreFriendUsernames || [];
+  const users = DB.getUsers();
+  container.innerHTML = '';
+  if (!friends.length) {
+    container.innerHTML = '<div class="hub-invite-empty">No friends yet — add some first, or share the invite link below.</div>';
+    return;
+  }
+  friends.forEach(friend => {
+    const isMember = hub.members.includes(friend);
+    const isInvited = hub.invites.includes(friend);
+    const pfp = (users[friend] && users[friend].pfp) ? users[friend].pfp : DEFAULT_AVATAR;
+    const row = document.createElement('div');
+    row.className = 'hub-invite-friend-row';
+    row.innerHTML = `<div class="user-profile-info"><img class="avatar" src="${pfp}" style="width:28px;height:28px;"><span>@${safeHubText(friend)}</span></div>`;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'poll-option';
+    btn.textContent = isMember ? 'Member' : (isInvited ? 'Invited' : 'Invite');
+    btn.disabled = isMember || isInvited;
+    if (!btn.disabled) btn.onclick = () => inviteFriendToHub(hub.id, friend, btn);
+    row.appendChild(btn);
+    container.appendChild(row);
+  });
+}
+
+function inviteFriendToHub(hubId, friend, btnEl) {
+  const hubs = getHubs(), hub = hubs.find(item => item.id === hubId); if (!hub) return;
+  if (hub.members.includes(friend) || hub.invites.includes(friend)) return;
+  hub.invites.push(friend); saveHubs(hubs);
+  sendHubInviteMessage(hub, friend);
+  if (btnEl) { btnEl.textContent = 'Invited'; btnEl.disabled = true; }
+}
+
 function openHubInvitePanel() {
   const hub = hubById(activeHub); if (!hub) return;
-  if (hubCanManage(hub)) { openHubSettings(); window.setTimeout(() => document.getElementById('hub-add-member')?.focus(), 0); return; }
-  if (hub.permissions?.invites !== 'members') return alert('Only the Hub owner can invite new members.');
-  const name = prompt('Invite a Nexora username to this Hub:');
-  if (name === null) return;
-  quickInviteToHub(hub.id, name);
+  if (hub.permissions?.invites !== 'members' && !hubCanManage(hub)) return alert('Only the Hub owner can invite new members.');
+  ensureHubInviteModal();
+  renderHubInviteFriends(hub);
+  document.getElementById('hub-invite-modal').classList.remove('hidden');
 }
 // Drops a hub_invite card into the existing DM thread with `toUsername` —
 // reuses the exact same DB.getMessages()/DB.saveMessages() path every other
