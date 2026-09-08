@@ -199,6 +199,12 @@ window.mergeRemoteHubMessages = function (hubId, remoteMessages) {
 };
 
 function hubById(id) { return getHubs().find(hub => hub.id === id); }
+// Modular Smart Hub Feature check: works for any Hub type/category, since it
+// only ever reads the same hub.features array the creation wizard already
+// writes. Adding a new toggleable feature anywhere just means adding its
+// label to that category's HUB_CATEGORY_FEATURES entry — no other code here
+// needs to change to support it.
+function hubHasFeature(hub, featureName) { return !!(hub && Array.isArray(hub.features) && hub.features.includes(featureName)); }
 function safeHubText(value='') { const el = document.createElement('div'); el.textContent = value; return el.innerHTML; }
 function hubImageSource(value) {
   if (typeof value !== 'string') return '';
@@ -219,7 +225,7 @@ const HUB_CATEGORIES = [
 ];
 const HUB_CATEGORY_FEATURES = {
   gaming: ['LFG board', 'Match schedule', 'Voice hangout callouts', 'Leaderboard'],
-  study: ['Study sessions', 'Shared resources', 'Assignment tracker', 'Focus timer'],
+  study: ['Study sessions', 'Shared resources', 'Assignment tracker', 'Focus timer', '📝 Quiz Maker', '📅 Events'],
   creator: ['Showcase feed', 'Feedback threads', 'Collab board', 'Release calendar'],
   coding: ['Code snippet sharing', 'Bug tracker', 'Pair programming board', 'Changelog'],
   music: ['Now playing', 'Setlist board', 'Jam session planner', 'Release drops'],
