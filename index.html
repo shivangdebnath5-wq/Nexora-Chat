@@ -676,7 +676,7 @@
           <button id="send-btn" onclick="sendMessage()" title="Send message"><img src="https://i.ibb.co/ccSt9Sbz/Chat-GPT-Image-Aug-26-2026-02-07-48-PM-removebg-preview.png" alt="Send" style="width:24px; height:24px; object-fit:contain;"></button>
         </div>
         <div id="extension-menu" class="extension-menu hidden"><h4>Send something useful</h4><div class="extension-grid">
-          <button class="extension-option" onclick="openExtension('poll')">Poll</button><button class="extension-option" onclick="openExtension('countdown')">Countdown</button><button class="extension-option" onclick="openExtension('note')">Sticky note</button><button class="extension-option" onclick="openExtension('todo')">To-do list</button><button class="extension-option" onclick="openExtension('calendar')">Calendar event</button><button class="extension-option" onclick="openExtension('game')">Play a game</button><button class="extension-option" onclick="openExtension('shopping')">Shopping list</button>
+          <button class="extension-option" onclick="openExtension('poll')">Poll</button><button class="extension-option" onclick="openExtension('countdown')">Countdown</button><button class="extension-option" onclick="openExtension('note')">Sticky note</button><button class="extension-option" onclick="openExtension('todo')">To-do list</button><button class="extension-option" onclick="openExtension('calendar')">Calendar event</button><button id="ext-opt-game" class="extension-option" onclick="openExtension('game')">Play a game</button><button class="extension-option" onclick="openExtension('shopping')">Shopping list</button>
         </div></div>
       </div>
     </div>
@@ -1824,10 +1824,18 @@
       Notification.requestPermission().then(refreshNotificationsTab);
     }
 
-    function toggleExtensionMenu() { document.getElementById('extension-menu').classList.toggle('hidden'); document.getElementById('emoji-picker').classList.add('hidden'); }
+    function toggleExtensionMenu() {
+      document.getElementById('extension-menu').classList.toggle('hidden');
+      document.getElementById('emoji-picker').classList.add('hidden');
+      // Games stay Direct-Chat-only — hide the option entirely in a Hub
+      // rather than let someone pick it and get turned away.
+      const gameOption = document.getElementById('ext-opt-game');
+      if (gameOption) gameOption.classList.toggle('hidden', !!activeHub);
+    }
     function closeExtension() { document.getElementById('extension-modal').classList.add('hidden'); activeExtension = null; }
     function openExtension(type) {
-      if (!activeFriend) return;
+      if (!activeFriend && !activeHub) return;
+      if (type === 'game' && activeHub) return; // Games are Direct-Chat-only; defense in depth alongside the hidden button.
       activeExtension = type;
       document.getElementById('extension-menu').classList.add('hidden');
       const fields = {
@@ -1848,11 +1856,37 @@
       const date = document.getElementById('ext-date')?.value || '';
       const items = (document.getElementById('ext-items')?.value || '').split('\n').map(x => x.trim()).filter(Boolean);
       if (!title || ((activeExtension === 'poll' || activeExtension === 'todo' || activeExtension === 'shopping') && !items.length) || ((activeExtension === 'countdown' || activeExtension === 'calendar') && !date)) return alert('Please complete the required fields.');
+      const extension = { type:activeExtension, title, items, date, link:document.getElementById('ext-link')?.value.trim() || '', mode:document.getElementById('ext-mode')?.value || '', votes:{}, checked:{}, accepted:false };
+
+      if (activeHub) {
+        // Same message store + saveHubs() path every other Hub message
+        // already goes through — already mirrored to Firestore in real time
+        // (see window.syncHubsToFirestore), so no new sync code is needed
+        // for extension messages to reach other Hub members.
+        const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return;
+        if (hub.permissions?.messaging === 'owner' && hub.owner !== currentUser) return alert('Only the Hub owner can send messages in this Hub.');
+        hub.messages.push({ id: Date.now(), sender: currentUser, text: '', attachment: null, timestamp: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), extension });
+        saveHubs(hubs);
+        closeExtension();
+        renderHubMessages(true);
+        return;
+      }
+
       const messages = DB.getMessages();
-      messages.push({ id: Date.now(), sender: currentUser, receiver: activeFriend, text:'', attachment:null, reactions:{}, timestamp:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), extension:{ type:activeExtension, title, items, date, link:document.getElementById('ext-link')?.value.trim() || '', mode:document.getElementById('ext-mode')?.value || '', votes:{}, checked:{}, accepted:false } });
+      messages.push({ id: Date.now(), sender: currentUser, receiver: activeFriend, text:'', attachment:null, reactions:{}, timestamp:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), extension });
       DB.saveMessages(messages); closeExtension(); renderMessages(true);
     }
     function updateExtension(msgId, action, value) {
+      if (activeHub) {
+        const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return;
+        const msg = hub.messages.find(m => m.id === msgId); if (!msg?.extension) return;
+        const e = msg.extension;
+        if (action === 'vote') { if (e.date && Date.now() > new Date(e.date).getTime()) return; e.votes[currentUser] = value; }
+        if (action === 'check') { e.checked[value] = !e.checked[value]; }
+        if (action === 'accept') e.accepted = true;
+        saveHubs(hubs); renderHubMessages(false);
+        return;
+      }
       const messages = DB.getMessages(); const msg = messages.find(m => m.id === msgId); if (!msg?.extension) return;
       const e = msg.extension;
       if (action === 'vote') { if (e.date && Date.now() > new Date(e.date).getTime()) return; e.votes[currentUser] = value; }
