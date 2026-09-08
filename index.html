@@ -1826,13 +1826,10 @@
     function toggleExtensionMenu() {
       document.getElementById('extension-menu').classList.toggle('hidden');
       document.getElementById('emoji-picker').classList.add('hidden');
-      // Games and Share Location stay Direct-Chat-only — hide them in a Hub
-      // rather than let someone pick one and get turned away (or, for
-      // location, silently create a message with no receiver).
+      // Games stay Direct-Chat-only — hide the option entirely in a Hub
+      // rather than let someone pick it and get turned away.
       const gameOption = document.getElementById('ext-opt-game');
       if (gameOption) gameOption.classList.toggle('hidden', !!activeHub);
-      const locationOption = document.getElementById('ext-opt-location');
-      if (locationOption) locationOption.classList.toggle('hidden', !!activeHub);
     }
     function closeExtension() { document.getElementById('extension-modal').classList.add('hidden'); activeExtension = null; }
     function openExtension(type) {
@@ -2032,13 +2029,25 @@
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
-        
+        const text = `📍 My Location: ${mapsUrl}`;
+
+        if (activeHub) {
+          // Same message store + saveHubs() path every other Hub message
+          // goes through — already mirrored to Firestore in real time.
+          const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return;
+          if (hub.permissions?.messaging === 'owner' && hub.owner !== currentUser) return alert('Only the Hub owner can send messages in this Hub.');
+          hub.messages.push({ id: Date.now(), sender: currentUser, text, attachment: null, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+          saveHubs(hubs);
+          renderHubMessages(true);
+          return;
+        }
+
         const messages = DB.getMessages();
         messages.push({
           id: Date.now(),
           sender: currentUser,
           receiver: activeFriend,
-          text: `📍 My Location: ${mapsUrl}`,
+          text,
           attachment: null,
           reactions: {},
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
