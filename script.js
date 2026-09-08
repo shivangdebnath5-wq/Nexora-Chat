@@ -277,7 +277,8 @@ function hubWizardStepHTML(step) {
   if (step === 3) {
     const options = HUB_CATEGORY_FEATURES[w.category] || HUB_CATEGORY_FEATURES.other;
     const label = HUB_CATEGORIES.find(c => c.id === w.category)?.label || 'this';
-    return `<p class="hub-wizard-help">Turn on the Hub features that fit a ${hubWizardEsc(label)} community. You can change these later in Hub settings.</p><div class="hub-feature-list">${options.map(f => `<label class="hub-feature-chip"><input type="checkbox" ${w.features.includes(f) ? 'checked' : ''} onchange="hubWizardToggleFeature('${hubWizardEsc(f)}', this.checked)"><span>${hubWizardEsc(f)}</span></label>`).join('')}</div>`;
+    const smartBanner = w.category === 'study' ? `<div class="smart-hub-banner"><span class="smart-hub-corner-icon" aria-hidden="true">✦</span><strong class="smart-hub-title">Looks like a Study Hub ✦</strong><p class="smart-hub-sub">We've suggested a few features to help shape your Hub. You're in control.</p></div>` : '';
+    return `${smartBanner}<p class="hub-wizard-help">Turn on the Hub features that fit a ${hubWizardEsc(label)} community. You can change these later in Hub settings.</p><div class="hub-feature-list">${options.map(f => `<label class="hub-feature-chip"><span class="hub-feature-chip-label">${hubWizardEsc(f)}</span><span class="hub-toggle"><input type="checkbox" ${w.features.includes(f) ? 'checked' : ''} onchange="hubWizardToggleFeature('${hubWizardEsc(f)}', this.checked)"><span class="hub-toggle-track"><span class="hub-toggle-thumb"></span></span></span></label>`).join('')}</div>`;
   }
   if (step === 4) {
     const p = w.permissions;
