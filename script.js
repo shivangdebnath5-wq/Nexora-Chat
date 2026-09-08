@@ -225,7 +225,7 @@ const HUB_CATEGORIES = [
 ];
 const HUB_CATEGORY_FEATURES = {
   gaming: ['LFG board', 'Match schedule', 'Voice hangout callouts', 'Leaderboard'],
-  study: ['Study sessions', 'Shared resources', 'Assignment tracker', 'Focus timer', '📝 Quiz Maker', '📅 Events'],
+  study: ['Study sessions', 'Shared resources', 'Assignment tracker', 'Focus timer', '📝 Quiz Maker', '📅 Events', '🖊️ Whiteboard'],
   creator: ['Showcase feed', 'Feedback threads', 'Collab board', 'Release calendar'],
   coding: ['Code snippet sharing', 'Bug tracker', 'Pair programming board', 'Changelog'],
   music: ['Now playing', 'Setlist board', 'Jam session planner', 'Release drops'],
@@ -768,4 +768,23 @@ const renderMessagesWithMotion = renderMessages;
 renderMessages = function(forceScroll) {
   renderMessagesWithMotion(forceScroll);
   if (forceScroll) document.querySelector('.message-wrapper:last-of-type')?.classList.add('message-arrive');
+};
+
+/* Chat Extensions: /whiteboard slash command. Hub-only, and only opens
+   anything when that Hub actually has the Whiteboard Smart Hub Feature
+   enabled (same hubHasFeature gate as the extension-menu button) — typing
+   it anywhere else just sends as ordinary text, same as any other message. */
+const beforeWhiteboardSlashCommand = sendMessage;
+sendMessage = function() {
+  const input = document.getElementById('message-input');
+  const text = input ? input.value.trim() : '';
+  if (activeHub && /^\/whiteboard$/i.test(text)) {
+    const hub = hubById(activeHub);
+    if (hub && hubHasFeature(hub, '🖊️ Whiteboard')) {
+      input.value = '';
+      openWhiteboard();
+      return;
+    }
+  }
+  return beforeWhiteboardSlashCommand();
 };

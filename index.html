@@ -451,6 +451,24 @@
     .quiz-play-option:disabled { cursor:default; }
     .quiz-play-option.quiz-correct { background:#22c55e; color:#fff; border-color:#22c55e; }
     .quiz-play-option.quiz-wrong { background:#ef4444; color:#fff; border-color:#ef4444; }
+
+    /* Whiteboard (Smart Hub Feature, Study Hubs) */
+    .whiteboard-card { max-width:820px; width:min(820px, calc(100vw - 32px)); display:flex; flex-direction:column; max-height:88vh; }
+    .whiteboard-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .whiteboard-head h3 { margin:0; text-align:left; }
+    .whiteboard-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:8px; margin-bottom:10px; background:var(--input-bg); border:1px solid var(--border); border-radius:12px; }
+    .whiteboard-tool-group { display:flex; align-items:center; gap:6px; padding-right:10px; border-right:1px solid var(--border); }
+    .whiteboard-tool-group:last-child { border-right:none; padding-right:0; }
+    .whiteboard-tool { width:36px; height:36px; margin:0; padding:0; display:flex; align-items:center; justify-content:center; font-size:16px; background:var(--bg-card); color:var(--text-main); border:1px solid var(--border); border-radius:9px; cursor:pointer; }
+    .whiteboard-tool:hover { background:var(--bg-main); }
+    .whiteboard-tool.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    #whiteboard-color { width:36px; height:36px; padding:2px; border:1px solid var(--border); border-radius:9px; background:var(--bg-card); cursor:pointer; }
+    #whiteboard-size { width:100px; }
+    .whiteboard-canvas-wrap { position:relative; flex:1 1 auto; min-height:340px; border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#fff; touch-action:none; }
+    #whiteboard-canvas { display:block; width:100%; height:100%; cursor:crosshair; touch-action:none; }
+    .whiteboard-download-btn { position:absolute; top:10px; right:10px; width:34px; height:34px; padding:0; display:flex; align-items:center; justify-content:center; font-size:15px; background:var(--bg-card); color:var(--text-main); border:1px solid var(--border); border-radius:50%; box-shadow:0 2px 8px var(--shadow); cursor:pointer; }
+    .whiteboard-download-btn:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+    @media (max-width:560px) { .whiteboard-canvas-wrap { min-height:260px; } .whiteboard-toolbar { gap:8px; } .whiteboard-tool-group { padding-right:7px; } }
     .settings-section { margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
     .settings-section input[readonly] { color: var(--text-muted); cursor: default; background: var(--bg-main); }
 
@@ -699,7 +717,7 @@
           <button id="send-btn" onclick="sendMessage()" title="Send message"><img src="https://i.ibb.co/ccSt9Sbz/Chat-GPT-Image-Aug-26-2026-02-07-48-PM-removebg-preview.png" alt="Send" style="width:24px; height:24px; object-fit:contain;"></button>
         </div>
         <div id="extension-menu" class="extension-menu hidden"><h4>Send something useful</h4><div class="extension-grid">
-          <button class="extension-option" onclick="openExtension('poll')">Poll</button><button class="extension-option" onclick="openExtension('countdown')">Countdown</button><button class="extension-option" onclick="openExtension('note')">Sticky note</button><button class="extension-option" onclick="openExtension('todo')">To-do list</button><button class="extension-option" onclick="openExtension('calendar')">Calendar event</button><button id="ext-opt-game" class="extension-option" onclick="openExtension('game')">Play a game</button><button class="extension-option" onclick="openExtension('shopping')">Shopping list</button><button id="ext-opt-location" class="extension-option" onclick="document.getElementById('extension-menu').classList.add('hidden'); shareLocation();">📍 Share location</button><button id="ext-opt-quiz" class="extension-option hidden" onclick="openExtension('quiz')">📝 Quiz Maker</button><button id="ext-opt-event" class="extension-option hidden" onclick="openExtension('event')">📅 Events</button>
+          <button class="extension-option" onclick="openExtension('poll')">Poll</button><button class="extension-option" onclick="openExtension('countdown')">Countdown</button><button class="extension-option" onclick="openExtension('note')">Sticky note</button><button class="extension-option" onclick="openExtension('todo')">To-do list</button><button class="extension-option" onclick="openExtension('calendar')">Calendar event</button><button id="ext-opt-game" class="extension-option" onclick="openExtension('game')">Play a game</button><button class="extension-option" onclick="openExtension('shopping')">Shopping list</button><button id="ext-opt-location" class="extension-option" onclick="document.getElementById('extension-menu').classList.add('hidden'); shareLocation();">📍 Share location</button><button id="ext-opt-quiz" class="extension-option hidden" onclick="openExtension('quiz')">📝 Quiz Maker</button><button id="ext-opt-event" class="extension-option hidden" onclick="openExtension('event')">📅 Events</button><button id="ext-opt-whiteboard" class="extension-option hidden" onclick="openExtension('whiteboard')">🖊️ Whiteboard</button>
         </div></div>
       </div>
     </div>
@@ -843,6 +861,45 @@
       <div class="dialog-actions">
         <button class="secondary" onclick="closeQuizPlay()">Cancel</button>
         <button id="quiz-play-next-btn" class="hidden" onclick="quizPlayNext()">Next Question</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Whiteboard (Smart Hub Feature, Study Hubs only) -->
+  <div id="whiteboard-modal" class="modal hidden">
+    <div class="card whiteboard-card">
+      <div class="whiteboard-head">
+        <h3>🖊️ Whiteboard</h3>
+        <button type="button" class="icon-btn" onclick="closeWhiteboard()" title="Close" aria-label="Close whiteboard">×</button>
+      </div>
+      <div class="whiteboard-toolbar">
+        <div class="whiteboard-tool-group" role="group" aria-label="Drawing tools">
+          <button type="button" class="whiteboard-tool active" data-tool="pen" onclick="setWhiteboardTool('pen')" title="Pen">✏️</button>
+          <button type="button" class="whiteboard-tool" data-tool="highlighter" onclick="setWhiteboardTool('highlighter')" title="Highlighter">🖍️</button>
+          <button type="button" class="whiteboard-tool" data-tool="eraser" onclick="setWhiteboardTool('eraser')" title="Eraser">🧽</button>
+          <button type="button" class="whiteboard-tool" data-tool="text" onclick="setWhiteboardTool('text')" title="Text">🔤</button>
+          <button type="button" class="whiteboard-tool" data-tool="line" onclick="setWhiteboardTool('line')" title="Line">📏</button>
+          <button type="button" class="whiteboard-tool" data-tool="rect" onclick="setWhiteboardTool('rect')" title="Rectangle">▭</button>
+          <button type="button" class="whiteboard-tool" data-tool="circle" onclick="setWhiteboardTool('circle')" title="Circle">⬤</button>
+        </div>
+        <div class="whiteboard-tool-group">
+          <input type="color" id="whiteboard-color" value="#1d4ed8" onchange="setWhiteboardColor(this.value)" title="Colour" aria-label="Colour picker">
+          <input type="range" id="whiteboard-size" min="1" max="40" value="4" oninput="setWhiteboardSize(this.value)" onchange="setWhiteboardSize(this.value)" title="Brush size" aria-label="Brush size">
+        </div>
+        <div class="whiteboard-tool-group">
+          <button type="button" class="icon-btn" onclick="whiteboardUndo()" title="Undo" aria-label="Undo">↶</button>
+          <button type="button" class="icon-btn" onclick="whiteboardRedo()" title="Redo" aria-label="Redo">↷</button>
+          <button type="button" class="icon-btn" onclick="whiteboardClear()" title="Clear board" aria-label="Clear board">🗑️</button>
+        </div>
+      </div>
+      <div class="whiteboard-canvas-wrap" id="whiteboard-canvas-wrap">
+        <canvas id="whiteboard-canvas"
+          onpointerdown="whiteboardPointerDown(event)"
+          onpointermove="whiteboardPointerMove(event)"
+          onpointerup="whiteboardPointerUp(event)"
+          onpointerleave="whiteboardPointerUp(event)"
+          onpointercancel="whiteboardPointerUp(event)"></canvas>
+        <button type="button" class="whiteboard-download-btn" onclick="downloadWhiteboardPDF()" title="Download whiteboard as PDF" aria-label="Download whiteboard as PDF">⬇</button>
       </div>
     </div>
   </div>
@@ -1878,6 +1935,9 @@
       if (quizOption) quizOption.classList.toggle('hidden', !hubHasFeature(hub, '📝 Quiz Maker'));
       const eventOption = document.getElementById('ext-opt-event');
       if (eventOption) eventOption.classList.toggle('hidden', !hubHasFeature(hub, '📅 Events'));
+      // Whiteboard: same Smart Hub Feature gating as Quiz Maker/Events above.
+      const whiteboardOption = document.getElementById('ext-opt-whiteboard');
+      if (whiteboardOption) whiteboardOption.classList.toggle('hidden', !hubHasFeature(hub, '🖊️ Whiteboard'));
     }
     function closeExtension() { document.getElementById('extension-modal').classList.add('hidden'); activeExtension = null; }
     function openExtension(type) {
@@ -1890,6 +1950,16 @@
         const hub = activeHub ? hubById(activeHub) : null;
         const label = type === 'quiz' ? '📝 Quiz Maker' : '📅 Events';
         if (!hubHasFeature(hub, label)) return;
+      }
+      // Whiteboard: Hub-only Smart Hub Feature, same gating pattern as Quiz
+      // Maker/Events, but opens its own dedicated canvas modal rather than
+      // the small extension-fields composer used below.
+      if (type === 'whiteboard') {
+        const hub = activeHub ? hubById(activeHub) : null;
+        if (!hubHasFeature(hub, '🖊️ Whiteboard')) return;
+        document.getElementById('extension-menu').classList.add('hidden');
+        openWhiteboard();
+        return;
       }
       activeExtension = type;
       document.getElementById('extension-menu').classList.add('hidden');
@@ -2028,6 +2098,242 @@
       const params = new URLSearchParams({ action: 'TEMPLATE', text: title, dates: `${fmt(start)}/${fmt(end)}`, details: details || '', location: location || '' });
       return `https://www.google.com/calendar/render?${params.toString()}`;
     }
+    /* ---- Whiteboard (Smart Hub Feature: Study Hubs) -----------------------
+       Real-time shared canvas, one per Hub, entirely separate from Hub chat
+       (hub.messages) — it lives in its own Firestore subcollection
+       (hubs/{hubId}/whiteboard_strokes), synced via window.subscribeToWhiteboard
+       and friends (Firebase module script, below). Every point/coordinate is
+       stored normalized to 0..1 so it replays correctly on any Hub member's
+       differently-sized canvas. Gated by hubHasFeature(hub, '🖊️ Whiteboard')
+       everywhere it can be opened (extension menu, /whiteboard, openExtension). */
+    let whiteboardHubId = null;
+    let whiteboardStrokes = [];
+    let whiteboardTool = 'pen';
+    let whiteboardColor = '#1d4ed8';
+    let whiteboardSize = 4;
+    let whiteboardDrawing = false;
+    let whiteboardCurrentPoints = [];
+    let whiteboardLivePreview = null;
+    let whiteboardMyStrokeIds = [];
+    let whiteboardRedoStack = [];
+
+    function newWhiteboardStrokeId() { return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`; }
+
+    function openWhiteboard() {
+      if (!activeHub) return;
+      const hub = hubById(activeHub);
+      if (!hub || !hubHasFeature(hub, '🖊️ Whiteboard')) return;
+      whiteboardHubId = activeHub;
+      whiteboardStrokes = []; whiteboardMyStrokeIds = []; whiteboardRedoStack = []; whiteboardLivePreview = null;
+      whiteboardTool = 'pen'; whiteboardColor = '#1d4ed8'; whiteboardSize = 4;
+      document.querySelectorAll('.whiteboard-tool').forEach(btn => btn.classList.toggle('active', btn.dataset.tool === 'pen'));
+      const colorInput = document.getElementById('whiteboard-color'); if (colorInput) colorInput.value = whiteboardColor;
+      const sizeInput = document.getElementById('whiteboard-size'); if (sizeInput) sizeInput.value = whiteboardSize;
+      document.getElementById('whiteboard-modal').classList.remove('hidden');
+      resizeWhiteboardCanvas();
+      if (typeof window.subscribeToWhiteboard === 'function') {
+        window.subscribeToWhiteboard(activeHub, strokes => { whiteboardStrokes = strokes; redrawWhiteboard(); });
+      }
+    }
+    function closeWhiteboard() {
+      document.getElementById('whiteboard-modal').classList.add('hidden');
+      if (typeof window.unsubscribeFromWhiteboard === 'function') window.unsubscribeFromWhiteboard();
+      whiteboardHubId = null;
+    }
+    function resizeWhiteboardCanvas() {
+      const canvas = document.getElementById('whiteboard-canvas');
+      const wrap = document.getElementById('whiteboard-canvas-wrap');
+      if (!canvas || !wrap) return;
+      const dpr = window.devicePixelRatio || 1;
+      const rect = wrap.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.round(rect.width * dpr));
+      canvas.height = Math.max(1, Math.round(rect.height * dpr));
+      redrawWhiteboard();
+    }
+    window.addEventListener('resize', () => { if (whiteboardHubId) resizeWhiteboardCanvas(); });
+
+    function whiteboardPointFromEvent(e) {
+      const canvas = document.getElementById('whiteboard-canvas');
+      const rect = canvas.getBoundingClientRect();
+      return { x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height };
+    }
+    function setWhiteboardTool(tool) {
+      whiteboardTool = tool;
+      document.querySelectorAll('.whiteboard-tool').forEach(btn => btn.classList.toggle('active', btn.dataset.tool === tool));
+    }
+    function setWhiteboardColor(hex) { whiteboardColor = hex; }
+    function setWhiteboardSize(px) { whiteboardSize = parseInt(px, 10) || 4; }
+
+    function whiteboardPointerDown(e) {
+      if (!whiteboardHubId) return;
+      e.preventDefault();
+      const canvas = document.getElementById('whiteboard-canvas');
+      if (canvas.setPointerCapture) { try { canvas.setPointerCapture(e.pointerId); } catch (err) {} }
+      const p = whiteboardPointFromEvent(e);
+      if (whiteboardTool === 'text') {
+        const text = prompt('Enter text:');
+        if (text && text.trim()) commitWhiteboardStroke({ id: newWhiteboardStrokeId(), tool: 'text', text: text.trim(), x: p.x, y: p.y, color: whiteboardColor, size: whiteboardSize, author: currentUser });
+        return;
+      }
+      whiteboardDrawing = true;
+      if (whiteboardTool === 'line' || whiteboardTool === 'rect' || whiteboardTool === 'circle') {
+        whiteboardLivePreview = { tool: whiteboardTool, x1: p.x, y1: p.y, x2: p.x, y2: p.y, color: whiteboardColor, size: whiteboardSize };
+      } else {
+        whiteboardCurrentPoints = [p];
+        whiteboardLivePreview = { tool: whiteboardTool, points: whiteboardCurrentPoints, color: whiteboardColor, size: whiteboardSize };
+      }
+      redrawWhiteboard();
+    }
+    function whiteboardPointerMove(e) {
+      if (!whiteboardDrawing || !whiteboardLivePreview) return;
+      e.preventDefault();
+      const p = whiteboardPointFromEvent(e);
+      if (whiteboardTool === 'line' || whiteboardTool === 'rect' || whiteboardTool === 'circle') {
+        whiteboardLivePreview.x2 = p.x; whiteboardLivePreview.y2 = p.y;
+      } else {
+        whiteboardCurrentPoints.push(p);
+      }
+      redrawWhiteboard();
+    }
+    function whiteboardPointerUp() {
+      if (!whiteboardDrawing) return;
+      whiteboardDrawing = false;
+      const stroke = whiteboardLivePreview;
+      whiteboardLivePreview = null;
+      if (!stroke) return;
+      if (stroke.tool === 'line' || stroke.tool === 'rect' || stroke.tool === 'circle') {
+        if (stroke.x1 === stroke.x2 && stroke.y1 === stroke.y2) { redrawWhiteboard(); return; }
+      } else {
+        if (!stroke.points || stroke.points.length < 1) { redrawWhiteboard(); return; }
+        if (stroke.points.length === 1) stroke.points.push(stroke.points[0]); // render a tap as a small dot
+      }
+      commitWhiteboardStroke({ id: newWhiteboardStrokeId(), ...stroke, author: currentUser });
+    }
+    function commitWhiteboardStroke(stroke) {
+      if (!whiteboardHubId) return;
+      whiteboardMyStrokeIds.push(stroke.id);
+      whiteboardRedoStack = [];
+      if (typeof window.addWhiteboardStroke === 'function') window.addWhiteboardStroke(whiteboardHubId, stroke);
+    }
+    function whiteboardUndo() {
+      if (!whiteboardHubId || !whiteboardMyStrokeIds.length) return;
+      const id = whiteboardMyStrokeIds.pop();
+      const stroke = whiteboardStrokes.find(s => s.id === id);
+      if (stroke) whiteboardRedoStack.push(stroke);
+      whiteboardStrokes = whiteboardStrokes.filter(s => s.id !== id);
+      redrawWhiteboard();
+      if (typeof window.deleteWhiteboardStroke === 'function') window.deleteWhiteboardStroke(whiteboardHubId, id);
+    }
+    function whiteboardRedo() {
+      if (!whiteboardHubId || !whiteboardRedoStack.length) return;
+      const stroke = whiteboardRedoStack.pop();
+      whiteboardMyStrokeIds.push(stroke.id);
+      whiteboardStrokes = [...whiteboardStrokes, stroke];
+      redrawWhiteboard();
+      if (typeof window.addWhiteboardStroke === 'function') window.addWhiteboardStroke(whiteboardHubId, stroke);
+    }
+    function whiteboardClear() {
+      if (!whiteboardHubId) return;
+      if (!confirm('Clear the whole whiteboard for everyone in this Hub? This cannot be undone.')) return;
+      whiteboardStrokes = []; whiteboardMyStrokeIds = []; whiteboardRedoStack = [];
+      redrawWhiteboard();
+      if (typeof window.clearWhiteboard === 'function') window.clearWhiteboard(whiteboardHubId);
+    }
+
+    function renderWhiteboardStroke(ctx, canvas, stroke) {
+      const w = canvas.width, h = canvas.height;
+      ctx.save();
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      if (stroke.tool === 'pen' || stroke.tool === 'highlighter' || stroke.tool === 'eraser') {
+        if (!stroke.points || stroke.points.length < 1) { ctx.restore(); return; }
+        ctx.globalCompositeOperation = stroke.tool === 'eraser' ? 'destination-out' : 'source-over';
+        ctx.globalAlpha = stroke.tool === 'highlighter' ? 0.35 : 1;
+        ctx.strokeStyle = stroke.tool === 'eraser' ? 'rgba(0,0,0,1)' : (stroke.color || '#1d4ed8');
+        ctx.lineWidth = (stroke.tool === 'highlighter' ? (stroke.size || 4) * 2.2 : (stroke.size || 4));
+        ctx.beginPath();
+        stroke.points.forEach((pt, i) => { const x = pt.x * w, y = pt.y * h; if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+        ctx.stroke();
+      } else if (stroke.tool === 'line') {
+        ctx.strokeStyle = stroke.color; ctx.lineWidth = stroke.size;
+        ctx.beginPath(); ctx.moveTo(stroke.x1 * w, stroke.y1 * h); ctx.lineTo(stroke.x2 * w, stroke.y2 * h); ctx.stroke();
+      } else if (stroke.tool === 'rect') {
+        ctx.strokeStyle = stroke.color; ctx.lineWidth = stroke.size;
+        ctx.strokeRect(Math.min(stroke.x1, stroke.x2) * w, Math.min(stroke.y1, stroke.y2) * h, Math.abs(stroke.x2 - stroke.x1) * w, Math.abs(stroke.y2 - stroke.y1) * h);
+      } else if (stroke.tool === 'circle') {
+        ctx.strokeStyle = stroke.color; ctx.lineWidth = stroke.size;
+        const cx = (stroke.x1 + stroke.x2) / 2 * w, cy = (stroke.y1 + stroke.y2) / 2 * h, rx = Math.abs(stroke.x2 - stroke.x1) / 2 * w, ry = Math.abs(stroke.y2 - stroke.y1) / 2 * h;
+        ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+      } else if (stroke.tool === 'text') {
+        ctx.fillStyle = stroke.color; ctx.font = `${(stroke.size || 4) * 4}px -apple-system, BlinkMacSystemFont, sans-serif`; ctx.textBaseline = 'top';
+        ctx.fillText(stroke.text || '', stroke.x * w, stroke.y * h);
+      }
+      ctx.restore();
+    }
+    function redrawWhiteboard() {
+      const canvas = document.getElementById('whiteboard-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      whiteboardStrokes.forEach(s => renderWhiteboardStroke(ctx, canvas, s));
+      if (whiteboardLivePreview) renderWhiteboardStroke(ctx, canvas, whiteboardLivePreview);
+    }
+
+    // Hand-built single-page PDF (no external library): a JPEG can be
+    // embedded in a PDF stream as-is via /DCTDecode, so this needs no image
+    // re-encoding — just the raw JPEG bytes wrapped in minimal PDF syntax.
+    function canvasToPdfBlob(canvas) {
+      const enc = new TextEncoder();
+      const base64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
+      const binary = atob(base64);
+      const jpegBytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) jpegBytes[i] = binary.charCodeAt(i);
+
+      const pageW = Math.max(1, Math.round(canvas.width * 0.75));
+      const pageH = Math.max(1, Math.round(canvas.height * 0.75));
+      const parts = [];
+      let offset = 0;
+      const objOffsets = [];
+      function push(bytesOrStr) { const bytes = typeof bytesOrStr === 'string' ? enc.encode(bytesOrStr) : bytesOrStr; parts.push(bytes); offset += bytes.length; }
+      function beginObj(num) { objOffsets[num] = offset; }
+
+      push('%PDF-1.4\n');
+      beginObj(1); push('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+      beginObj(2); push('2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n');
+      beginObj(3); push(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`);
+      beginObj(4);
+      push(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
+      push(jpegBytes);
+      push('\nendstream\nendobj\n');
+      const contentStream = `q ${pageW} 0 0 ${pageH} 0 0 cm /Im0 Do Q`;
+      beginObj(5); push(`5 0 obj\n<< /Length ${contentStream.length} >>\nstream\n${contentStream}\nendstream\nendobj\n`);
+
+      const xrefStart = offset;
+      let xref = 'xref\n0 6\n0000000000 65535 f \n';
+      for (let i = 1; i <= 5; i++) xref += String(objOffsets[i]).padStart(10, '0') + ' 00000 n \n';
+      push(xref);
+      push(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`);
+
+      return new Blob(parts, { type: 'application/pdf' });
+    }
+    function downloadWhiteboardPDF() {
+      const canvas = document.getElementById('whiteboard-canvas');
+      if (!canvas) return;
+      try {
+        const blob = canvasToPdfBlob(canvas);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `nexora-whiteboard-${Date.now()}.pdf`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      } catch (error) {
+        console.error('Whiteboard PDF export failed:', error);
+        alert('Could not export the whiteboard as a PDF.');
+      }
+    }
+
     function extensionHTML(m) {
       const e = m.extension; if (!e) return ''; const closed = e.date && e.type === 'poll' && Date.now() >= new Date(e.date).getTime();
       if (e.type === 'poll') { const counts = e.items.map((_,i) => Object.values(e.votes).filter(v => +v === i).length); const max = Math.max(0,...counts); return `<div class="extension-card"><div class="extension-title">Poll · ${escapeHTML(e.title)}</div>${e.items.map((item,i) => `<button class="poll-option" ${closed?'disabled':''} onclick="updateExtension(${m.id},'vote',${i})"><span>${escapeHTML(item)}</span><span>${counts[i]} vote${counts[i]===1?'':'s'}</span></button>${closed?`<div class="poll-bar" style="width:${max ? counts[i]/max*100 : 0}%"></div>`:''}`).join('')}<div class="extension-meta">${closed ? `Closed · Winner: ${escapeHTML(e.items[counts.indexOf(max)] || 'No votes')}` : `Closes ${new Date(e.date).toLocaleString()}`}</div></div>`; }
@@ -3012,6 +3318,59 @@
         ? 'Permission denied by Firestore security rules (check the "hubs" rule).'
         : (error.message || 'Could not join this Hub.');
       return { ok: false, message };
+    }
+  };
+
+  // --- Whiteboard (Smart Hub Feature: Study Hubs) --------------------------
+  // hubs/{hubId}/whiteboard_strokes/{strokeId} — one small doc per completed
+  // stroke, shape, or text item. Deliberately its own subcollection, never
+  // touched by syncHubsToFirestore/subscribeToHub above, so it can't
+  // interact with — or risk breaking — existing Hub chat sync. `seq` (a
+  // client timestamp) gives a stable draw order across all Hub members.
+  let unsubscribeWhiteboard = null;
+
+  window.subscribeToWhiteboard = function (hubId, onChange) {
+    if (unsubscribeWhiteboard) { unsubscribeWhiteboard(); unsubscribeWhiteboard = null; }
+    if (!hubId) return;
+    const strokesRef = collection(db, 'hubs', String(hubId), 'whiteboard_strokes');
+    const q = query(strokesRef, orderBy('seq', 'asc'));
+    unsubscribeWhiteboard = onSnapshot(q, (snapshot) => {
+      onChange(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+    }, (error) => console.error("❌ Whiteboard listener error:", error));
+  };
+
+  window.unsubscribeFromWhiteboard = function () {
+    if (unsubscribeWhiteboard) { unsubscribeWhiteboard(); unsubscribeWhiteboard = null; }
+  };
+
+  window.addWhiteboardStroke = async function (hubId, stroke) {
+    try {
+      await setDoc(doc(db, 'hubs', String(hubId), 'whiteboard_strokes', stroke.id), { ...stroke, seq: Date.now() });
+      return { ok: true };
+    } catch (error) {
+      console.error("❌ Whiteboard stroke save failed:", error);
+      return { ok: false };
+    }
+  };
+
+  window.deleteWhiteboardStroke = async function (hubId, strokeId) {
+    try {
+      await deleteDoc(doc(db, 'hubs', String(hubId), 'whiteboard_strokes', strokeId));
+      return { ok: true };
+    } catch (error) {
+      console.error("❌ Whiteboard stroke delete failed:", error);
+      return { ok: false };
+    }
+  };
+
+  window.clearWhiteboard = async function (hubId) {
+    try {
+      const snap = await getDocs(collection(db, 'hubs', String(hubId), 'whiteboard_strokes'));
+      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+      return { ok: true };
+    } catch (error) {
+      console.error("❌ Whiteboard clear failed:", error);
+      return { ok: false };
     }
   };
 
