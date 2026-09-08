@@ -36,10 +36,10 @@ function gameState(e) {
   return e.game;
 }
 function canPlayGame(e) { return e.mode === 'solo' || (e.accepted && e.game?.turn === currentUser); }
-function gameMessage(msgId, text) { const ctx = extensionMessageContext(msgId); if (!ctx?.message?.extension) return; const e = ctx.message.extension; const g = gameState(e); g.log.unshift(text); g.log = g.log.slice(0,8); ctx.save(); ctx.render(); }
+function gameMessage(msgId, text) { const messages = DB.getMessages(); const m = messages.find(x => x.id === msgId); if (!m) return; const e = m.extension; const g = gameState(e); g.log.unshift(text); g.log = g.log.slice(0,8); DB.saveMessages(messages); renderMessages(false); }
 function playGame(msgId, action, value) {
-  const ctx = extensionMessageContext(msgId); if (!ctx?.message?.extension) return; const m = ctx.message; const e = m.extension; const g = gameState(e);
-  if (action === 'accept') { e.accepted = true; if (!('receiver' in m)) e.opponent = currentUser; g.turn = m.sender; g.log.unshift(`${currentUser} accepted the challenge`); }
+  const messages = DB.getMessages(); const m = messages.find(x => x.id === msgId); if (!m?.extension) return; const e = m.extension; const g = gameState(e);
+  if (action === 'accept') { e.accepted = true; g.turn = m.sender; g.log.unshift(`${currentUser} accepted the challenge`); }
   else if (!canPlayGame(e)) return;
   else if (e.title === 'Tic-tac-toe' && action === 'cell') { if (g.board[value]) return; const mark = currentUser === m.sender ? 'X' : 'O'; g.board[value] = mark; if (win(g.board)) g.winner = currentUser; else if (g.board.every(Boolean)) g.winner = 'Draw'; else g.turn = otherPlayer(m, currentUser); }
   else if (e.title === 'Chess' && action === 'cell') { if (g.selected === null) { if (g.board[value]) g.selected = value; } else { const piece = g.board[g.selected]; if (piece) { g.board[value] = piece; g.board[g.selected] = ''; g.log.unshift(`${currentUser} moved ${piece}`); g.turn = e.mode === 'solo' ? currentUser : otherPlayer(m, currentUser); } g.selected = null; } }
@@ -48,14 +48,14 @@ function playGame(msgId, action, value) {
   else if (action === 'submit') { const input = document.getElementById(`game-input-${msgId}`); const valueText = input?.value.trim(); if (!valueText) return; g.log.unshift(`${currentUser}: ${valueText}`); if (e.title === 'Guess the emoji' && /pizza/i.test(valueText)) g.winner = currentUser; g.turn = e.mode === 'solo' ? currentUser : otherPlayer(m, currentUser); }
   else if (e.title === 'Trivia' && action === 'answer') { g.winner = value === 'Pacific' ? currentUser : ''; g.prompt = value === 'Pacific' ? `${currentUser} got it right!` : 'Not quite — the answer was Pacific.'; }
   else if (e.title === 'Drawing challenge' && action === 'done') { g.log.unshift(`${currentUser} finished their drawing`); g.turn = e.mode === 'solo' ? currentUser : otherPlayer(m, currentUser); }
-  ctx.save(); ctx.render();
+  DB.saveMessages(messages); renderMessages(false);
 }
-function otherPlayer(m, user) { if ('receiver' in m) return m.sender === user ? m.receiver : m.sender; const opponent = m.extension?.opponent; return opponent ? (m.sender === user ? opponent : m.sender) : null; }
+function otherPlayer(m, user) { return m.sender === user ? m.receiver : m.sender; }
 function win(board) { return [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].some(line => line.every(i => board[i] && board[i] === board[line[0]])); }
 function gameInput(msgId, placeholder) { return `<div class="game-actions"><input id="game-input-${msgId}" placeholder="${placeholder}"><button onclick="playGame(${msgId},'submit')">Send</button></div>`; }
 function gameHTML(m) {
   const e = m.extension, g = gameState(e); const locked = !canPlayGame(e); const title = escapeHTML(e.title);
-  if (e.mode !== 'solo' && !e.accepted) return `<div class="extension-card game-card"><div class="extension-title">Game · ${title}</div><div class="game-status">Challenge waiting for acceptance.</div>${extensionCanAccept(m) ? `<button class="poll-option" onclick="playGame(${m.id},'accept')">Accept & play</button>` : ''}</div>`;
+  if (e.mode !== 'solo' && !e.accepted) return `<div class="extension-card game-card"><div class="extension-title">Game · ${title}</div><div class="game-status">Challenge waiting for acceptance.</div>${m.receiver === currentUser ? `<button class="poll-option" onclick="playGame(${m.id},'accept')">Accept & play</button>` : ''}</div>`;
   const status = g.winner ? (g.winner === 'Draw' ? 'It is a draw.' : `${g.winner} wins!`) : (locked ? `Waiting for @${g.turn}` : 'Your turn');
   let play = '';
   if (e.title === 'Tic-tac-toe') play = `<div class="game-board">${g.board.map((cell,i) => `<button ${locked||g.winner?'disabled':''} onclick="playGame(${m.id},'cell',${i})">${cell}</button>`).join('')}</div>`;
@@ -70,53 +70,7 @@ function gameHTML(m) {
 }
 
 extensionHTML = function(message) { return message.extension?.type === 'game' ? gameHTML(message) : baseExtensionHTML(message); };
-
-/* Chat Extensions now work inside Hubs too, not just Direct Chats. Hub
-   extension messages are stored/broadcast through the exact same Hub
-   messaging pipeline (hub.messages + saveHubs + Firestore sync in
-   index.html) that plain text/attachment Hub messages already use, so
-   they persist and reach every member in real time. Direct Chat behavior
-   below is untouched — it still falls through to the original functions. */
-function extensionCanAccept(m) { return 'receiver' in m ? m.receiver === currentUser : m.sender !== currentUser; }
-// Looks a message up in whichever store is currently open (a Hub's shared
-// message list, or the DM store) and hands back matching save/render
-// callbacks, so every extension-update path (votes, checkboxes, game
-// moves) can work the same way regardless of where the message lives.
-function extensionMessageContext(msgId) {
-  if (activeHub) {
-    const hubs = getHubs(); const hub = hubs.find(item => item.id === activeHub);
-    const message = hub?.messages.find(m => m.id === msgId);
-    if (!hub || !message) return null;
-    return { message, save: () => saveHubs(hubs), render: () => renderHubMessages(false) };
-  }
-  const messages = DB.getMessages(); const message = messages.find(m => m.id === msgId);
-  if (!message) return null;
-  return { message, save: () => DB.saveMessages(messages), render: () => renderMessages(false) };
-}
-
-const baseSendExtension = sendExtension;
-sendExtension = function() {
-  if (!activeHub) return baseSendExtension();
-  const title = document.getElementById('ext-title').value.trim();
-  const date = document.getElementById('ext-date')?.value || '';
-  const items = (document.getElementById('ext-items')?.value || '').split('\n').map(x => x.trim()).filter(Boolean);
-  if (!title || ((activeExtension === 'poll' || activeExtension === 'todo' || activeExtension === 'shopping') && !items.length) || ((activeExtension === 'countdown' || activeExtension === 'calendar') && !date)) return alert('Please complete the required fields.');
-  const hubs = getHubs(); const hub = hubs.find(item => item.id === activeHub);
-  if (!hub) return closeExtension();
-  if (hub.permissions?.messaging === 'owner' && hub.owner !== currentUser) { closeExtension(); return alert('Only the Hub owner can send messages in this Hub.'); }
-  hub.messages.push({ id: Date.now(), sender: currentUser, text:'', attachment:null, timestamp:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), extension:{ type:activeExtension, title, items, date, link:document.getElementById('ext-link')?.value.trim() || '', mode:document.getElementById('ext-mode')?.value || '', votes:{}, checked:{}, accepted:false } });
-  saveHubs(hubs); closeExtension(); renderHubMessages(true);
-};
-
-updateExtension = function(msgId, action, value) {
-  if (action === 'accept') return playGame(msgId, action, value);
-  if (!activeHub) return baseUpdateExtension(msgId, action, value);
-  const ctx = extensionMessageContext(msgId); if (!ctx?.message?.extension) return;
-  const e = ctx.message.extension;
-  if (action === 'vote') { if (e.date && Date.now() > new Date(e.date).getTime()) return; e.votes[currentUser] = value; }
-  if (action === 'check') { e.checked[value] = !e.checked[value]; }
-  ctx.save(); ctx.render();
-};
+updateExtension = function(msgId, action, value) { if (action === 'accept') return playGame(msgId, action, value); return baseUpdateExtension(msgId, action, value); };
 
 /* Reaction controls now require an intentional double-click. */
 const originalRenderMessages = renderMessages;
@@ -245,6 +199,12 @@ window.mergeRemoteHubMessages = function (hubId, remoteMessages) {
 };
 
 function hubById(id) { return getHubs().find(hub => hub.id === id); }
+// Modular Smart Hub Feature check: works for any Hub type/category, since it
+// only ever reads the same hub.features array the creation wizard already
+// writes. Adding a new toggleable feature anywhere just means adding its
+// label to that category's HUB_CATEGORY_FEATURES entry — no other code here
+// needs to change to support it.
+function hubHasFeature(hub, featureName) { return !!(hub && Array.isArray(hub.features) && hub.features.includes(featureName)); }
 function safeHubText(value='') { const el = document.createElement('div'); el.textContent = value; return el.innerHTML; }
 function hubImageSource(value) {
   if (typeof value !== 'string') return '';
@@ -265,7 +225,7 @@ const HUB_CATEGORIES = [
 ];
 const HUB_CATEGORY_FEATURES = {
   gaming: ['LFG board', 'Match schedule', 'Voice hangout callouts', 'Leaderboard'],
-  study: ['Study sessions', 'Shared resources', 'Assignment tracker', 'Focus timer'],
+  study: ['Study sessions', 'Shared resources', 'Assignment tracker', 'Focus timer', '📝 Quiz Maker', '📅 Events', '🖊️ Whiteboard'],
   creator: ['Showcase feed', 'Feedback threads', 'Collab board', 'Release calendar'],
   coding: ['Code snippet sharing', 'Bug tracker', 'Pair programming board', 'Changelog'],
   music: ['Now playing', 'Setlist board', 'Jam session planner', 'Release drops'],
@@ -317,7 +277,8 @@ function hubWizardStepHTML(step) {
   if (step === 3) {
     const options = HUB_CATEGORY_FEATURES[w.category] || HUB_CATEGORY_FEATURES.other;
     const label = HUB_CATEGORIES.find(c => c.id === w.category)?.label || 'this';
-    return `<p class="hub-wizard-help">Turn on the Hub features that fit a ${hubWizardEsc(label)} community. You can change these later in Hub settings.</p><div class="hub-feature-list">${options.map(f => `<label class="hub-feature-chip"><input type="checkbox" ${w.features.includes(f) ? 'checked' : ''} onchange="hubWizardToggleFeature('${hubWizardEsc(f)}', this.checked)"><span>${hubWizardEsc(f)}</span></label>`).join('')}</div>`;
+    const smartBanner = w.category === 'study' ? `<div class="smart-hub-banner"><span class="smart-hub-corner-icon" aria-hidden="true">✦</span><strong class="smart-hub-title">Looks like a Study Hub ✦</strong><p class="smart-hub-sub">We've suggested a few features to help shape your Hub. You're in control.</p></div>` : '';
+    return `${smartBanner}<p class="hub-wizard-help">Turn on the Hub features that fit a ${hubWizardEsc(label)} community. You can change these later in Hub settings.</p><div class="hub-feature-list">${options.map(f => `<label class="hub-feature-chip"><span class="hub-feature-chip-label">${hubWizardEsc(f)}</span><span class="hub-toggle"><input type="checkbox" ${w.features.includes(f) ? 'checked' : ''} onchange="hubWizardToggleFeature('${hubWizardEsc(f)}', this.checked)"><span class="hub-toggle-track"><span class="hub-toggle-thumb"></span></span></span></label>`).join('')}</div>`;
   }
   if (step === 4) {
     const p = w.permissions;
@@ -405,7 +366,7 @@ function renderHubMessages(scroll) {
   const hub = hubById(activeHub); if (!hub) return; const list = document.getElementById('messages-list'); const query = document.getElementById('hub-message-search')?.value.trim().toLowerCase() || ''; list.innerHTML = '';
   const visibleMessages = hub.messages.filter(message => !query || `${message.sender} ${message.text || ''}`.toLowerCase().includes(query));
   if (!visibleMessages.length && query) list.innerHTML = '<div class="hub-search-empty">No Hub messages match your search.</div>';
-  visibleMessages.forEach(message => { const sent = message.sender === currentUser; const row = document.createElement('div'); row.className = `message-wrapper ${sent ? 'sent' : 'received'}${scroll ? ' message-arrive' : ''}`; row.dataset.messageId = message.id; const structuredContent = extensionHTML(message); row.innerHTML = `<div class="message-body-row"><img class="avatar" src="${(DB.getUsers()[message.sender]?.pfp) || DEFAULT_AVATAR}" style="width:26px;height:26px;"><div class="message ${sent ? 'sent' : 'received'}"><div class="hub-message-name">@${safeHubText(message.sender)}</div>${message.attachment?.type === 'image' ? `<img src="${message.attachment.data}" class="attachment-img">` : ''}${structuredContent}${message.text ? `<div>${parseTextLinks(message.text)}</div>` : ''}<div style="font-size:10px;opacity:.7;text-align:right;">${message.timestamp}</div></div></div>`; list.appendChild(row); }); if (scroll) list.scrollTop = list.scrollHeight;
+  visibleMessages.forEach(message => { const sent = message.sender === currentUser; const row = document.createElement('div'); row.className = `message-wrapper ${sent ? 'sent' : 'received'}${scroll ? ' message-arrive' : ''}`; row.dataset.messageId = message.id; const structuredContent = (message.extension && typeof extensionHTML === 'function') ? extensionHTML(message) : ''; const locationCard = (typeof locationCardHTML === 'function') ? locationCardHTML(message.text) : null; row.innerHTML = `<div class="message-body-row"><img class="avatar" src="${(DB.getUsers()[message.sender]?.pfp) || DEFAULT_AVATAR}" style="width:26px;height:26px;"><div class="message ${sent ? 'sent' : 'received'}"><div class="hub-message-name">@${safeHubText(message.sender)}</div>${message.attachment?.type === 'image' ? `<img src="${message.attachment.data}" class="attachment-img">` : ''}${structuredContent}${locationCard || (message.text ? `<div>${parseTextLinks(message.text)}</div>` : '')}<div style="font-size:10px;opacity:.7;text-align:right;">${message.timestamp}</div></div></div>`; list.appendChild(row); }); if (scroll) list.scrollTop = list.scrollHeight;
 }
 sendMessage = function() { if (!activeHub) return directSendMessage(); const input = document.getElementById('message-input'), text = input.value.trim(); if (!text && !currentAttachment) return; const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return; if (hub.permissions?.messaging === 'owner' && hub.owner !== currentUser) return alert('Only the Hub owner can send messages in this Hub.'); hub.messages.push({id:Date.now(),sender:currentUser,text,attachment:currentAttachment,timestamp:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}); saveHubs(hubs); input.value=''; removeAttachment(); renderHubMessages(true); };
 function hubCanManage(hub) { return !!hub && (hub.owner === currentUser || hub.permissions?.management === 'members'); }
@@ -807,4 +768,23 @@ const renderMessagesWithMotion = renderMessages;
 renderMessages = function(forceScroll) {
   renderMessagesWithMotion(forceScroll);
   if (forceScroll) document.querySelector('.message-wrapper:last-of-type')?.classList.add('message-arrive');
+};
+
+/* Chat Extensions: /whiteboard slash command. Hub-only, and only opens
+   anything when that Hub actually has the Whiteboard Smart Hub Feature
+   enabled (same hubHasFeature gate as the extension-menu button) — typing
+   it anywhere else just sends as ordinary text, same as any other message. */
+const beforeWhiteboardSlashCommand = sendMessage;
+sendMessage = function() {
+  const input = document.getElementById('message-input');
+  const text = input ? input.value.trim() : '';
+  if (activeHub && /^\/whiteboard$/i.test(text)) {
+    const hub = hubById(activeHub);
+    if (hub && hubHasFeature(hub, '🖊️ Whiteboard')) {
+      input.value = '';
+      openWhiteboard();
+      return;
+    }
+  }
+  return beforeWhiteboardSlashCommand();
 };

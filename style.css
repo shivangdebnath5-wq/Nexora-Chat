@@ -75,8 +75,40 @@
 .hub-category-card.selected { border-color:var(--primary); box-shadow:0 0 0 2px color-mix(in srgb, var(--primary) 23%, transparent); }
 .hub-category-emoji { font-size:20px; }
 .hub-feature-list { display:flex; flex-direction:column; gap:8px; }
-.hub-feature-chip { display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--input-bg); border:1px solid var(--border); border-radius:10px; font-size:13px; color:var(--text-main); }
-.hub-feature-chip input { width:auto; margin:0; }
+.hub-feature-chip { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; background:var(--input-bg); border:1px solid var(--border); border-radius:10px; font-size:13px; color:var(--text-main); transition:background-color .2s ease, border-color .2s ease; }
+.hub-feature-chip:has(input:checked) { border-color:color-mix(in srgb, var(--primary) 45%, var(--border)); background:color-mix(in srgb, var(--primary) 7%, var(--input-bg)); }
+.hub-feature-chip-label { min-width:0; }
+.hub-toggle { position:relative; width:42px; height:24px; flex:0 0 42px; }
+.hub-toggle input { position:absolute; inset:0; margin:0; opacity:0; cursor:pointer; z-index:2; }
+.hub-toggle-track { position:absolute; inset:0; border-radius:999px; background:var(--border); transition:background-color .25s ease, box-shadow .25s ease; }
+.hub-toggle-thumb { position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.28); transition:transform .28s cubic-bezier(.34,1.56,.64,1); }
+.hub-toggle input:checked + .hub-toggle-track { background:var(--primary); }
+.hub-toggle input:checked + .hub-toggle-track .hub-toggle-thumb { transform:translateX(18px); }
+.hub-toggle input:focus-visible + .hub-toggle-track { box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent); }
+.hub-toggle input:active + .hub-toggle-track .hub-toggle-thumb { width:21px; }
+@media (prefers-reduced-motion: no-preference) {
+  .hub-feature-list .hub-feature-chip { animation:hubFeatureChipIn .35s ease both; }
+  .hub-feature-list .hub-feature-chip:nth-child(1) { animation-delay:.02s; }
+  .hub-feature-list .hub-feature-chip:nth-child(2) { animation-delay:.06s; }
+  .hub-feature-list .hub-feature-chip:nth-child(3) { animation-delay:.1s; }
+  .hub-feature-list .hub-feature-chip:nth-child(4) { animation-delay:.14s; }
+  .hub-feature-list .hub-feature-chip:nth-child(5) { animation-delay:.18s; }
+  .hub-feature-list .hub-feature-chip:nth-child(6) { animation-delay:.22s; }
+}
+@keyframes hubFeatureChipIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+/* Smart Hub Configuration: shown when the wizard detects a Study Hub */
+.smart-hub-banner { position:relative; margin:0 0 14px; padding:14px 42px 14px 14px; border-radius:14px; border:1px solid color-mix(in srgb, var(--primary) 35%, var(--border)); background:linear-gradient(135deg, color-mix(in srgb, var(--primary) 12%, var(--bg-card)), color-mix(in srgb, #8b5cf6 10%, var(--bg-card))); overflow:hidden; }
+.smart-hub-banner::before { content:''; position:absolute; inset:0; background:radial-gradient(130px 90px at 92% -15%, color-mix(in srgb, var(--primary) 24%, transparent), transparent 70%); pointer-events:none; }
+.smart-hub-title { position:relative; display:block; margin-bottom:4px; font-size:13.5px; font-weight:800; background:linear-gradient(90deg, var(--primary), #8b5cf6); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.smart-hub-sub { position:relative; margin:0; color:var(--text-muted); font-size:12px; line-height:1.5; }
+.smart-hub-corner-icon { position:absolute; top:10px; right:10px; width:26px; height:26px; display:grid; place-items:center; border-radius:50%; background:linear-gradient(135deg, var(--primary), #8b5cf6); color:#fff; font-size:12.5px; box-shadow:0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent); }
+@media (prefers-reduced-motion: no-preference) {
+  .smart-hub-banner { animation:smartHubIn .45s cubic-bezier(.22,1,.36,1) both; }
+  .smart-hub-corner-icon { animation:smartHubSparklePulse 2.4s ease-in-out .45s infinite; }
+}
+@keyframes smartHubIn { from { opacity:0; transform:translateY(-6px) scale(.98); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes smartHubSparklePulse { 0%,100% { box-shadow:0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent); transform:scale(1); } 50% { box-shadow:0 0 0 7px color-mix(in srgb, var(--primary) 7%, transparent); transform:scale(1.08); } }
 .hub-permission-group { margin-bottom:14px; }
 .hub-permission-title { margin-bottom:7px; font-size:13px; font-weight:700; color:var(--text-main); }
 .hub-permission-option { display:flex; align-items:center; gap:10px; padding:9px 12px; margin-bottom:6px; background:var(--input-bg); border:1px solid var(--border); border-radius:10px; font-size:12.5px; color:var(--text-main); }
@@ -161,7 +193,7 @@
   .status-menu { position:fixed; top:calc(env(safe-area-inset-top) + 66px); left:12px; width:min(280px,calc(100vw - 24px)); z-index:1100; border-radius:14px; }.status-option { min-height:46px; font-size:14px; }
   .quick-status-popover { position:fixed; top:calc(env(safe-area-inset-top) + 66px); left:12px; width:min(300px,calc(100vw - 24px)); z-index:1100; border-radius:16px; padding:14px; }.qsp-option { min-height:44px; font-size:14px; }.qsp-custom input[type="datetime-local"] { min-height:42px; font-size:14px; }.qsp-custom button { min-height:42px; }
   .pinned-messages-menu { position:fixed; top:auto; right:8px; bottom:calc(66px + env(safe-area-inset-bottom)); width:calc(100vw - 16px); max-height:50dvh; border-radius:18px; z-index:950; }.pinned-message-item { min-height:54px; padding:10px; }
-  .msg-popover { top:-46px !important; padding:5px 7px !important; gap:4px; border-radius:20px !important; box-shadow:0 6px 18px var(--shadow) !important; max-width:calc(100vw - 24px); }.popover-reactions { padding-right:5px !important; }.popover-reactions span { min-width:32px; min-height:32px; display:grid; place-items:center; font-size:18px !important; padding:0 !important; }.popover-btn, .pin-message-popover { min-width:32px !important; width:32px !important; height:32px !important; }.popover-dropdown { position:fixed; left:8px; right:8px; top:auto; bottom:calc(124px + env(safe-area-inset-bottom)); width:auto; border-radius:14px; z-index:970; }.popover-dropdown-item { min-height:48px; padding:13px 16px; font-size:14px; }
+  .msg-popover { position:fixed; top:auto; left:8px !important; right:8px !important; bottom:calc(66px + env(safe-area-inset-bottom)); z-index:960; padding:10px; border-radius:18px; justify-content:center; }.popover-reactions { flex:1; justify-content:space-evenly; padding-right:8px; }.popover-reactions span { min-width:34px; min-height:34px; display:grid; place-items:center; font-size:20px; }.popover-btn, .pin-message-popover { min-width:36px !important; width:36px !important; height:36px !important; }.popover-dropdown { position:fixed; left:8px; right:8px; top:auto; bottom:calc(124px + env(safe-area-inset-bottom)); width:auto; border-radius:14px; z-index:970; }.popover-dropdown-item { min-height:48px; padding:13px 16px; font-size:14px; }
   .modal { width:100%; height:var(--mobile-app-height); padding:0; align-items:flex-end; background:rgba(15,23,42,.52); }.modal .card, .modal .card.extension-dialog, .modal .card.quest-shop, .modal .card.quest-modal-card { width:100%; max-width:none; max-height:min(92dvh,760px) !important; margin:0; padding:20px max(16px,env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)); border-radius:22px 22px 0 0; overflow-y:auto; box-shadow:0 -12px 36px rgba(15,23,42,.24); }.modal .card h2, .modal .card h3 { text-align:left; margin-bottom:14px; }.modal input, .modal select, .modal textarea { min-height:46px; font-size:16px; }.modal button { min-height:46px; font-size:14px; }.extension-dialog .dialog-actions { position:sticky; bottom:calc(-20px - env(safe-area-inset-bottom)); padding:10px 0 calc(2px + env(safe-area-inset-bottom)); background:var(--bg-card); }.hub-wizard-card { max-height:min(92dvh,760px) !important; }.hub-wizard-footer { position:sticky; bottom:calc(-20px - env(safe-area-inset-bottom)); padding:10px 0 calc(2px + env(safe-area-inset-bottom)); background:var(--bg-card); margin-top:10px; }
   .hub-modal .card { max-width:none; }.hub-member-list { gap:7px; }.hub-member-chip { min-height:34px; font-size:13px; }.hub-member-chip button { min-height:24px; }.game-board { max-width:100%; }.chess-board { width:min(100%,300px); }.timer-display { font-size:25px; }
 }
