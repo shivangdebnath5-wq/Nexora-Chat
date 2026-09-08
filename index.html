@@ -666,7 +666,6 @@
 
         <div class="input-row">
           <button class="icon-btn" onclick="toggleEmojiPicker()" title="Add Emoji">😊</button>
-          <button class="icon-btn" onclick="shareLocation()" title="Share Location">📍</button>
           <button class="icon-btn" onclick="toggleExtensionMenu()" title="Chat extensions">+</button>
           <label class="icon-btn" title="Attach File">
             📎
@@ -676,7 +675,7 @@
           <button id="send-btn" onclick="sendMessage()" title="Send message"><img src="https://i.ibb.co/ccSt9Sbz/Chat-GPT-Image-Aug-26-2026-02-07-48-PM-removebg-preview.png" alt="Send" style="width:24px; height:24px; object-fit:contain;"></button>
         </div>
         <div id="extension-menu" class="extension-menu hidden"><h4>Send something useful</h4><div class="extension-grid">
-          <button class="extension-option" onclick="openExtension('poll')">Poll</button><button class="extension-option" onclick="openExtension('countdown')">Countdown</button><button class="extension-option" onclick="openExtension('note')">Sticky note</button><button class="extension-option" onclick="openExtension('todo')">To-do list</button><button class="extension-option" onclick="openExtension('calendar')">Calendar event</button><button id="ext-opt-game" class="extension-option" onclick="openExtension('game')">Play a game</button><button class="extension-option" onclick="openExtension('shopping')">Shopping list</button>
+          <button class="extension-option" onclick="openExtension('poll')">Poll</button><button class="extension-option" onclick="openExtension('countdown')">Countdown</button><button class="extension-option" onclick="openExtension('note')">Sticky note</button><button class="extension-option" onclick="openExtension('todo')">To-do list</button><button class="extension-option" onclick="openExtension('calendar')">Calendar event</button><button id="ext-opt-game" class="extension-option" onclick="openExtension('game')">Play a game</button><button class="extension-option" onclick="openExtension('shopping')">Shopping list</button><button id="ext-opt-location" class="extension-option" onclick="document.getElementById('extension-menu').classList.add('hidden'); shareLocation();">📍 Share location</button>
         </div></div>
       </div>
     </div>
@@ -1827,10 +1826,13 @@
     function toggleExtensionMenu() {
       document.getElementById('extension-menu').classList.toggle('hidden');
       document.getElementById('emoji-picker').classList.add('hidden');
-      // Games stay Direct-Chat-only — hide the option entirely in a Hub
-      // rather than let someone pick it and get turned away.
+      // Games and Share Location stay Direct-Chat-only — hide them in a Hub
+      // rather than let someone pick one and get turned away (or, for
+      // location, silently create a message with no receiver).
       const gameOption = document.getElementById('ext-opt-game');
       if (gameOption) gameOption.classList.toggle('hidden', !!activeHub);
+      const locationOption = document.getElementById('ext-opt-location');
+      if (locationOption) locationOption.classList.toggle('hidden', !!activeHub);
     }
     function closeExtension() { document.getElementById('extension-modal').classList.add('hidden'); activeExtension = null; }
     function openExtension(type) {
