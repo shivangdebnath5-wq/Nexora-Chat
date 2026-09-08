@@ -412,11 +412,6 @@
     .extension-title { display:flex; align-items:center; gap:8px; font-weight:700; margin-bottom:9px; }
     .extension-meta { font-size:12px; color:var(--text-muted); margin-top:8px; }
     .poll-option { width:100%; margin:6px 0 0; padding:8px 10px; display:flex; justify-content:space-between; background:var(--input-bg); color:var(--text-main); border:1px solid var(--border); border-radius:8px; font-size:13px; }
-    .location-card-preview { display:block; width:calc(100% + 28px); margin:-14px -14px 10px -14px; height:140px; border-radius:14px 14px 0 0; }
-    .location-pulse { animation: locationPulse 2.2s ease-in-out infinite; transform-origin: 160px 70px; }
-    @keyframes locationPulse { 0%, 100% { opacity:.16; transform:scale(1); } 50% { opacity:.05; transform:scale(1.35); } }
-    .location-card-coords { font-size:12px; color:var(--text-muted); margin-bottom:2px; }
-    .location-card-link { justify-content:center; gap:6px; text-decoration:none; font-weight:600; }
     .poll-option:disabled { cursor:default; opacity:.8; }
     .poll-bar { height:5px; margin-top:4px; border-radius:8px; background:var(--primary); }
     .timer-display { font-size:28px; font-weight:800; letter-spacing:.04em; color:var(--primary); margin:4px 0; }
@@ -432,43 +427,6 @@
     .extension-dialog textarea { width:100%; min-height:72px; resize:vertical; padding:12px 14px; background:var(--input-bg); color:var(--text-main); border:1px solid var(--border); border-radius:8px; }
     .extension-dialog .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
     .extension-dialog .dialog-actions button { width:auto; margin:0; }
-
-    /* Smart Hub Features: Quiz Maker + Events (Study Hubs) */
-    .event-gcal-link { justify-content:center; gap:6px; text-decoration:none; font-weight:600; }
-    .quiz-card .quiz-my-score { margin-top:8px; font-weight:700; color:var(--primary); }
-    .quiz-score-list { margin-top:10px; padding-top:8px; border-top:1px solid var(--border); }
-    .quiz-score-row { display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); padding:3px 0; }
-    .quiz-builder-question { margin:14px 0; padding:12px; border:1px solid var(--border); border-radius:10px; background:var(--input-bg); }
-    .quiz-builder-question-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-    .quiz-builder-remove { width:auto; margin:0; padding:5px 10px; font-size:11px; }
-    .quiz-builder-option-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
-    .quiz-builder-option-row input[type="radio"] { width:auto; margin:0; flex:0 0 auto; }
-    .quiz-builder-option-row input[type="text"], .quiz-builder-option-row input:not([type]) { margin:0; }
-    .quiz-play-card { max-width:420px; text-align:left; }
-    .quiz-play-progress { font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
-    .quiz-play-timer { font-size:14px; font-weight:700; color:var(--primary); margin-bottom:12px; }
-    .quiz-play-option { text-align:left; justify-content:flex-start; cursor:pointer; }
-    .quiz-play-option:disabled { cursor:default; }
-    .quiz-play-option.quiz-correct { background:#22c55e; color:#fff; border-color:#22c55e; }
-    .quiz-play-option.quiz-wrong { background:#ef4444; color:#fff; border-color:#ef4444; }
-
-    /* Whiteboard (Smart Hub Feature, Study Hubs) */
-    .whiteboard-card { max-width:820px; width:min(820px, calc(100vw - 32px)); display:flex; flex-direction:column; max-height:88vh; }
-    .whiteboard-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-    .whiteboard-head h3 { margin:0; text-align:left; }
-    .whiteboard-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:8px; margin-bottom:10px; background:var(--input-bg); border:1px solid var(--border); border-radius:12px; }
-    .whiteboard-tool-group { display:flex; align-items:center; gap:6px; padding-right:10px; border-right:1px solid var(--border); }
-    .whiteboard-tool-group:last-child { border-right:none; padding-right:0; }
-    .whiteboard-tool { width:36px; height:36px; margin:0; padding:0; display:flex; align-items:center; justify-content:center; font-size:16px; background:var(--bg-card); color:var(--text-main); border:1px solid var(--border); border-radius:9px; cursor:pointer; }
-    .whiteboard-tool:hover { background:var(--bg-main); }
-    .whiteboard-tool.active { background:var(--primary); color:#fff; border-color:var(--primary); }
-    #whiteboard-color { width:36px; height:36px; padding:2px; border:1px solid var(--border); border-radius:9px; background:var(--bg-card); cursor:pointer; }
-    #whiteboard-size { width:100px; }
-    .whiteboard-canvas-wrap { position:relative; flex:1 1 auto; min-height:340px; border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#fff; touch-action:none; }
-    #whiteboard-canvas { display:block; width:100%; height:100%; cursor:crosshair; touch-action:none; }
-    .whiteboard-download-btn { position:absolute; top:10px; right:10px; width:34px; height:34px; padding:0; display:flex; align-items:center; justify-content:center; font-size:15px; background:var(--bg-card); color:var(--text-main); border:1px solid var(--border); border-radius:50%; box-shadow:0 2px 8px var(--shadow); cursor:pointer; }
-    .whiteboard-download-btn:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
-    @media (max-width:560px) { .whiteboard-canvas-wrap { min-height:260px; } .whiteboard-toolbar { gap:8px; } .whiteboard-tool-group { padding-right:7px; } }
     .settings-section { margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
     .settings-section input[readonly] { color: var(--text-muted); cursor: default; background: var(--bg-main); }
 
@@ -708,6 +666,7 @@
 
         <div class="input-row">
           <button class="icon-btn" onclick="toggleEmojiPicker()" title="Add Emoji">😊</button>
+          <button class="icon-btn" onclick="shareLocation()" title="Share Location">📍</button>
           <button class="icon-btn" onclick="toggleExtensionMenu()" title="Chat extensions">+</button>
           <label class="icon-btn" title="Attach File">
             📎
@@ -717,7 +676,7 @@
           <button id="send-btn" onclick="sendMessage()" title="Send message"><img src="https://i.ibb.co/ccSt9Sbz/Chat-GPT-Image-Aug-26-2026-02-07-48-PM-removebg-preview.png" alt="Send" style="width:24px; height:24px; object-fit:contain;"></button>
         </div>
         <div id="extension-menu" class="extension-menu hidden"><h4>Send something useful</h4><div class="extension-grid">
-          <button class="extension-option" onclick="openExtension('poll')">Poll</button><button class="extension-option" onclick="openExtension('countdown')">Countdown</button><button class="extension-option" onclick="openExtension('note')">Sticky note</button><button class="extension-option" onclick="openExtension('todo')">To-do list</button><button class="extension-option" onclick="openExtension('calendar')">Calendar event</button><button id="ext-opt-game" class="extension-option" onclick="openExtension('game')">Play a game</button><button class="extension-option" onclick="openExtension('shopping')">Shopping list</button><button id="ext-opt-location" class="extension-option" onclick="document.getElementById('extension-menu').classList.add('hidden'); shareLocation();">📍 Share location</button><button id="ext-opt-quiz" class="extension-option hidden" onclick="openExtension('quiz')">📝 Quiz Maker</button><button id="ext-opt-event" class="extension-option hidden" onclick="openExtension('event')">📅 Events</button><button id="ext-opt-whiteboard" class="extension-option hidden" onclick="openExtension('whiteboard')">🖊️ Whiteboard</button>
+          <button class="extension-option" onclick="openExtension('poll')">Poll</button><button class="extension-option" onclick="openExtension('countdown')">Countdown</button><button class="extension-option" onclick="openExtension('note')">Sticky note</button><button class="extension-option" onclick="openExtension('todo')">To-do list</button><button class="extension-option" onclick="openExtension('calendar')">Calendar event</button><button class="extension-option" onclick="openExtension('game')">Play a game</button><button class="extension-option" onclick="openExtension('shopping')">Shopping list</button>
         </div></div>
       </div>
     </div>
@@ -850,59 +809,6 @@
   </div>
 
   <div id="extension-modal" class="modal hidden"><div class="card extension-dialog"><h3 id="extension-title">New extension</h3><div id="extension-fields"></div><div class="dialog-actions"><button class="secondary" onclick="closeExtension()">Cancel</button><button onclick="sendExtension()">Send</button></div></div></div>
-
-  <!-- Quiz Maker play-through (Smart Hub Feature, Study Hubs only) -->
-  <div id="quiz-play-modal" class="modal hidden">
-    <div class="card quiz-play-card">
-      <div class="quiz-play-progress" id="quiz-play-progress"></div>
-      <h3 id="quiz-play-question-title"></h3>
-      <div class="quiz-play-timer" id="quiz-play-timer"></div>
-      <div id="quiz-play-options"></div>
-      <div class="dialog-actions">
-        <button class="secondary" onclick="closeQuizPlay()">Cancel</button>
-        <button id="quiz-play-next-btn" class="hidden" onclick="quizPlayNext()">Next Question</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Whiteboard (Smart Hub Feature, Study Hubs only) -->
-  <div id="whiteboard-modal" class="modal hidden">
-    <div class="card whiteboard-card">
-      <div class="whiteboard-head">
-        <h3>🖊️ Whiteboard</h3>
-        <button type="button" class="icon-btn" onclick="closeWhiteboard()" title="Close" aria-label="Close whiteboard">×</button>
-      </div>
-      <div class="whiteboard-toolbar">
-        <div class="whiteboard-tool-group" role="group" aria-label="Drawing tools">
-          <button type="button" class="whiteboard-tool active" data-tool="pen" onclick="setWhiteboardTool('pen')" title="Pen">✏️</button>
-          <button type="button" class="whiteboard-tool" data-tool="highlighter" onclick="setWhiteboardTool('highlighter')" title="Highlighter">🖍️</button>
-          <button type="button" class="whiteboard-tool" data-tool="eraser" onclick="setWhiteboardTool('eraser')" title="Eraser">🧽</button>
-          <button type="button" class="whiteboard-tool" data-tool="text" onclick="setWhiteboardTool('text')" title="Text">🔤</button>
-          <button type="button" class="whiteboard-tool" data-tool="line" onclick="setWhiteboardTool('line')" title="Line">📏</button>
-          <button type="button" class="whiteboard-tool" data-tool="rect" onclick="setWhiteboardTool('rect')" title="Rectangle">▭</button>
-          <button type="button" class="whiteboard-tool" data-tool="circle" onclick="setWhiteboardTool('circle')" title="Circle">⬤</button>
-        </div>
-        <div class="whiteboard-tool-group">
-          <input type="color" id="whiteboard-color" value="#1d4ed8" onchange="setWhiteboardColor(this.value)" title="Colour" aria-label="Colour picker">
-          <input type="range" id="whiteboard-size" min="1" max="40" value="4" oninput="setWhiteboardSize(this.value)" onchange="setWhiteboardSize(this.value)" title="Brush size" aria-label="Brush size">
-        </div>
-        <div class="whiteboard-tool-group">
-          <button type="button" class="icon-btn" onclick="whiteboardUndo()" title="Undo" aria-label="Undo">↶</button>
-          <button type="button" class="icon-btn" onclick="whiteboardRedo()" title="Redo" aria-label="Redo">↷</button>
-          <button type="button" class="icon-btn" onclick="whiteboardClear()" title="Clear board" aria-label="Clear board">🗑️</button>
-        </div>
-      </div>
-      <div class="whiteboard-canvas-wrap" id="whiteboard-canvas-wrap">
-        <canvas id="whiteboard-canvas"
-          onpointerdown="whiteboardPointerDown(event)"
-          onpointermove="whiteboardPointerMove(event)"
-          onpointerup="whiteboardPointerUp(event)"
-          onpointerleave="whiteboardPointerUp(event)"
-          onpointercancel="whiteboardPointerUp(event)"></canvas>
-        <button type="button" class="whiteboard-download-btn" onclick="downloadWhiteboardPDF()" title="Download whiteboard as PDF" aria-label="Download whiteboard as PDF">⬇</button>
-      </div>
-    </div>
-  </div>
 
 
   <script>
@@ -1918,60 +1824,12 @@
       Notification.requestPermission().then(refreshNotificationsTab);
     }
 
-    function toggleExtensionMenu() {
-      document.getElementById('extension-menu').classList.toggle('hidden');
-      document.getElementById('emoji-picker').classList.add('hidden');
-      // Games stay Direct-Chat-only — hide the option entirely in a Hub
-      // rather than let someone pick it and get turned away.
-      const gameOption = document.getElementById('ext-opt-game');
-      if (gameOption) gameOption.classList.toggle('hidden', !!activeHub);
-      // Smart Hub Features (Quiz Maker, Events): Hub-only, and only shown
-      // when the Hub owner enabled that specific feature when creating (or
-      // later editing) the Hub. See hubHasFeature() in script.js — this
-      // check is generic, so any future Hub type/category can list these
-      // same feature labels and get the same gating for free.
-      const hub = activeHub ? hubById(activeHub) : null;
-      const quizOption = document.getElementById('ext-opt-quiz');
-      if (quizOption) quizOption.classList.toggle('hidden', !hubHasFeature(hub, '📝 Quiz Maker'));
-      const eventOption = document.getElementById('ext-opt-event');
-      if (eventOption) eventOption.classList.toggle('hidden', !hubHasFeature(hub, '📅 Events'));
-      // Whiteboard: same Smart Hub Feature gating as Quiz Maker/Events above.
-      const whiteboardOption = document.getElementById('ext-opt-whiteboard');
-      if (whiteboardOption) whiteboardOption.classList.toggle('hidden', !hubHasFeature(hub, '🖊️ Whiteboard'));
-    }
+    function toggleExtensionMenu() { document.getElementById('extension-menu').classList.toggle('hidden'); document.getElementById('emoji-picker').classList.add('hidden'); }
     function closeExtension() { document.getElementById('extension-modal').classList.add('hidden'); activeExtension = null; }
     function openExtension(type) {
       if (!activeFriend && !activeHub) return;
-      if (type === 'game' && activeHub) return; // Games are Direct-Chat-only; defense in depth alongside the hidden button.
-      // Quiz Maker / Events: Hub-only Smart Hub Features, and only when the
-      // Hub owner enabled that feature. Defense in depth alongside the
-      // hidden menu buttons in toggleExtensionMenu().
-      if ((type === 'quiz' || type === 'event')) {
-        const hub = activeHub ? hubById(activeHub) : null;
-        const label = type === 'quiz' ? '📝 Quiz Maker' : '📅 Events';
-        if (!hubHasFeature(hub, label)) return;
-      }
-      // Whiteboard: Hub-only Smart Hub Feature, same gating pattern as Quiz
-      // Maker/Events, but opens its own dedicated canvas modal rather than
-      // the small extension-fields composer used below.
-      if (type === 'whiteboard') {
-        const hub = activeHub ? hubById(activeHub) : null;
-        if (!hubHasFeature(hub, '🖊️ Whiteboard')) return;
-        document.getElementById('extension-menu').classList.add('hidden');
-        openWhiteboard();
-        return;
-      }
       activeExtension = type;
       document.getElementById('extension-menu').classList.add('hidden');
-
-      if (type === 'quiz') {
-        document.getElementById('extension-title').textContent = 'New quiz';
-        quizBuilder = { title: '', questions: [] };
-        renderQuizBuilder();
-        document.getElementById('extension-modal').classList.remove('hidden');
-        return;
-      }
-
       const fields = {
         poll: `<label>Question</label><input id="ext-title" placeholder="Where should we eat?"><label>Options (one per line)</label><textarea id="ext-items" placeholder="Pizza\nSushi\nBurgers"></textarea><label>Poll closes</label><input id="ext-date" type="datetime-local">`,
         countdown: `<label>Countdown name</label><input id="ext-title" placeholder="Movie night"><label>Ends at</label><input id="ext-date" type="datetime-local">`,
@@ -1979,107 +1837,22 @@
         todo: `<label>List title</label><input id="ext-title" placeholder="Weekend tasks"><label>Tasks (one per line)</label><textarea id="ext-items" placeholder="Buy groceries\nFinish notes"></textarea><label>Due date (optional)</label><input id="ext-date" type="date">`,
         calendar: `<label>Event title</label><input id="ext-title" placeholder="Team meeting"><label>Date & time</label><input id="ext-date" type="datetime-local"><label>Google Meet or event link (optional)</label><input id="ext-link" placeholder="https://meet.google.com/...">`,
         game: `<label>Choose a game</label><select id="ext-title"><option>Chess</option><option>Tic-tac-toe</option><option>Word battle</option><option>Guess the emoji</option><option>Trivia</option><option>Drawing challenge</option><option>Reaction speed</option><option>20 Questions</option></select><label>Play mode</label><select id="ext-mode"><option value="two-player">Challenge friend (requires acceptance)</option><option value="solo">Play solo while they are offline</option></select>`,
-        shopping: `<label>List title</label><input id="ext-title" placeholder="Shared shopping"><label>Items (one per line)</label><textarea id="ext-items" placeholder="Milk\nBread\nCoffee"></textarea>`,
-        event: `<label>Event title</label><input id="ext-title" placeholder="Midterm study session"><label>Date &amp; time</label><input id="ext-date" type="datetime-local"><label>Duration (minutes)</label><input id="ext-duration" type="number" min="15" step="15" value="60"><label>Location (optional)</label><input id="ext-location" placeholder="Library, Room 204 or a video link"><label>Details (optional)</label><textarea id="ext-items" placeholder="Bring your notes from chapter 4..."></textarea>`
+        shopping: `<label>List title</label><input id="ext-title" placeholder="Shared shopping"><label>Items (one per line)</label><textarea id="ext-items" placeholder="Milk\nBread\nCoffee"></textarea>`
       };
       document.getElementById('extension-title').textContent = type === 'todo' ? 'New to-do list' : `New ${type}`;
       document.getElementById('extension-fields').innerHTML = fields[type];
       document.getElementById('extension-modal').classList.remove('hidden');
     }
-
-    /* ---- Quiz Maker (Smart Hub Feature: Study hubs) -----------------------
-       Owner builds N timed multiple-choice questions here. Sent as a single
-       extension message (same message/sync path as every other extension —
-       Poll, Countdown, etc. — already used in this Hub, so it reaches other
-       members in real time for free). Taking the quiz happens in a separate
-       dedicated modal (openQuizPlay below) so each question's countdown timer
-       is simple local JS state, unaffected by Firestore re-renders while
-       someone is mid-quiz. */
-    let quizBuilder = { title: '', questions: [] };
-    function freshQuizQuestion() { return { text: '', options: ['', '', '', ''], correct: 0, seconds: 20 }; }
-    function renderQuizBuilder() {
-      quizBuilder = { title: quizBuilder.title || '', questions: quizBuilder.questions.length ? quizBuilder.questions : [freshQuizQuestion()] };
-      const q = quizBuilder;
-      const questionsHTML = q.questions.map((question, i) => `
-        <div class="quiz-builder-question">
-          <div class="quiz-builder-question-head">
-            <strong>Question ${i + 1}</strong>
-            ${q.questions.length > 1 ? `<button type="button" class="secondary quiz-builder-remove" onclick="quizBuilderRemoveQuestion(${i})">Remove</button>` : ''}
-          </div>
-          <input placeholder="Question text" value="${escapeHTML(question.text)}" oninput="quizBuilder.questions[${i}].text=this.value">
-          <label style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Options — select the correct one</label>
-          ${question.options.map((opt, j) => `
-            <div class="quiz-builder-option-row">
-              <input type="radio" name="quiz-correct-${i}" ${question.correct === j ? 'checked' : ''} onchange="quizBuilder.questions[${i}].correct=${j}">
-              <input placeholder="Option ${j + 1}" value="${escapeHTML(opt)}" oninput="quizBuilder.questions[${i}].options[${j}]=this.value">
-            </div>`).join('')}
-          <label style="font-size:12px; color:var(--text-muted); margin:6px 0 2px;">Time limit (seconds)</label>
-          <input type="number" min="5" max="300" value="${question.seconds}" oninput="quizBuilder.questions[${i}].seconds=parseInt(this.value)||20">
-        </div>`).join('');
-      document.getElementById('extension-fields').innerHTML = `
-        <label>Quiz title</label>
-        <input id="quiz-title" placeholder="Chapter 4 review" value="${escapeHTML(q.title)}" oninput="quizBuilder.title=this.value">
-        ${questionsHTML}
-        <button type="button" class="secondary" onclick="quizBuilderAddQuestion()">+ Add another question</button>`;
-    }
-    function quizBuilderAddQuestion() { quizBuilder.questions.push(freshQuizQuestion()); renderQuizBuilder(); }
-    function quizBuilderRemoveQuestion(i) { quizBuilder.questions.splice(i, 1); renderQuizBuilder(); }
-    function sendQuizExtension() {
-      const title = (document.getElementById('quiz-title')?.value || '').trim();
-      if (!title) return alert('Give your quiz a title.');
-      const questions = quizBuilder.questions.map(q => ({ text: q.text.trim(), options: q.options.map(o => o.trim()), correct: q.correct, seconds: Math.max(5, q.seconds || 20) }));
-      if (!questions.length || questions.some(q => !q.text || q.options.some(o => !o))) return alert('Every question needs text and all 4 options filled in.');
-
-      const extension = { type: 'quiz', title, questions, responses: {} };
-      const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return;
-      if (hub.permissions?.messaging === 'owner' && hub.owner !== currentUser) return alert('Only the Hub owner can send messages in this Hub.');
-      hub.messages.push({ id: Date.now(), sender: currentUser, text: '', attachment: null, timestamp: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), extension });
-      saveHubs(hubs);
-      quizBuilder = { title: '', questions: [] };
-      closeExtension();
-      renderHubMessages(true);
-    }
-
     function sendExtension() {
-      if (activeExtension === 'quiz') return sendQuizExtension();
       const title = document.getElementById('ext-title').value.trim();
       const date = document.getElementById('ext-date')?.value || '';
       const items = (document.getElementById('ext-items')?.value || '').split('\n').map(x => x.trim()).filter(Boolean);
-      if (!title || ((activeExtension === 'poll' || activeExtension === 'todo' || activeExtension === 'shopping') && !items.length) || ((activeExtension === 'countdown' || activeExtension === 'calendar' || activeExtension === 'event') && !date)) return alert('Please complete the required fields.');
-      const extension = { type:activeExtension, title, items, date, link:document.getElementById('ext-link')?.value.trim() || '', mode:document.getElementById('ext-mode')?.value || '', votes:{}, checked:{}, accepted:false, duration:parseInt(document.getElementById('ext-duration')?.value, 10) || 60, location:document.getElementById('ext-location')?.value.trim() || '' };
-
-      if (activeHub) {
-        // Same message store + saveHubs() path every other Hub message
-        // already goes through — already mirrored to Firestore in real time
-        // (see window.syncHubsToFirestore), so no new sync code is needed
-        // for extension messages to reach other Hub members.
-        const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return;
-        if (hub.permissions?.messaging === 'owner' && hub.owner !== currentUser) return alert('Only the Hub owner can send messages in this Hub.');
-        hub.messages.push({ id: Date.now(), sender: currentUser, text: '', attachment: null, timestamp: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), extension });
-        saveHubs(hubs);
-        closeExtension();
-        renderHubMessages(true);
-        return;
-      }
-
+      if (!title || ((activeExtension === 'poll' || activeExtension === 'todo' || activeExtension === 'shopping') && !items.length) || ((activeExtension === 'countdown' || activeExtension === 'calendar') && !date)) return alert('Please complete the required fields.');
       const messages = DB.getMessages();
-      messages.push({ id: Date.now(), sender: currentUser, receiver: activeFriend, text:'', attachment:null, reactions:{}, timestamp:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), extension });
+      messages.push({ id: Date.now(), sender: currentUser, receiver: activeFriend, text:'', attachment:null, reactions:{}, timestamp:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), extension:{ type:activeExtension, title, items, date, link:document.getElementById('ext-link')?.value.trim() || '', mode:document.getElementById('ext-mode')?.value || '', votes:{}, checked:{}, accepted:false } });
       DB.saveMessages(messages); closeExtension(); renderMessages(true);
     }
     function updateExtension(msgId, action, value) {
-      if (activeHub) {
-        const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return;
-        const msg = hub.messages.find(m => m.id === msgId); if (!msg?.extension) return;
-        const e = msg.extension;
-        if (action === 'vote') { if (e.date && Date.now() > new Date(e.date).getTime()) return; e.votes[currentUser] = value; }
-        if (action === 'check') { e.checked[value] = !e.checked[value]; }
-        if (action === 'accept') e.accepted = true;
-        // Quiz Maker (Study Hubs only): records one participant's finished
-        // attempt. value: { answers:[optionIndexOrNull,...], score }.
-        if (action === 'quizSubmit') { e.responses = e.responses || {}; e.responses[currentUser] = { answers: value.answers, score: value.score, completedAt: Date.now() }; }
-        saveHubs(hubs); renderHubMessages(false);
-        return;
-      }
       const messages = DB.getMessages(); const msg = messages.find(m => m.id === msgId); if (!msg?.extension) return;
       const e = msg.extension;
       if (action === 'vote') { if (e.date && Date.now() > new Date(e.date).getTime()) return; e.votes[currentUser] = value; }
@@ -2088,252 +1861,6 @@
       DB.saveMessages(messages); renderMessages(false);
     }
     function escapeHTML(value='') { const div = document.createElement('div'); div.textContent = value; return div.innerHTML; }
-    // Builds a Google Calendar "quick add" link — no API key or OAuth needed,
-    // since it just opens Google Calendar's own web UI pre-filled; whoever
-    // clicks it adds the event to THEIR OWN calendar with their own account.
-    function googleCalendarLink(title, startISO, durationMinutes, details, location) {
-      const start = new Date(startISO);
-      const end = new Date(start.getTime() + (durationMinutes || 60) * 60000);
-      const fmt = d => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-      const params = new URLSearchParams({ action: 'TEMPLATE', text: title, dates: `${fmt(start)}/${fmt(end)}`, details: details || '', location: location || '' });
-      return `https://www.google.com/calendar/render?${params.toString()}`;
-    }
-    /* ---- Whiteboard (Smart Hub Feature: Study Hubs) -----------------------
-       Real-time shared canvas, one per Hub, entirely separate from Hub chat
-       (hub.messages) — it lives in its own Firestore subcollection
-       (hubs/{hubId}/whiteboard_strokes), synced via window.subscribeToWhiteboard
-       and friends (Firebase module script, below). Every point/coordinate is
-       stored normalized to 0..1 so it replays correctly on any Hub member's
-       differently-sized canvas. Gated by hubHasFeature(hub, '🖊️ Whiteboard')
-       everywhere it can be opened (extension menu, /whiteboard, openExtension). */
-    let whiteboardHubId = null;
-    let whiteboardStrokes = [];
-    let whiteboardTool = 'pen';
-    let whiteboardColor = '#1d4ed8';
-    let whiteboardSize = 4;
-    let whiteboardDrawing = false;
-    let whiteboardCurrentPoints = [];
-    let whiteboardLivePreview = null;
-    let whiteboardMyStrokeIds = [];
-    let whiteboardRedoStack = [];
-
-    function newWhiteboardStrokeId() { return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`; }
-
-    function openWhiteboard() {
-      if (!activeHub) return;
-      const hub = hubById(activeHub);
-      if (!hub || !hubHasFeature(hub, '🖊️ Whiteboard')) return;
-      whiteboardHubId = activeHub;
-      whiteboardStrokes = []; whiteboardMyStrokeIds = []; whiteboardRedoStack = []; whiteboardLivePreview = null;
-      whiteboardTool = 'pen'; whiteboardColor = '#1d4ed8'; whiteboardSize = 4;
-      document.querySelectorAll('.whiteboard-tool').forEach(btn => btn.classList.toggle('active', btn.dataset.tool === 'pen'));
-      const colorInput = document.getElementById('whiteboard-color'); if (colorInput) colorInput.value = whiteboardColor;
-      const sizeInput = document.getElementById('whiteboard-size'); if (sizeInput) sizeInput.value = whiteboardSize;
-      document.getElementById('whiteboard-modal').classList.remove('hidden');
-      resizeWhiteboardCanvas();
-      if (typeof window.subscribeToWhiteboard === 'function') {
-        window.subscribeToWhiteboard(activeHub, strokes => { whiteboardStrokes = strokes; redrawWhiteboard(); });
-      }
-    }
-    function closeWhiteboard() {
-      document.getElementById('whiteboard-modal').classList.add('hidden');
-      if (typeof window.unsubscribeFromWhiteboard === 'function') window.unsubscribeFromWhiteboard();
-      whiteboardHubId = null;
-    }
-    function resizeWhiteboardCanvas() {
-      const canvas = document.getElementById('whiteboard-canvas');
-      const wrap = document.getElementById('whiteboard-canvas-wrap');
-      if (!canvas || !wrap) return;
-      const dpr = window.devicePixelRatio || 1;
-      const rect = wrap.getBoundingClientRect();
-      canvas.width = Math.max(1, Math.round(rect.width * dpr));
-      canvas.height = Math.max(1, Math.round(rect.height * dpr));
-      redrawWhiteboard();
-    }
-    window.addEventListener('resize', () => { if (whiteboardHubId) resizeWhiteboardCanvas(); });
-
-    function whiteboardPointFromEvent(e) {
-      const canvas = document.getElementById('whiteboard-canvas');
-      const rect = canvas.getBoundingClientRect();
-      return { x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height };
-    }
-    function setWhiteboardTool(tool) {
-      whiteboardTool = tool;
-      document.querySelectorAll('.whiteboard-tool').forEach(btn => btn.classList.toggle('active', btn.dataset.tool === tool));
-    }
-    function setWhiteboardColor(hex) { whiteboardColor = hex; }
-    function setWhiteboardSize(px) { whiteboardSize = parseInt(px, 10) || 4; }
-
-    function whiteboardPointerDown(e) {
-      if (!whiteboardHubId) return;
-      e.preventDefault();
-      const canvas = document.getElementById('whiteboard-canvas');
-      if (canvas.setPointerCapture) { try { canvas.setPointerCapture(e.pointerId); } catch (err) {} }
-      const p = whiteboardPointFromEvent(e);
-      if (whiteboardTool === 'text') {
-        const text = prompt('Enter text:');
-        if (text && text.trim()) commitWhiteboardStroke({ id: newWhiteboardStrokeId(), tool: 'text', text: text.trim(), x: p.x, y: p.y, color: whiteboardColor, size: whiteboardSize, author: currentUser });
-        return;
-      }
-      whiteboardDrawing = true;
-      if (whiteboardTool === 'line' || whiteboardTool === 'rect' || whiteboardTool === 'circle') {
-        whiteboardLivePreview = { tool: whiteboardTool, x1: p.x, y1: p.y, x2: p.x, y2: p.y, color: whiteboardColor, size: whiteboardSize };
-      } else {
-        whiteboardCurrentPoints = [p];
-        whiteboardLivePreview = { tool: whiteboardTool, points: whiteboardCurrentPoints, color: whiteboardColor, size: whiteboardSize };
-      }
-      redrawWhiteboard();
-    }
-    function whiteboardPointerMove(e) {
-      if (!whiteboardDrawing || !whiteboardLivePreview) return;
-      e.preventDefault();
-      const p = whiteboardPointFromEvent(e);
-      if (whiteboardTool === 'line' || whiteboardTool === 'rect' || whiteboardTool === 'circle') {
-        whiteboardLivePreview.x2 = p.x; whiteboardLivePreview.y2 = p.y;
-      } else {
-        whiteboardCurrentPoints.push(p);
-      }
-      redrawWhiteboard();
-    }
-    function whiteboardPointerUp() {
-      if (!whiteboardDrawing) return;
-      whiteboardDrawing = false;
-      const stroke = whiteboardLivePreview;
-      whiteboardLivePreview = null;
-      if (!stroke) return;
-      if (stroke.tool === 'line' || stroke.tool === 'rect' || stroke.tool === 'circle') {
-        if (stroke.x1 === stroke.x2 && stroke.y1 === stroke.y2) { redrawWhiteboard(); return; }
-      } else {
-        if (!stroke.points || stroke.points.length < 1) { redrawWhiteboard(); return; }
-        if (stroke.points.length === 1) stroke.points.push(stroke.points[0]); // render a tap as a small dot
-      }
-      commitWhiteboardStroke({ id: newWhiteboardStrokeId(), ...stroke, author: currentUser });
-    }
-    function commitWhiteboardStroke(stroke) {
-      if (!whiteboardHubId) return;
-      whiteboardMyStrokeIds.push(stroke.id);
-      whiteboardRedoStack = [];
-      if (typeof window.addWhiteboardStroke === 'function') window.addWhiteboardStroke(whiteboardHubId, stroke);
-    }
-    function whiteboardUndo() {
-      if (!whiteboardHubId || !whiteboardMyStrokeIds.length) return;
-      const id = whiteboardMyStrokeIds.pop();
-      const stroke = whiteboardStrokes.find(s => s.id === id);
-      if (stroke) whiteboardRedoStack.push(stroke);
-      whiteboardStrokes = whiteboardStrokes.filter(s => s.id !== id);
-      redrawWhiteboard();
-      if (typeof window.deleteWhiteboardStroke === 'function') window.deleteWhiteboardStroke(whiteboardHubId, id);
-    }
-    function whiteboardRedo() {
-      if (!whiteboardHubId || !whiteboardRedoStack.length) return;
-      const stroke = whiteboardRedoStack.pop();
-      whiteboardMyStrokeIds.push(stroke.id);
-      whiteboardStrokes = [...whiteboardStrokes, stroke];
-      redrawWhiteboard();
-      if (typeof window.addWhiteboardStroke === 'function') window.addWhiteboardStroke(whiteboardHubId, stroke);
-    }
-    function whiteboardClear() {
-      if (!whiteboardHubId) return;
-      if (!confirm('Clear the whole whiteboard for everyone in this Hub? This cannot be undone.')) return;
-      whiteboardStrokes = []; whiteboardMyStrokeIds = []; whiteboardRedoStack = [];
-      redrawWhiteboard();
-      if (typeof window.clearWhiteboard === 'function') window.clearWhiteboard(whiteboardHubId);
-    }
-
-    function renderWhiteboardStroke(ctx, canvas, stroke) {
-      const w = canvas.width, h = canvas.height;
-      ctx.save();
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      if (stroke.tool === 'pen' || stroke.tool === 'highlighter' || stroke.tool === 'eraser') {
-        if (!stroke.points || stroke.points.length < 1) { ctx.restore(); return; }
-        ctx.globalCompositeOperation = stroke.tool === 'eraser' ? 'destination-out' : 'source-over';
-        ctx.globalAlpha = stroke.tool === 'highlighter' ? 0.35 : 1;
-        ctx.strokeStyle = stroke.tool === 'eraser' ? 'rgba(0,0,0,1)' : (stroke.color || '#1d4ed8');
-        ctx.lineWidth = (stroke.tool === 'highlighter' ? (stroke.size || 4) * 2.2 : (stroke.size || 4));
-        ctx.beginPath();
-        stroke.points.forEach((pt, i) => { const x = pt.x * w, y = pt.y * h; if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
-        ctx.stroke();
-      } else if (stroke.tool === 'line') {
-        ctx.strokeStyle = stroke.color; ctx.lineWidth = stroke.size;
-        ctx.beginPath(); ctx.moveTo(stroke.x1 * w, stroke.y1 * h); ctx.lineTo(stroke.x2 * w, stroke.y2 * h); ctx.stroke();
-      } else if (stroke.tool === 'rect') {
-        ctx.strokeStyle = stroke.color; ctx.lineWidth = stroke.size;
-        ctx.strokeRect(Math.min(stroke.x1, stroke.x2) * w, Math.min(stroke.y1, stroke.y2) * h, Math.abs(stroke.x2 - stroke.x1) * w, Math.abs(stroke.y2 - stroke.y1) * h);
-      } else if (stroke.tool === 'circle') {
-        ctx.strokeStyle = stroke.color; ctx.lineWidth = stroke.size;
-        const cx = (stroke.x1 + stroke.x2) / 2 * w, cy = (stroke.y1 + stroke.y2) / 2 * h, rx = Math.abs(stroke.x2 - stroke.x1) / 2 * w, ry = Math.abs(stroke.y2 - stroke.y1) / 2 * h;
-        ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
-      } else if (stroke.tool === 'text') {
-        ctx.fillStyle = stroke.color; ctx.font = `${(stroke.size || 4) * 4}px -apple-system, BlinkMacSystemFont, sans-serif`; ctx.textBaseline = 'top';
-        ctx.fillText(stroke.text || '', stroke.x * w, stroke.y * h);
-      }
-      ctx.restore();
-    }
-    function redrawWhiteboard() {
-      const canvas = document.getElementById('whiteboard-canvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      whiteboardStrokes.forEach(s => renderWhiteboardStroke(ctx, canvas, s));
-      if (whiteboardLivePreview) renderWhiteboardStroke(ctx, canvas, whiteboardLivePreview);
-    }
-
-    // Hand-built single-page PDF (no external library): a JPEG can be
-    // embedded in a PDF stream as-is via /DCTDecode, so this needs no image
-    // re-encoding — just the raw JPEG bytes wrapped in minimal PDF syntax.
-    function canvasToPdfBlob(canvas) {
-      const enc = new TextEncoder();
-      const base64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
-      const binary = atob(base64);
-      const jpegBytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) jpegBytes[i] = binary.charCodeAt(i);
-
-      const pageW = Math.max(1, Math.round(canvas.width * 0.75));
-      const pageH = Math.max(1, Math.round(canvas.height * 0.75));
-      const parts = [];
-      let offset = 0;
-      const objOffsets = [];
-      function push(bytesOrStr) { const bytes = typeof bytesOrStr === 'string' ? enc.encode(bytesOrStr) : bytesOrStr; parts.push(bytes); offset += bytes.length; }
-      function beginObj(num) { objOffsets[num] = offset; }
-
-      push('%PDF-1.4\n');
-      beginObj(1); push('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
-      beginObj(2); push('2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n');
-      beginObj(3); push(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`);
-      beginObj(4);
-      push(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
-      push(jpegBytes);
-      push('\nendstream\nendobj\n');
-      const contentStream = `q ${pageW} 0 0 ${pageH} 0 0 cm /Im0 Do Q`;
-      beginObj(5); push(`5 0 obj\n<< /Length ${contentStream.length} >>\nstream\n${contentStream}\nendstream\nendobj\n`);
-
-      const xrefStart = offset;
-      let xref = 'xref\n0 6\n0000000000 65535 f \n';
-      for (let i = 1; i <= 5; i++) xref += String(objOffsets[i]).padStart(10, '0') + ' 00000 n \n';
-      push(xref);
-      push(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`);
-
-      return new Blob(parts, { type: 'application/pdf' });
-    }
-    function downloadWhiteboardPDF() {
-      const canvas = document.getElementById('whiteboard-canvas');
-      if (!canvas) return;
-      try {
-        const blob = canvasToPdfBlob(canvas);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `nexora-whiteboard-${Date.now()}.pdf`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 4000);
-      } catch (error) {
-        console.error('Whiteboard PDF export failed:', error);
-        alert('Could not export the whiteboard as a PDF.');
-      }
-    }
-
     function extensionHTML(m) {
       const e = m.extension; if (!e) return ''; const closed = e.date && e.type === 'poll' && Date.now() >= new Date(e.date).getTime();
       if (e.type === 'poll') { const counts = e.items.map((_,i) => Object.values(e.votes).filter(v => +v === i).length); const max = Math.max(0,...counts); return `<div class="extension-card"><div class="extension-title">Poll · ${escapeHTML(e.title)}</div>${e.items.map((item,i) => `<button class="poll-option" ${closed?'disabled':''} onclick="updateExtension(${m.id},'vote',${i})"><span>${escapeHTML(item)}</span><span>${counts[i]} vote${counts[i]===1?'':'s'}</span></button>${closed?`<div class="poll-bar" style="width:${max ? counts[i]/max*100 : 0}%"></div>`:''}`).join('')}<div class="extension-meta">${closed ? `Closed · Winner: ${escapeHTML(e.items[counts.indexOf(max)] || 'No votes')}` : `Closes ${new Date(e.date).toLocaleString()}`}</div></div>`; }
@@ -2342,138 +1869,8 @@
       if (e.type === 'todo') return `<div class="extension-card"><div class="extension-title">To-do · ${escapeHTML(e.title)}</div>${e.items.map((item,i) => `<label class="todo-item ${e.checked[i]?'done':''}"><input type="checkbox" ${e.checked[i]?'checked':''} onchange="updateExtension(${m.id},'check',${i})"><span>${escapeHTML(item)}</span></label>`).join('')}<div class="extension-meta">${e.date ? `Due ${new Date(e.date).toLocaleDateString()}` : 'Shared and editable'}</div></div>`;
       if (e.type === 'shopping') return `<div class="extension-card shopping-card"><div class="extension-title">Shopping list · ${escapeHTML(e.title)}</div>${e.items.map((item,i) => `<label class="shopping-item ${e.checked[i]?'done':''}"><input type="checkbox" ${e.checked[i]?'checked':''} onchange="updateExtension(${m.id},'check',${i})"><span>${escapeHTML(item)}</span></label>`).join('')}<div class="extension-meta">${e.date ? `Due ${new Date(e.date).toLocaleDateString()}` : 'Shared and editable'}</div></div>`;
       if (e.type === 'calendar') return `<div class="extension-card"><div class="extension-title">Calendar event · ${escapeHTML(e.title)}</div><div>${new Date(e.date).toLocaleString()}</div>${e.link ? `<a class="map-link" href="${escapeHTML(e.link)}" target="_blank">Join Google Meet</a>` : ''}</div>`;
-      // Events (Smart Hub Feature, Study Hubs only): distinct from the
-      // general-purpose "calendar" extension above — this one always renders
-      // a "+ Add to Google Calendar" link so any member can one-click add it
-      // to their own calendar.
-      if (e.type === 'event') {
-        const gcalLink = e.date ? googleCalendarLink(e.title, e.date, e.duration, (e.items || []).join(' '), e.location || '') : '';
-        return `<div class="extension-card event-card"><div class="extension-title">📅 ${escapeHTML(e.title)}</div>${e.date ? `<div>${new Date(e.date).toLocaleString([], {dateStyle:'medium', timeStyle:'short'})}</div>` : ''}${e.location ? `<div class="extension-meta">📍 ${escapeHTML(e.location)}</div>` : ''}${e.items?.length ? `<div class="extension-meta">${escapeHTML(e.items.join(' '))}</div>` : ''}${gcalLink ? `<a class="poll-option event-gcal-link" href="${gcalLink}" target="_blank" rel="noopener">+ Add to Google Calendar</a>` : ''}</div>`;
-      }
-      // Quiz Maker (Smart Hub Feature, Study Hubs only): summary card. Taking
-      // the quiz opens the dedicated quiz-play-modal (openQuizPlay) rather
-      // than answering inline here — see the block below extensionHTML.
-      if (e.type === 'quiz') {
-        const totalQ = e.questions.length;
-        const myResult = e.responses && e.responses[currentUser];
-        const participantRows = Object.keys(e.responses || {}).map(user => `<div class="quiz-score-row"><span>@${escapeHTML(user)}</span><span>${e.responses[user].score}/${totalQ}</span></div>`).join('');
-        return `<div class="extension-card quiz-card"><div class="extension-title">📝 Quiz · ${escapeHTML(e.title)}</div><div class="extension-meta">${totalQ} question${totalQ===1?'':'s'}</div>${myResult ? `<div class="quiz-my-score">You scored ${myResult.score}/${totalQ}</div>` : `<button type="button" class="poll-option" onclick="openQuizPlay(${m.id})">Take Quiz</button>`}${participantRows ? `<div class="quiz-score-list">${participantRows}</div>` : ''}</div>`;
-      }
       if (e.type === 'hub_invite') { const isRecipient = m.receiver === currentUser; return `<div class="extension-card"><div class="extension-title">Hub invite · ${escapeHTML(e.hubName || 'Hub')}</div><div>${isRecipient ? "You've been invited to join this Hub." : `Invite sent to @${escapeHTML(m.receiver)}.`}</div>${isRecipient ? `<button class="poll-option" onclick="joinHubFromInvite(${e.hubId})">Join Hub</button>` : ''}</div>`; }
       return `<div class="extension-card"><div class="extension-title">Game · ${escapeHTML(e.title)}</div><div>${e.mode === 'solo' ? 'Solo game ready to play.' : (e.accepted ? 'Challenge accepted — game ready!' : 'Challenge sent — waiting for your friend.')}</div>${e.mode !== 'solo' && !e.accepted && m.receiver === currentUser ? `<button class="poll-option" onclick="updateExtension(${m.id},'accept')">Accept challenge</button>` : ''}</div>`;
-    }
-
-    /* ---- Quiz Maker: taking the quiz --------------------------------------
-       Runs entirely in local JS state while the modal is open (including the
-       per-question countdown timer), and only writes to Firestore once, at
-       the very end (via updateExtension → 'quizSubmit'). This sidesteps the
-       problem of a live per-question timer getting reset or confused by
-       Firestore's real-time re-renders whenever ANY Hub member sends a
-       message or another participant finishes the quiz. */
-    let quizPlayState = null;
-    function openQuizPlay(msgId) {
-      const hub = hubById(activeHub); if (!hub) return;
-      const msg = hub.messages.find(m => m.id === msgId); if (!msg?.extension) return;
-      const e = msg.extension;
-      if (e.responses && e.responses[currentUser]) return; // already taken
-      quizPlayState = { msgId, questions: e.questions, index: 0, answers: [], locked: false, timerHandle: null, remaining: 0 };
-      document.getElementById('quiz-play-modal').classList.remove('hidden');
-      quizPlayRenderQuestion();
-    }
-    function quizPlayRenderQuestion() {
-      const s = quizPlayState; const q = s.questions[s.index];
-      s.locked = false;
-      s.remaining = q.seconds;
-      document.getElementById('quiz-play-progress').textContent = `Question ${s.index + 1} of ${s.questions.length}`;
-      document.getElementById('quiz-play-question-title').textContent = q.text;
-      document.getElementById('quiz-play-next-btn').classList.add('hidden');
-      document.getElementById('quiz-play-options').innerHTML = q.options.map((opt, i) => `<button type="button" class="poll-option quiz-play-option" data-idx="${i}" onclick="quizPlayAnswer(${i})">${escapeHTML(opt)}</button>`).join('');
-      quizPlayUpdateTimerDisplay();
-      if (s.timerHandle) clearInterval(s.timerHandle);
-      s.timerHandle = setInterval(quizPlayTick, 1000);
-    }
-    function quizPlayUpdateTimerDisplay() {
-      const el = document.getElementById('quiz-play-timer'); if (el) el.textContent = `⏱ ${quizPlayState.remaining}s`;
-    }
-    function quizPlayTick() {
-      const s = quizPlayState; if (!s || s.locked) return;
-      s.remaining -= 1;
-      quizPlayUpdateTimerDisplay();
-      if (s.remaining <= 0) quizPlayAnswer(-1); // time's up — counts as unanswered/wrong
-    }
-    function quizPlayAnswer(optionIndex) {
-      const s = quizPlayState; if (!s || s.locked) return;
-      s.locked = true;
-      clearInterval(s.timerHandle);
-      const q = s.questions[s.index];
-      s.answers[s.index] = optionIndex;
-      document.querySelectorAll('#quiz-play-options .quiz-play-option').forEach(btn => {
-        const idx = parseInt(btn.dataset.idx, 10);
-        btn.disabled = true;
-        if (idx === q.correct) btn.classList.add('quiz-correct');
-        else if (idx === optionIndex) btn.classList.add('quiz-wrong');
-      });
-      const nextBtn = document.getElementById('quiz-play-next-btn');
-      nextBtn.classList.remove('hidden');
-      nextBtn.textContent = s.index < s.questions.length - 1 ? 'Next Question' : 'See Results';
-    }
-    function quizPlayNext() {
-      const s = quizPlayState;
-      if (s.index < s.questions.length - 1) { s.index += 1; quizPlayRenderQuestion(); }
-      else quizPlaySubmit();
-    }
-    function quizPlaySubmit() {
-      const s = quizPlayState;
-      clearInterval(s.timerHandle);
-      const score = s.answers.reduce((sum, ans, i) => sum + (ans === s.questions[i].correct ? 1 : 0), 0);
-      updateExtension(s.msgId, 'quizSubmit', { answers: s.answers, score });
-      closeQuizPlay();
-      alert(`Quiz complete! You scored ${score}/${s.questions.length}.`);
-    }
-    function closeQuizPlay() {
-      if (quizPlayState?.timerHandle) clearInterval(quizPlayState.timerHandle);
-      quizPlayState = null;
-      document.getElementById('quiz-play-modal').classList.add('hidden');
-    }
-    // Detects the exact "📍 My Location: https://maps.google.com/?q=LAT,LNG"
-    // text shareLocation() (DM and Hub) sends, and renders it as a rich card
-    // instead of the plain linkified text — same helper used by both
-    // renderMessages() and renderHubMessages() so the two stay in sync.
-    // Scoped to this app's own share-location format on purpose, so an
-    // arbitrary Maps link someone pastes into a normal message still shows
-    // as plain text rather than being mis-detected.
-    //
-    // The preview is a custom-drawn SVG, not a Google/third-party static
-    // map image — no API key, no billing, no external request at all. The
-    // street pattern is seeded from the coordinates so different shared
-    // locations get a distinct (but stable) look instead of an identical
-    // graphic every time, and it's colored entirely with var(--...) tokens
-    // so it matches whichever theme is active, light or dark.
-    function locationCardHTML(text) {
-      if (!text) return null;
-      const match = text.match(/https:\/\/maps\.google\.com\/\?q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
-      if (!match) return null;
-      const [mapsUrl, lat, lng] = match;
-
-      let seed = Math.abs(Math.round(parseFloat(lat) * 1000 + parseFloat(lng) * 7919)) || 1;
-      const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-
-      const blockLines = Array.from({ length: 4 }).map(() => {
-        const vertical = rand() > 0.5;
-        return vertical
-          ? `<line x1="${(rand()*320).toFixed(0)}" y1="0" x2="${(rand()*320).toFixed(0)}" y2="140" stroke="var(--border)" stroke-width="2"/>`
-          : `<line x1="0" y1="${(rand()*140).toFixed(0)}" x2="320" y2="${(rand()*140).toFixed(0)}" stroke="var(--border)" stroke-width="2"/>`;
-      }).join('');
-      const roads = Array.from({ length: 3 }).map(() => {
-        const y1 = (10 + rand() * 35).toFixed(0), y2 = (90 + rand() * 40).toFixed(0);
-        const c1x = (50 + rand() * 70).toFixed(0), c1y = (rand() * 140).toFixed(0);
-        const c2x = (190 + rand() * 80).toFixed(0), c2y = (rand() * 140).toFixed(0);
-        return `<path d="M-5 ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, 325 ${y2}" stroke="var(--text-muted)" stroke-width="3" fill="none" opacity="${(0.25 + rand() * 0.3).toFixed(2)}"/>`;
-      }).join('');
-
-      const preview = `<svg class="location-card-preview" viewBox="0 0 320 140" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stylized map preview centered on the shared location"><rect width="320" height="140" fill="var(--input-bg)"/>${blockLines}${roads}<circle class="location-pulse" cx="160" cy="70" r="26" fill="var(--primary)" opacity=".16"/><circle cx="160" cy="70" r="13" fill="var(--primary)" opacity=".22"/><path d="M160 44c-10 0-18 8-18 18 0 13 18 34 18 34s18-21 18-34c0-10-8-18-18-18z" fill="var(--primary)"/><circle cx="160" cy="61" r="6.5" fill="#fff"/></svg>`;
-
-      return `<div class="extension-card location-card">${preview}<div class="extension-title">📍 Shared location</div><div class="location-card-coords">${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}</div><a class="poll-option location-card-link" href="${escapeHTML(mapsUrl)}" target="_blank" rel="noopener">Open in Google Maps</a></div>`;
     }
     function refreshCountdowns() { document.querySelectorAll('.countdown-card').forEach(card => { const diff = Math.max(0, new Date(card.dataset.end).getTime() - Date.now()); const h = Math.floor(diff/3600000); const min = Math.floor(diff%3600000/60000); const s = Math.floor(diff%60000/1000); card.querySelector('.timer-display').textContent = diff ? `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}` : 'Time is up!'; }); }
     setInterval(refreshCountdowns, 1000);
@@ -2599,25 +1996,13 @@
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
-        const text = `📍 My Location: ${mapsUrl}`;
-
-        if (activeHub) {
-          // Same message store + saveHubs() path every other Hub message
-          // goes through — already mirrored to Firestore in real time.
-          const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return;
-          if (hub.permissions?.messaging === 'owner' && hub.owner !== currentUser) return alert('Only the Hub owner can send messages in this Hub.');
-          hub.messages.push({ id: Date.now(), sender: currentUser, text, attachment: null, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
-          saveHubs(hubs);
-          renderHubMessages(true);
-          return;
-        }
-
+        
         const messages = DB.getMessages();
         messages.push({
           id: Date.now(),
           sender: currentUser,
           receiver: activeFriend,
-          text,
+          text: `📍 My Location: ${mapsUrl}`,
           attachment: null,
           reactions: {},
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -2812,14 +2197,13 @@
         msgDiv.className = `message ${isSent ? 'sent' : 'received'}`;
         msgDiv.onclick = (e) => toggleMsgPopover(e, m.id);
 
-        const locationCard = locationCardHTML(m.text);
-        const formattedText = locationCard ? '' : parseTextLinks(m.text);
+        const formattedText = parseTextLinks(m.text);
         const structuredContent = extensionHTML(m);
 
         msgDiv.innerHTML = `
           ${attachmentHTML}
           ${structuredContent}
-          ${locationCard || (formattedText ? `<div>${formattedText}</div>` : '')}
+          ${formattedText ? `<div>${formattedText}</div>` : ''}
           <div style="font-size:10px; opacity:0.7; text-align:right;">
             ${m.edited ? '(edited) ' : ''}${m.timestamp}
           </div>
@@ -3318,59 +2702,6 @@
         ? 'Permission denied by Firestore security rules (check the "hubs" rule).'
         : (error.message || 'Could not join this Hub.');
       return { ok: false, message };
-    }
-  };
-
-  // --- Whiteboard (Smart Hub Feature: Study Hubs) --------------------------
-  // hubs/{hubId}/whiteboard_strokes/{strokeId} — one small doc per completed
-  // stroke, shape, or text item. Deliberately its own subcollection, never
-  // touched by syncHubsToFirestore/subscribeToHub above, so it can't
-  // interact with — or risk breaking — existing Hub chat sync. `seq` (a
-  // client timestamp) gives a stable draw order across all Hub members.
-  let unsubscribeWhiteboard = null;
-
-  window.subscribeToWhiteboard = function (hubId, onChange) {
-    if (unsubscribeWhiteboard) { unsubscribeWhiteboard(); unsubscribeWhiteboard = null; }
-    if (!hubId) return;
-    const strokesRef = collection(db, 'hubs', String(hubId), 'whiteboard_strokes');
-    const q = query(strokesRef, orderBy('seq', 'asc'));
-    unsubscribeWhiteboard = onSnapshot(q, (snapshot) => {
-      onChange(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
-    }, (error) => console.error("❌ Whiteboard listener error:", error));
-  };
-
-  window.unsubscribeFromWhiteboard = function () {
-    if (unsubscribeWhiteboard) { unsubscribeWhiteboard(); unsubscribeWhiteboard = null; }
-  };
-
-  window.addWhiteboardStroke = async function (hubId, stroke) {
-    try {
-      await setDoc(doc(db, 'hubs', String(hubId), 'whiteboard_strokes', stroke.id), { ...stroke, seq: Date.now() });
-      return { ok: true };
-    } catch (error) {
-      console.error("❌ Whiteboard stroke save failed:", error);
-      return { ok: false };
-    }
-  };
-
-  window.deleteWhiteboardStroke = async function (hubId, strokeId) {
-    try {
-      await deleteDoc(doc(db, 'hubs', String(hubId), 'whiteboard_strokes', strokeId));
-      return { ok: true };
-    } catch (error) {
-      console.error("❌ Whiteboard stroke delete failed:", error);
-      return { ok: false };
-    }
-  };
-
-  window.clearWhiteboard = async function (hubId) {
-    try {
-      const snap = await getDocs(collection(db, 'hubs', String(hubId), 'whiteboard_strokes'));
-      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
-      return { ok: true };
-    } catch (error) {
-      console.error("❌ Whiteboard clear failed:", error);
-      return { ok: false };
     }
   };
 
