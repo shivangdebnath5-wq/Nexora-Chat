@@ -412,7 +412,9 @@
     .extension-title { display:flex; align-items:center; gap:8px; font-weight:700; margin-bottom:9px; }
     .extension-meta { font-size:12px; color:var(--text-muted); margin-top:8px; }
     .poll-option { width:100%; margin:6px 0 0; padding:8px 10px; display:flex; justify-content:space-between; background:var(--input-bg); color:var(--text-main); border:1px solid var(--border); border-radius:8px; font-size:13px; }
-    .location-card-preview { display:block; width:calc(100% + 28px); margin:-14px -14px 10px -14px; height:140px; object-fit:cover; border-radius:14px 14px 0 0; background:var(--input-bg); }
+    .location-card-preview { display:block; width:calc(100% + 28px); margin:-14px -14px 10px -14px; height:140px; border-radius:14px 14px 0 0; }
+    .location-pulse { animation: locationPulse 2.2s ease-in-out infinite; transform-origin: 160px 70px; }
+    @keyframes locationPulse { 0%, 100% { opacity:.16; transform:scale(1); } 50% { opacity:.05; transform:scale(1.35); } }
     .location-card-coords { font-size:12px; color:var(--text-muted); margin-bottom:2px; }
     .location-card-link { justify-content:center; gap:6px; text-decoration:none; font-weight:600; }
     .poll-option:disabled { cursor:default; opacity:.8; }
@@ -1915,13 +1917,38 @@
     // Scoped to this app's own share-location format on purpose, so an
     // arbitrary Maps link someone pastes into a normal message still shows
     // as plain text rather than being mis-detected.
+    //
+    // The preview is a custom-drawn SVG, not a Google/third-party static
+    // map image — no API key, no billing, no external request at all. The
+    // street pattern is seeded from the coordinates so different shared
+    // locations get a distinct (but stable) look instead of an identical
+    // graphic every time, and it's colored entirely with var(--...) tokens
+    // so it matches whichever theme is active, light or dark.
     function locationCardHTML(text) {
       if (!text) return null;
       const match = text.match(/https:\/\/maps\.google\.com\/\?q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
       if (!match) return null;
       const [mapsUrl, lat, lng] = match;
-      const previewUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=15&size=320x140&maptype=mapnik&markers=${lat},${lng},red-pushpin`;
-      return `<div class="extension-card location-card"><img class="location-card-preview" src="${previewUrl}" alt="Map preview centered on the shared location" loading="lazy" onerror="this.style.display='none'"><div class="extension-title">📍 Shared location</div><div class="location-card-coords">${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}</div><a class="poll-option location-card-link" href="${escapeHTML(mapsUrl)}" target="_blank" rel="noopener">Open in Google Maps</a></div>`;
+
+      let seed = Math.abs(Math.round(parseFloat(lat) * 1000 + parseFloat(lng) * 7919)) || 1;
+      const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+
+      const blockLines = Array.from({ length: 4 }).map(() => {
+        const vertical = rand() > 0.5;
+        return vertical
+          ? `<line x1="${(rand()*320).toFixed(0)}" y1="0" x2="${(rand()*320).toFixed(0)}" y2="140" stroke="var(--border)" stroke-width="2"/>`
+          : `<line x1="0" y1="${(rand()*140).toFixed(0)}" x2="320" y2="${(rand()*140).toFixed(0)}" stroke="var(--border)" stroke-width="2"/>`;
+      }).join('');
+      const roads = Array.from({ length: 3 }).map(() => {
+        const y1 = (10 + rand() * 35).toFixed(0), y2 = (90 + rand() * 40).toFixed(0);
+        const c1x = (50 + rand() * 70).toFixed(0), c1y = (rand() * 140).toFixed(0);
+        const c2x = (190 + rand() * 80).toFixed(0), c2y = (rand() * 140).toFixed(0);
+        return `<path d="M-5 ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, 325 ${y2}" stroke="var(--text-muted)" stroke-width="3" fill="none" opacity="${(0.25 + rand() * 0.3).toFixed(2)}"/>`;
+      }).join('');
+
+      const preview = `<svg class="location-card-preview" viewBox="0 0 320 140" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stylized map preview centered on the shared location"><rect width="320" height="140" fill="var(--input-bg)"/>${blockLines}${roads}<circle class="location-pulse" cx="160" cy="70" r="26" fill="var(--primary)" opacity=".16"/><circle cx="160" cy="70" r="13" fill="var(--primary)" opacity=".22"/><path d="M160 44c-10 0-18 8-18 18 0 13 18 34 18 34s18-21 18-34c0-10-8-18-18-18z" fill="var(--primary)"/><circle cx="160" cy="61" r="6.5" fill="#fff"/></svg>`;
+
+      return `<div class="extension-card location-card">${preview}<div class="extension-title">📍 Shared location</div><div class="location-card-coords">${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}</div><a class="poll-option location-card-link" href="${escapeHTML(mapsUrl)}" target="_blank" rel="noopener">Open in Google Maps</a></div>`;
     }
     function refreshCountdowns() { document.querySelectorAll('.countdown-card').forEach(card => { const diff = Math.max(0, new Date(card.dataset.end).getTime() - Date.now()); const h = Math.floor(diff/3600000); const min = Math.floor(diff%3600000/60000); const s = Math.floor(diff%60000/1000); card.querySelector('.timer-display').textContent = diff ? `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}` : 'Time is up!'; }); }
     setInterval(refreshCountdowns, 1000);
