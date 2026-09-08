@@ -412,6 +412,9 @@
     .extension-title { display:flex; align-items:center; gap:8px; font-weight:700; margin-bottom:9px; }
     .extension-meta { font-size:12px; color:var(--text-muted); margin-top:8px; }
     .poll-option { width:100%; margin:6px 0 0; padding:8px 10px; display:flex; justify-content:space-between; background:var(--input-bg); color:var(--text-main); border:1px solid var(--border); border-radius:8px; font-size:13px; }
+    .location-card-preview { display:block; width:calc(100% + 28px); margin:-14px -14px 10px -14px; height:140px; object-fit:cover; border-radius:14px 14px 0 0; background:var(--input-bg); }
+    .location-card-coords { font-size:12px; color:var(--text-muted); margin-bottom:2px; }
+    .location-card-link { justify-content:center; gap:6px; text-decoration:none; font-weight:600; }
     .poll-option:disabled { cursor:default; opacity:.8; }
     .poll-bar { height:5px; margin-top:4px; border-radius:8px; background:var(--primary); }
     .timer-display { font-size:28px; font-weight:800; letter-spacing:.04em; color:var(--primary); margin:4px 0; }
@@ -1905,6 +1908,21 @@
       if (e.type === 'hub_invite') { const isRecipient = m.receiver === currentUser; return `<div class="extension-card"><div class="extension-title">Hub invite · ${escapeHTML(e.hubName || 'Hub')}</div><div>${isRecipient ? "You've been invited to join this Hub." : `Invite sent to @${escapeHTML(m.receiver)}.`}</div>${isRecipient ? `<button class="poll-option" onclick="joinHubFromInvite(${e.hubId})">Join Hub</button>` : ''}</div>`; }
       return `<div class="extension-card"><div class="extension-title">Game · ${escapeHTML(e.title)}</div><div>${e.mode === 'solo' ? 'Solo game ready to play.' : (e.accepted ? 'Challenge accepted — game ready!' : 'Challenge sent — waiting for your friend.')}</div>${e.mode !== 'solo' && !e.accepted && m.receiver === currentUser ? `<button class="poll-option" onclick="updateExtension(${m.id},'accept')">Accept challenge</button>` : ''}</div>`;
     }
+    // Detects the exact "📍 My Location: https://maps.google.com/?q=LAT,LNG"
+    // text shareLocation() (DM and Hub) sends, and renders it as a rich card
+    // instead of the plain linkified text — same helper used by both
+    // renderMessages() and renderHubMessages() so the two stay in sync.
+    // Scoped to this app's own share-location format on purpose, so an
+    // arbitrary Maps link someone pastes into a normal message still shows
+    // as plain text rather than being mis-detected.
+    function locationCardHTML(text) {
+      if (!text) return null;
+      const match = text.match(/https:\/\/maps\.google\.com\/\?q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+      if (!match) return null;
+      const [mapsUrl, lat, lng] = match;
+      const previewUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=15&size=320x140&maptype=mapnik&markers=${lat},${lng},red-pushpin`;
+      return `<div class="extension-card location-card"><img class="location-card-preview" src="${previewUrl}" alt="Map preview centered on the shared location" loading="lazy" onerror="this.style.display='none'"><div class="extension-title">📍 Shared location</div><div class="location-card-coords">${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}</div><a class="poll-option location-card-link" href="${escapeHTML(mapsUrl)}" target="_blank" rel="noopener">Open in Google Maps</a></div>`;
+    }
     function refreshCountdowns() { document.querySelectorAll('.countdown-card').forEach(card => { const diff = Math.max(0, new Date(card.dataset.end).getTime() - Date.now()); const h = Math.floor(diff/3600000); const min = Math.floor(diff%3600000/60000); const s = Math.floor(diff%60000/1000); card.querySelector('.timer-display').textContent = diff ? `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}` : 'Time is up!'; }); }
     setInterval(refreshCountdowns, 1000);
 
@@ -2242,13 +2260,14 @@
         msgDiv.className = `message ${isSent ? 'sent' : 'received'}`;
         msgDiv.onclick = (e) => toggleMsgPopover(e, m.id);
 
-        const formattedText = parseTextLinks(m.text);
+        const locationCard = locationCardHTML(m.text);
+        const formattedText = locationCard ? '' : parseTextLinks(m.text);
         const structuredContent = extensionHTML(m);
 
         msgDiv.innerHTML = `
           ${attachmentHTML}
           ${structuredContent}
-          ${formattedText ? `<div>${formattedText}</div>` : ''}
+          ${locationCard || (formattedText ? `<div>${formattedText}</div>` : '')}
           <div style="font-size:10px; opacity:0.7; text-align:right;">
             ${m.edited ? '(edited) ' : ''}${m.timestamp}
           </div>
