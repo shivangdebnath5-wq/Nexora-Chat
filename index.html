@@ -2543,11 +2543,40 @@
     async function loadPinterestPreview(url, cardId) {
       let html;
       try {
-        const res = await fetch(`${PINTEREST_BACKEND_URL}/api/pinterest/preview?url=${encodeURIComponent(url)}`);
-        const data = await res.json();
-        html = data.ok ? pinterestCardHTML(data) : pinterestErrorCardHTML(url);
+        // Render's free tier can cold-start slowly after inactivity — fail
+        // after 20s with a clear timeout instead of hanging indefinitely.
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000);
+        let res;
+        try {
+          res = await fetch(`${PINTEREST_BACKEND_URL}/api/pinterest/preview?url=${encodeURIComponent(url)}`, { signal: controller.signal });
+        } finally {
+          clearTimeout(timeout);
+        }
+        if (!res.ok) {
+          // Log the real HTTP failure (404 = wrong route, 401/403 = Pinterest
+          // token issue, 500 = backend error) instead of just showing the
+          // generic card with no trace of why.
+          const bodyText = await res.text().catch(() => '');
+          console.error(`Pinterest preview backend returned ${res.status} ${res.statusText}:`, bodyText);
+          html = pinterestErrorCardHTML(url);
+        } else {
+          const data = await res.json();
+          if (data.ok) {
+            html = pinterestCardHTML(data);
+          } else {
+            console.error('Pinterest preview backend responded with ok:false —', data.error || data);
+            html = pinterestErrorCardHTML(url);
+          }
+        }
       } catch (error) {
-        console.error('Pinterest preview fetch failed:', error);
+        // A "Failed to fetch" / AbortError here almost always means the
+        // browser never got a real response at all — most commonly missing
+        // CORS headers on the Render backend (it needs to send
+        // Access-Control-Allow-Origin for THIS frontend's origin), a sleeping
+        // free-tier instance, or the URL being unreachable. Check this
+        // request in the Network tab for the real status.
+        console.error('Pinterest preview fetch failed (network/CORS?):', error);
         html = pinterestErrorCardHTML(url);
       }
       pinterestPreviewCache.set(url, html);

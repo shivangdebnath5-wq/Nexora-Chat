@@ -3,18 +3,20 @@
 // This is the ONLY place Pinterest credentials (client secret, access/refresh
 // tokens) ever exist. The frontend (index.html / script.js) never talks to
 // Pinterest directly — it only calls GET /api/pinterest/preview on this
-// server, which does the Pinterest API call itself and hands back a small,
-// pre-shaped JSON object. No secret or token value is ever sent to the
-// browser in any response from this server.
+// server, which fetches the public pin/board page and reads its Open Graph
+// tags (see the big comment above fetchPinterestPreview for why — short
+// version: Pinterest's v5 API can't look up arbitrary public pins). No
+// secret or token value is ever sent to the browser in any response.
 //
-// Setup (see README notes in the chat reply for the full walkthrough):
+// Setup:
 //   1. npm install
-//   2. Fill in .env (PINTEREST_CLIENT_ID, PINTEREST_CLIENT_SECRET,
-//      PINTEREST_REDIRECT_URI, ALLOWED_ORIGIN).
-//   3. node server.js, then visit /oauth/pinterest/start ONCE in a browser
-//      to authorize and get a refresh token — paste it into .env as
-//      PINTEREST_REFRESH_TOKEN, restart. After that this route is never
-//      needed again; getAccessToken() below refreshes silently forever.
+//   2. Fill in .env (ALLOWED_ORIGIN is all /api/pinterest/preview needs).
+//   3. node server.js — previews work immediately, no OAuth required.
+//
+//   PINTEREST_CLIENT_ID / PINTEREST_CLIENT_SECRET / PINTEREST_REDIRECT_URI /
+//   PINTEREST_REFRESH_TOKEN are only needed if you want the dormant
+//   /oauth/pinterest/* routes below for future *authenticated* features
+//   (posting Pins, managing boards) — the preview endpoint doesn't use them.
 //
 // Data-retention note: Pinterest's developer guidelines prohibit storing
 // data fetched through their API except for campaign analytics. Nothing
@@ -38,7 +40,7 @@ const {
 } = process.env;
 
 if (!PINTEREST_CLIENT_ID || !PINTEREST_CLIENT_SECRET) {
-  console.warn('⚠️  PINTEREST_CLIENT_ID / PINTEREST_CLIENT_SECRET are not set in .env — Pinterest endpoints will fail until they are.');
+  console.warn('⚠️  PINTEREST_CLIENT_ID / PINTEREST_CLIENT_SECRET are not set in .env — only the dormant /oauth/pinterest/* routes are affected; GET /api/pinterest/preview does not need them.');
 }
 
 const app = express();
@@ -128,112 +130,109 @@ app.get('/oauth/pinterest/callback', async (req, res) => {
 });
 
 // --- URL classification ------------------------------------------------
-// NOTE ON BOARDS: Pinterest's v5 API addresses boards by numeric board_id
-// (GET /v5/boards/{board_id}), not by the vanity "/username/board-slug/"
-// path people actually paste around. I don't have a verified, documented v5
-// endpoint that resolves a third party's vanity board URL straight to an
-// id — this implementation's board path is a best-effort attempt and is the
-// one part of this integration you should test for real once credentials
-// are live; the pin path (GET /v5/pins/{pin_id}) is the well-documented,
-// confident part.
-function classifyPinterestUrl(rawUrl) {
+function isPinterestUrl(rawUrl) {
   let u;
-  try { u = new URL(rawUrl); } catch { return null; }
-  if (!/(^|\.)pinterest\.[a-z.]+$/i.test(u.hostname) && !/(^|\.)pin\.it$/i.test(u.hostname)) return null;
+  try { u = new URL(rawUrl); } catch { return false; }
+  return /(^|\.)pinterest\.[a-z.]+$/i.test(u.hostname) || /(^|\.)pin\.it$/i.test(u.hostname);
+}
 
-  if (/(^|\.)pin\.it$/i.test(u.hostname)) return { type: 'short', url: rawUrl };
+// --- Open Graph fetch + parse -----------------------------------------
+// IMPORTANT — why this doesn't call Pinterest's REST API for the preview:
+// Pinterest's v5 `GET /v5/pins/{pin_id}` is documented as "Get a Pin owned
+// by the operation user_account" — it only returns pins that belong to
+// (or are shared with) whichever account issued the access token. It is
+// NOT a general "look up any public pin by URL" endpoint, and Pinterest's
+// own docs list the response for anyone else's pin as 403 "You are not
+// permitted to access that resource." Since Nexora users share pins from
+// all over Pinterest — not just from one connected account — every one of
+// those lookups was failing by design, which is why every single preview
+// showed "Couldn't load a Pinterest preview" regardless of OAuth/env setup.
+//
+// Fix: fetch the public pin/board page itself and read its Open Graph
+// meta tags — the same technique Facebook/Slack/Discord/iMessage use to
+// unfurl links generally, and Pinterest's own pin/board pages carry
+// og:title/og:image/og:description for exactly this reason. This needs no
+// Pinterest auth at all, so previews now work even before the one-time
+// OAuth setup below (getAccessToken/oauth routes) has ever been completed.
+// That OAuth scaffolding is left in place and untouched, in case you want
+// authenticated write access (posting Pins, managing boards) later — it's
+// just no longer on the path for read-only previews.
+const BROWSER_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 
-  const pinMatch = u.pathname.match(/\/pin\/(\d+)/);
-  if (pinMatch) return { type: 'pin', id: pinMatch[1] };
-
-  const parts = u.pathname.split('/').filter(Boolean);
-  if (parts.length >= 2 && !['pin', 'search', 'today', 'ideas', 'topics'].includes(parts[0])) {
-    return { type: 'board', username: parts[0], slug: parts[1] };
+function decodeHtmlEntities(value) {
+  return value
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
+function readMetaTag(html, property) {
+  // Open Graph tags can appear with either attribute order.
+  const patterns = [
+    new RegExp(`<meta[^>]+property=["']${property}["'][^>]*content=["']([^"']*)["']`, 'i'),
+    new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]*property=["']${property}["']`, 'i')
+  ];
+  for (const re of patterns) {
+    const match = html.match(re);
+    if (match) return decodeHtmlEntities(match[1]);
   }
   return null;
 }
 
-async function fetchPinPreview(pinId, headers) {
-  const res = await fetch(`https://api.pinterest.com/v5/pins/${pinId}`, { headers });
-  if (!res.ok) throw Object.assign(new Error('Pinterest API error'), { status: res.status });
-  const pin = await res.json();
-  return {
-    ok: true,
-    type: 'pin',
-    url: pin.link || `https://www.pinterest.com/pin/${pinId}/`,
-    title: pin.title || pin.grid_title || 'Pinterest pin',
-    description: pin.description || '',
-    image: pin.media?.images?.['1200x']?.url || pin.media?.images?.orig?.url || null,
-    creator: pin.pinner ? {
-      name: `${pin.pinner.first_name || ''} ${pin.pinner.last_name || ''}`.trim() || pin.pinner.username,
-      username: pin.pinner.username,
-      profileUrl: pin.pinner.username ? `https://www.pinterest.com/${pin.pinner.username}/` : null,
-      avatar: pin.pinner.image_medium_url || null
-    } : null
-  };
+// A single fetch handles pin.it short links, canonical pin links, and board
+// links uniformly: `redirect: 'follow'` transparently follows pin.it's
+// server-side redirect, and res.url / the response body are already the
+// FINAL page's — no separate "resolve the short link" round trip needed.
+async function fetchPinterestPage(pageUrl) {
+  const res = await fetch(pageUrl, {
+    redirect: 'follow',
+    headers: { 'User-Agent': BROWSER_USER_AGENT, 'Accept': 'text/html,application/xhtml+xml' }
+  });
+  if (!res.ok) throw Object.assign(new Error(`Pinterest page fetch error (${res.status})`), { status: res.status === 404 ? 404 : 502 });
+  const html = await res.text();
+  return { html, finalUrl: res.url || pageUrl };
 }
 
-async function fetchBoardPreview(classified, headers) {
-  // Best-effort: try the vanity path as a board_id lookup first (some
-  // Pinterest surfaces do embed the resolvable id in the slug); if that
-  // 404s, there's currently no further public fallback wired in here.
-  const boardRes = await fetch(`https://api.pinterest.com/v5/boards/${classified.username}%2F${classified.slug}`, { headers });
-  if (!boardRes.ok) throw Object.assign(new Error('Pinterest API error (board lookup unverified — see comment above fetchBoardPreview)'), { status: boardRes.status });
-  const board = await boardRes.json();
+function buildPreviewFromPage(html, finalUrl) {
+  let path = '/';
+  try { path = new URL(finalUrl).pathname; } catch { /* fall through with default */ }
+  const isPin = /\/pin\/\d+/.test(path);
 
-  let previewPins = [];
-  try {
-    const pinsRes = await fetch(`https://api.pinterest.com/v5/boards/${board.id}/pins?page_size=4`, { headers });
-    if (pinsRes.ok) {
-      const pinsJson = await pinsRes.json();
-      previewPins = (pinsJson.items || []).slice(0, 4).map(p => ({
-        image: p.media?.images?.['400x300']?.url || p.media?.images?.orig?.url || null,
-        url: p.link || `https://www.pinterest.com/pin/${p.id}/`
-      })).filter(p => p.image);
-    }
-  } catch { /* preview pins are optional decoration; ignore failures */ }
+  const title = readMetaTag(html, 'og:title');
+  const description = readMetaTag(html, 'og:description');
+  const image = readMetaTag(html, 'og:image');
+  const ogUrl = readMetaTag(html, 'og:url') || finalUrl;
 
-  return {
-    ok: true,
-    type: 'board',
-    url: `https://www.pinterest.com/${classified.username}/${classified.slug}/`,
-    title: board.name || 'Pinterest board',
-    pinCount: board.pin_count ?? null,
-    creator: board.owner ? {
-      name: board.owner.username,
-      username: board.owner.username,
-      profileUrl: `https://www.pinterest.com/${board.owner.username}/`,
-      avatar: null
-    } : { name: classified.username, username: classified.username, profileUrl: `https://www.pinterest.com/${classified.username}/`, avatar: null },
-    previewPins
-  };
+  if (!title && !image) {
+    // No usable Open Graph data at all — most likely a private/removed pin,
+    // or Pinterest served something unexpected (e.g. a consent wall).
+    throw Object.assign(new Error('No preview data available for this Pinterest link'), { status: 404 });
+  }
+
+  if (isPin) {
+    return { ok: true, type: 'pin', url: ogUrl, title: title || 'Pinterest pin', description: description || '', image, creator: null };
+  }
+  // Board (or profile) pages don't expose a clean pin-count or per-pin
+  // thumbnail grid via Open Graph alone, so those fields are omitted rather
+  // than guessed — the frontend already renders the card correctly without
+  // them (see pinterestCardHTML's `data.pinCount != null` / `pins ?` checks).
+  return { ok: true, type: 'board', url: ogUrl, title: title || 'Pinterest board', pinCount: null, creator: null, previewPins: image ? [{ image, url: ogUrl }] : [] };
+}
+
+async function fetchPinterestPreview(rawUrl) {
+  const { html, finalUrl } = await fetchPinterestPage(rawUrl);
+  return buildPreviewFromPage(html, finalUrl);
 }
 
 // --- The one endpoint the frontend calls -----------------------------------
 app.get('/api/pinterest/preview', async (req, res) => {
   const rawUrl = req.query.url;
   if (!rawUrl) return res.status(400).json({ ok: false, error: 'Missing url' });
+  if (!isPinterestUrl(rawUrl)) return res.status(422).json({ ok: false, error: 'Not a recognized Pinterest URL' });
 
   const cached = previewCache.get(rawUrl);
   if (cached && Date.now() < cached.expiresAt) return res.json(cached.data);
 
   try {
-    let classified = classifyPinterestUrl(rawUrl);
-    if (!classified) return res.status(422).json({ ok: false, error: 'Not a recognized Pinterest URL' });
-
-    if (classified.type === 'short') {
-      const resolved = await fetch(rawUrl, { redirect: 'follow' });
-      classified = classifyPinterestUrl(resolved.url);
-      if (!classified) return res.status(422).json({ ok: false, error: 'Could not resolve short link' });
-    }
-
-    const token = await getAccessToken();
-    const headers = { Authorization: `Bearer ${token}` };
-
-    const data = classified.type === 'pin'
-      ? await fetchPinPreview(classified.id, headers)
-      : await fetchBoardPreview(classified, headers);
-
+    const data = await fetchPinterestPreview(rawUrl);
     previewCache.set(rawUrl, { data, expiresAt: Date.now() + PREVIEW_CACHE_TTL_MS });
     res.json(data);
   } catch (err) {
