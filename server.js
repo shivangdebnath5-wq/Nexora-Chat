@@ -52,6 +52,9 @@ const allowedOrigins = (ALLOWED_ORIGIN || '').split(',').map(o => o.trim()).filt
 app.use(cors({
   origin(origin, callback) {
     if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) return callback(null, true);
+    // Log the exact rejected origin — without this, "Not allowed by CORS"
+    // in the Render logs gives no way to know what to whitelist.
+    console.warn(`⚠️  CORS rejected request from origin "${origin}". Current ALLOWED_ORIGIN: ${allowedOrigins.length ? allowedOrigins.join(', ') : '(not set)'}. If this origin is your real Nexora frontend, add it (exact scheme + host + port, no path, no trailing slash) to ALLOWED_ORIGIN in Render's environment variables and redeploy.`);
     return callback(new Error('Not allowed by CORS'));
   }
 }));
