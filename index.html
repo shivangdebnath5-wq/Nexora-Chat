@@ -2494,7 +2494,9 @@
     // small pre-shaped JSON object. Edit this one line to point at wherever
     // you deploy server.js (GitHub Pages only serves static files, so this
     // can't be the same host as the frontend).
-    const PINTEREST_BACKEND_URL = 'http://localhost:3001';
+    // Backend (server.js) deployed on Render — the frontend calls this,
+    // never Pinterest directly, so credentials stay server-side only.
+    const PINTEREST_BACKEND_URL = 'https://nexora-i2z9.onrender.com';
 
     // Session-only cache (cleared on reload, never written to localStorage)
     // so re-rendering a message list doesn't re-fetch the same preview.
