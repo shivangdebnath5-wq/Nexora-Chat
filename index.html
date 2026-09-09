@@ -68,6 +68,7 @@
     [data-theme="solar-flare"] { --bg-main:#39290d; --bg-card:#513b13; --bg-sidebar:#43300e; --text-main:#fff9e9; --text-muted:#f0d69a; --border:#8e6b27; --primary:rgb(235,170,55); --primary-hover:#ffd06e; --msg-sent:#b87a19; --msg-sent-text:#fff; --msg-received:#664c18; --msg-received-text:#fff9e9; --input-bg:#694f1a; --shadow:rgba(34,23,1,.62); }
     [data-theme="arctic-frost"] { --bg-main:#102d3b; --bg-card:#1b4658; --bg-sidebar:#153646; --text-main:#f3fcff; --text-muted:#bddde8; --border:#52899e; --primary:rgb(125,190,220); --primary-hover:#afe2f6; --msg-sent:#4a91af; --msg-sent-text:#fff; --msg-received:#28576a; --msg-received-text:#f3fcff; --input-bg:#2c6074; --shadow:rgba(0,22,32,.58); }
     [data-theme="royal-eclipse"] { --bg-main:#19132d; --bg-card:#292044; --bg-sidebar:#201832; --text-main:#f9f6ff; --text-muted:#c9bee5; --border:#554176; --primary:rgb(73,55,115); --primary-hover:#8e78c4; --msg-sent:#59458b; --msg-sent-text:#fff; --msg-received:#352855; --msg-received-text:#f9f6ff; --input-bg:#392c5b; --shadow:rgba(10,5,24,.63); }
+    [data-theme="pinflare"] { --bg-main:#e60023; --bg-card:#b8001c; --bg-sidebar:#ff4d6d; --text-main:#fff5f6; --text-muted:#ffb8c2; --border:#a30020; --primary:rgb(255,77,109); --primary-hover:#ff8098; --msg-sent:#ff4d6d; --msg-sent-text:#fff; --msg-received:#8f0016; --msg-received-text:#fff5f6; --input-bg:#93001d; --shadow:rgba(120,0,15,.4); }
     [data-theme="sage-green"] { --bg-main:#89AF88; --bg-card:#AFAF88; --bg-sidebar:#9CAF88; --text-main:#26301e; --text-muted:#4d5c3c; --border:#7f9770; --primary:rgb(92,138,82); --primary-hover:#4a7341; --msg-sent:#5c8a52; --msg-sent-text:#fff; --msg-received:#9CAF88; --msg-received-text:#26301e; --input-bg:#cfe0c2; --shadow:rgba(60,80,45,.28); }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
@@ -204,7 +205,8 @@
     [data-theme="forest-pulse"] .qsp-custom input[type="datetime-local"],
     [data-theme="solar-flare"] .qsp-custom input[type="datetime-local"],
     [data-theme="arctic-frost"] .qsp-custom input[type="datetime-local"],
-    [data-theme="royal-eclipse"] .qsp-custom input[type="datetime-local"] { color-scheme: dark; }
+    [data-theme="royal-eclipse"] .qsp-custom input[type="datetime-local"],
+    [data-theme="pinflare"] .qsp-custom input[type="datetime-local"] { color-scheme: dark; }
     .qsp-custom button { margin-bottom: 0; padding: 8px; font-size: 12px; }
 
     .user-profile-info { display: flex; align-items: center; gap: 10px; }
@@ -808,7 +810,7 @@
             <option value="oceanic">Oceanic</option><option value="sakura-mist">Sakura Mist</option>
             <option value="forest-pulse">Forest Pulse</option><option value="solar-flare">Solar Flare</option>
             <option value="arctic-frost">Arctic Frost</option><option value="royal-eclipse">Royal Eclipse</option>
-            <option value="sage-green">Sage Green</option>
+            <option value="sage-green">Sage Green</option><option value="pinflare">Pinflare 📌</option>
           </select>
           <div id="theme-preview-grid" class="theme-preview-grid" role="radiogroup" aria-label="Choose app theme"></div>
         </div>
@@ -1726,7 +1728,8 @@
       { id: 'solar-flare', name: 'Solar Flare', colors: ['#39290d', '#513b13', 'rgb(235, 170, 55)'] },
       { id: 'arctic-frost', name: 'Arctic Frost', colors: ['#102d3b', '#1b4658', 'rgb(125, 190, 220)'] },
       { id: 'royal-eclipse', name: 'Royal Eclipse', colors: ['#19132d', '#292044', 'rgb(73, 55, 115)'] },
-      { id: 'sage-green', name: 'Sage Green', colors: ['#89AF88', '#AFAF88', 'rgb(92, 138, 82)'] }
+      { id: 'sage-green', name: 'Sage Green', colors: ['#89AF88', '#AFAF88', 'rgb(92, 138, 82)'] },
+      { id: 'pinflare', name: 'Pinflare 📌', colors: ['#e60023', '#b8001c', 'rgb(255, 77, 109)'] }
     ];
 
     function renderThemeSelector() {
@@ -2543,40 +2546,11 @@
     async function loadPinterestPreview(url, cardId) {
       let html;
       try {
-        // Render's free tier can cold-start slowly after inactivity — fail
-        // after 20s with a clear timeout instead of hanging indefinitely.
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 20000);
-        let res;
-        try {
-          res = await fetch(`${PINTEREST_BACKEND_URL}/api/pinterest/preview?url=${encodeURIComponent(url)}`, { signal: controller.signal });
-        } finally {
-          clearTimeout(timeout);
-        }
-        if (!res.ok) {
-          // Log the real HTTP failure (404 = wrong route, 401/403 = Pinterest
-          // token issue, 500 = backend error) instead of just showing the
-          // generic card with no trace of why.
-          const bodyText = await res.text().catch(() => '');
-          console.error(`Pinterest preview backend returned ${res.status} ${res.statusText}:`, bodyText);
-          html = pinterestErrorCardHTML(url);
-        } else {
-          const data = await res.json();
-          if (data.ok) {
-            html = pinterestCardHTML(data);
-          } else {
-            console.error('Pinterest preview backend responded with ok:false —', data.error || data);
-            html = pinterestErrorCardHTML(url);
-          }
-        }
+        const res = await fetch(`${PINTEREST_BACKEND_URL}/api/pinterest/preview?url=${encodeURIComponent(url)}`);
+        const data = await res.json();
+        html = data.ok ? pinterestCardHTML(data) : pinterestErrorCardHTML(url);
       } catch (error) {
-        // A "Failed to fetch" / AbortError here almost always means the
-        // browser never got a real response at all — most commonly missing
-        // CORS headers on the Render backend (it needs to send
-        // Access-Control-Allow-Origin for THIS frontend's origin), a sleeping
-        // free-tier instance, or the URL being unreachable. Check this
-        // request in the Network tab for the real status.
-        console.error('Pinterest preview fetch failed (network/CORS?):', error);
+        console.error('Pinterest preview fetch failed:', error);
         html = pinterestErrorCardHTML(url);
       }
       pinterestPreviewCache.set(url, html);
