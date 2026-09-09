@@ -673,6 +673,11 @@ renderMessages = function(forceScroll) {
     }
   }
   const menu = document.getElementById('pinned-messages-menu'); if (menu && !menu.classList.contains('hidden')) renderPinnedMessagesMenu();
+  // Re-run mobile popover positioning now that the pin button above may have
+  // widened it — otherwise the earlier positioning pass (inside the original
+  // renderMessages, before this pin button existed) could clamp using a
+  // stale, narrower width and let the wider final popover overflow again.
+  if (typeof positionMsgPopoverMobile === 'function') positionMsgPopoverMobile();
 };
 
 /* Smart Context: high-confidence suggestions only; every action remains opt-in. */

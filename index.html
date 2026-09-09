@@ -2897,7 +2897,43 @@
       if (forceScroll) {
         msgList.scrollTop = msgList.scrollHeight;
       }
+
+      if (activePopoverMsgId !== null) positionMsgPopoverMobile();
     }
+
+    /* Mobile reaction-bar positioning fix: on phones, the popover switches to
+       position:fixed (see the mobile media query in style.css) so it can
+       never get clipped by .messages-list's overflow-x:hidden — that
+       clipping was the cause of the reaction icons visually spilling outside
+       their rounded background. Placement is computed here from the tapped
+       message's real on-screen position and clamped to stay fully inside the
+       viewport, so it always renders beside the message, fully visible, and
+       fully tappable regardless of where that message sits on screen.
+       Desktop is untouched — it keeps the original CSS-only positioning. */
+    function positionMsgPopoverMobile() {
+      if (!window.matchMedia('(max-width: 720px)').matches) return;
+      const popover = document.querySelector('.msg-popover');
+      const wrapper = popover ? popover.closest('.message-wrapper') : null;
+      const msgEl = wrapper ? wrapper.querySelector('.message') : null;
+      if (!popover || !msgEl) return;
+
+      const margin = 8;
+      const rect = msgEl.getBoundingClientRect();
+      const popH = popover.offsetHeight || 44;
+      const popW = popover.offsetWidth || 220;
+
+      let top = rect.top - popH - 8;
+      if (top < margin) top = Math.min(rect.bottom + 8, window.innerHeight - popH - margin);
+      top = Math.max(margin, top);
+
+      let left = wrapper.classList.contains('sent') ? rect.right - popW : rect.left;
+      left = Math.max(margin, Math.min(left, window.innerWidth - popW - margin));
+
+      popover.style.top = `${top}px`;
+      popover.style.left = `${left}px`;
+      popover.style.right = 'auto';
+    }
+    window.addEventListener('resize', () => { if (activePopoverMsgId !== null) positionMsgPopoverMobile(); });
   </script>
   <script type="module">
   // Firebase connection setup (modular Web SDK, loaded via CDN)
