@@ -181,11 +181,25 @@ function readMetaTag(html, property) {
 // links uniformly: `redirect: 'follow'` transparently follows pin.it's
 // server-side redirect, and res.url / the response body are already the
 // FINAL page's — no separate "resolve the short link" round trip needed.
+// Bounded with its own timeout so a slow/hanging response from Pinterest
+// can't sit open long enough for Render's own proxy to kill the connection
+// first — that would show up to the browser as a bare network failure
+// (net::ERR_FAILED / "Failed to fetch") instead of a clean JSON error.
 async function fetchPinterestPage(pageUrl) {
-  const res = await fetch(pageUrl, {
-    redirect: 'follow',
-    headers: { 'User-Agent': BROWSER_USER_AGENT, 'Accept': 'text/html,application/xhtml+xml' }
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  let res;
+  try {
+    res = await fetch(pageUrl, {
+      redirect: 'follow',
+      signal: controller.signal,
+      headers: { 'User-Agent': BROWSER_USER_AGENT, 'Accept': 'text/html,application/xhtml+xml' }
+    });
+  } catch (err) {
+    throw Object.assign(new Error(`Could not reach Pinterest: ${err.message}`), { status: 504 });
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!res.ok) throw Object.assign(new Error(`Pinterest page fetch error (${res.status})`), { status: res.status === 404 ? 404 : 502 });
   const html = await res.text();
   return { html, finalUrl: res.url || pageUrl };
