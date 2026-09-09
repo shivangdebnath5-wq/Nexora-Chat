@@ -366,7 +366,27 @@ function renderHubMessages(scroll) {
   const hub = hubById(activeHub); if (!hub) return; const list = document.getElementById('messages-list'); const query = document.getElementById('hub-message-search')?.value.trim().toLowerCase() || ''; list.innerHTML = '';
   const visibleMessages = hub.messages.filter(message => !query || `${message.sender} ${message.text || ''}`.toLowerCase().includes(query));
   if (!visibleMessages.length && query) list.innerHTML = '<div class="hub-search-empty">No Hub messages match your search.</div>';
-  visibleMessages.forEach(message => { const sent = message.sender === currentUser; const row = document.createElement('div'); row.className = `message-wrapper ${sent ? 'sent' : 'received'}${scroll ? ' message-arrive' : ''}`; row.dataset.messageId = message.id; const structuredContent = (message.extension && typeof extensionHTML === 'function') ? extensionHTML(message) : ''; const locationCard = (typeof locationCardHTML === 'function') ? locationCardHTML(message.text) : null; row.innerHTML = `<div class="message-body-row"><img class="avatar" src="${(DB.getUsers()[message.sender]?.pfp) || DEFAULT_AVATAR}" style="width:26px;height:26px;"><div class="message ${sent ? 'sent' : 'received'}"><div class="hub-message-name">@${safeHubText(message.sender)}</div>${message.attachment?.type === 'image' ? `<img src="${message.attachment.data}" class="attachment-img">` : ''}${structuredContent}${locationCard || (message.text ? `<div>${parseTextLinks(message.text)}</div>` : '')}<div style="font-size:10px;opacity:.7;text-align:right;">${message.timestamp}</div></div></div>`; list.appendChild(row); }); if (scroll) list.scrollTop = list.scrollHeight;
+  visibleMessages.forEach(message => {
+    const sent = message.sender === currentUser; const row = document.createElement('div'); row.className = `message-wrapper ${sent ? 'sent' : 'received'}${scroll ? ' message-arrive' : ''}`; row.dataset.messageId = message.id; const structuredContent = (message.extension && typeof extensionHTML === 'function') ? extensionHTML(message) : ''; const locationCard = (typeof locationCardHTML === 'function') ? locationCardHTML(message.text) : null; row.innerHTML = `<div class="message-body-row"><img class="avatar" src="${(DB.getUsers()[message.sender]?.pfp) || DEFAULT_AVATAR}" style="width:26px;height:26px;"><div class="message ${sent ? 'sent' : 'received'}"><div class="hub-message-name">@${safeHubText(message.sender)}</div>${message.attachment?.type === 'image' ? `<img src="${message.attachment.data}" class="attachment-img">` : ''}${structuredContent}${locationCard || (message.text ? `<div>${parseTextLinks(message.text)}</div>` : '')}<div style="font-size:10px;opacity:.7;text-align:right;">${message.timestamp}</div></div></div>`;
+
+    // Reactions: same popover UI/behaviour as Direct Chat (buildMsgPopoverElement
+    // / buildReactionBadgeElement in index.html — shared, not duplicated).
+    // Hub messages don't get the 📌 pin button; pinning stays Direct-Chat-only.
+    const msgEl = row.querySelector('.message');
+    if (msgEl) msgEl.onclick = (e) => toggleMsgPopover(e, message.id);
+    if (activePopoverMsgId === message.id && typeof buildMsgPopoverElement === 'function') {
+      const bodyRow = row.querySelector('.message-body-row');
+      if (bodyRow) bodyRow.appendChild(buildMsgPopoverElement(message.id, sent));
+    }
+    if (typeof buildReactionBadgeElement === 'function') {
+      const badge = buildReactionBadgeElement(message.id, message.reactions);
+      if (badge) row.appendChild(badge);
+    }
+
+    list.appendChild(row);
+  });
+  if (scroll) list.scrollTop = list.scrollHeight;
+  if (activePopoverMsgId !== null && typeof positionMsgPopoverMobile === 'function') positionMsgPopoverMobile();
 }
 sendMessage = function() { if (!activeHub) return directSendMessage(); const input = document.getElementById('message-input'), text = input.value.trim(); if (!text && !currentAttachment) return; const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return; if (hub.permissions?.messaging === 'owner' && hub.owner !== currentUser) return alert('Only the Hub owner can send messages in this Hub.'); hub.messages.push({id:Date.now(),sender:currentUser,text,attachment:currentAttachment,timestamp:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}); saveHubs(hubs); input.value=''; removeAttachment(); renderHubMessages(true); };
 function hubCanManage(hub) { return !!hub && (hub.owner === currentUser || hub.permissions?.management === 'members'); }

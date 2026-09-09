@@ -2673,16 +2673,94 @@
         activePopoverMsgId = msgId;
         activeMoreMenuMsgId = null;
       }
-      renderMessages(false);
+      if (activeHub) renderHubMessages(false); else renderMessages(false);
     }
 
     function toggleMoreMenu(event, msgId) {
       event.stopPropagation();
       activeMoreMenuMsgId = activeMoreMenuMsgId === msgId ? null : msgId;
-      renderMessages(false);
+      if (activeHub) renderHubMessages(false); else renderMessages(false);
+    }
+
+    /* Shared by both renderMessages (Direct Chat) and renderHubMessages
+       (Hubs) — same reaction bar / ⋮ menu, same classes, same mobile
+       positioning fix (positionMsgPopoverMobile just looks for .msg-popover
+       generically, so it works for both without any extra wiring). Hub
+       messages don't get a 📌 pin button here — pinning is a Direct-Chat-only
+       feature (see togglePinnedMessage/DB.getMessages), unrelated to this. */
+    function buildMsgPopoverElement(msgId, isSent) {
+      const popover = document.createElement('div');
+      popover.className = 'msg-popover';
+
+      const popoverReactions = document.createElement('div');
+      popoverReactions.className = 'popover-reactions';
+      ['👍', '❤️', '😂', '🔥', '🎉'].forEach(emoji => {
+        const span = document.createElement('span');
+        span.innerText = emoji;
+        span.onclick = (e) => { e.stopPropagation(); reactToMsg(msgId, emoji); };
+        popoverReactions.appendChild(span);
+      });
+
+      const moreBtn = document.createElement('div');
+      moreBtn.className = 'popover-btn';
+      moreBtn.innerText = '⋮';
+      moreBtn.onclick = (e) => toggleMoreMenu(e, msgId);
+
+      popover.appendChild(popoverReactions);
+      popover.appendChild(moreBtn);
+
+      if (activeMoreMenuMsgId === msgId) {
+        const dropdown = document.createElement('div');
+        dropdown.className = 'popover-dropdown';
+
+        if (isSent) {
+          const editItem = document.createElement('div');
+          editItem.className = 'popover-dropdown-item';
+          editItem.innerHTML = '✏️ Edit';
+          editItem.onclick = (e) => { e.stopPropagation(); startEditMsg(msgId); };
+          dropdown.appendChild(editItem);
+        }
+
+        const deleteItem = document.createElement('div');
+        deleteItem.className = 'popover-dropdown-item danger';
+        deleteItem.innerHTML = '🗑️ Delete';
+        deleteItem.onclick = (e) => { e.stopPropagation(); deleteMsg(msgId); };
+        dropdown.appendChild(deleteItem);
+
+        popover.appendChild(dropdown);
+      }
+
+      return popover;
+    }
+
+    function buildReactionBadgeElement(msgId, reactions) {
+      if (!reactions || !Object.keys(reactions).length) return null;
+      const reactionCounts = {};
+      Object.values(reactions).forEach(r => { reactionCounts[r] = (reactionCounts[r] || 0) + 1; });
+      const reactionBadge = document.createElement('div');
+      reactionBadge.className = 'active-reactions';
+      reactionBadge.innerHTML = Object.entries(reactionCounts)
+        .map(([emoji, count]) => `${emoji} ${count > 1 ? count : ''}`)
+        .join(' ');
+      reactionBadge.onclick = (e) => toggleMsgPopover(e, msgId);
+      return reactionBadge;
     }
 
     function reactToMsg(msgId, emoji) {
+      if (activeHub) {
+        const hubs = getHubs(), hub = hubs.find(h => h.id === activeHub); if (!hub) return;
+        const msg = hub.messages.find(m => m.id === msgId);
+        if (msg) {
+          if (!msg.reactions) msg.reactions = {};
+          if (msg.reactions[currentUser] === emoji) delete msg.reactions[currentUser];
+          else msg.reactions[currentUser] = emoji;
+          saveHubs(hubs);
+        }
+        activePopoverMsgId = null;
+        activeMoreMenuMsgId = null;
+        renderHubMessages(false);
+        return;
+      }
       const messages = DB.getMessages();
       const msg = messages.find(m => m.id === msgId);
       if (msg) {
@@ -2700,6 +2778,19 @@
     }
 
     function startEditMsg(msgId) {
+      if (activeHub) {
+        const hub = hubById(activeHub); if (!hub) return;
+        const msg = hub.messages.find(m => m.id === msgId);
+        if (msg) {
+          editingMsgId = msgId;
+          document.getElementById('message-input').value = msg.text || '';
+          document.getElementById('message-input').focus();
+        }
+        activePopoverMsgId = null;
+        activeMoreMenuMsgId = null;
+        renderHubMessages(false);
+        return;
+      }
       const messages = DB.getMessages();
       const msg = messages.find(m => m.id === msgId);
       if (msg) {
@@ -2713,6 +2804,15 @@
     }
 
     function deleteMsg(msgId) {
+      if (activeHub) {
+        const hubs = getHubs(), hub = hubs.find(h => h.id === activeHub); if (!hub) return;
+        hub.messages = hub.messages.filter(m => m.id !== msgId);
+        saveHubs(hubs);
+        activePopoverMsgId = null;
+        activeMoreMenuMsgId = null;
+        renderHubMessages(false);
+        return;
+      }
       let messages = DB.getMessages();
       messages = messages.filter(m => m.id !== msgId);
       DB.saveMessages(messages);
@@ -2829,67 +2929,13 @@
         bodyRow.appendChild(msgDiv);
 
         if (activePopoverMsgId === m.id) {
-          const popover = document.createElement('div');
-          popover.className = 'msg-popover';
-
-          const popoverReactions = document.createElement('div');
-          popoverReactions.className = 'popover-reactions';
-          ['👍', '❤️', '😂', '🔥', '🎉'].forEach(emoji => {
-            const span = document.createElement('span');
-            span.innerText = emoji;
-            span.onclick = (e) => { e.stopPropagation(); reactToMsg(m.id, emoji); };
-            popoverReactions.appendChild(span);
-          });
-
-          const moreBtn = document.createElement('div');
-          moreBtn.className = 'popover-btn';
-          moreBtn.innerText = '⋮';
-          moreBtn.onclick = (e) => toggleMoreMenu(e, m.id);
-
-          popover.appendChild(popoverReactions);
-          popover.appendChild(moreBtn);
-
-          if (activeMoreMenuMsgId === m.id) {
-            const dropdown = document.createElement('div');
-            dropdown.className = 'popover-dropdown';
-
-            if (isSent) {
-              const editItem = document.createElement('div');
-              editItem.className = 'popover-dropdown-item';
-              editItem.innerHTML = '✏️ Edit';
-              editItem.onclick = (e) => { e.stopPropagation(); startEditMsg(m.id); };
-              dropdown.appendChild(editItem);
-            }
-
-            const deleteItem = document.createElement('div');
-            deleteItem.className = 'popover-dropdown-item danger';
-            deleteItem.innerHTML = '🗑️ Delete';
-            deleteItem.onclick = (e) => { e.stopPropagation(); deleteMsg(m.id); };
-            dropdown.appendChild(deleteItem);
-
-            popover.appendChild(dropdown);
-          }
-
-          bodyRow.appendChild(popover);
+          bodyRow.appendChild(buildMsgPopoverElement(m.id, isSent));
         }
 
         wrapper.appendChild(bodyRow);
 
-        if (m.reactions && Object.keys(m.reactions).length > 0) {
-          const reactionCounts = {};
-          Object.values(m.reactions).forEach(r => {
-            reactionCounts[r] = (reactionCounts[r] || 0) + 1;
-          });
-
-          const reactionBadge = document.createElement('div');
-          reactionBadge.className = 'active-reactions';
-          reactionBadge.innerHTML = Object.entries(reactionCounts)
-            .map(([emoji, count]) => `${emoji} ${count > 1 ? count : ''}`)
-            .join(' ');
-
-          reactionBadge.onclick = (e) => toggleMsgPopover(e, m.id);
-          wrapper.appendChild(reactionBadge);
-        }
+        const reactionBadge = buildReactionBadgeElement(m.id, m.reactions);
+        if (reactionBadge) wrapper.appendChild(reactionBadge);
 
         msgList.appendChild(wrapper);
       });
