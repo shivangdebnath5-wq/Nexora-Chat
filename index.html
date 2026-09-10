@@ -2549,8 +2549,7 @@
     }
 
     function pinterestCardHTML(data) {
-      const followUrl = data.creator?.profileUrl || data.url;
-      const actions = `<div class="pinterest-card-actions"><a class="poll-option" href="${escapeHTML(data.url)}" target="_blank" rel="noopener">Open on Pinterest</a><a class="poll-option" href="${escapeHTML(followUrl)}" target="_blank" rel="noopener">Follow</a></div>`;
+      const actions = `<div class="pinterest-card-actions"><a class="poll-option" href="${escapeHTML(data.url)}" target="_blank" rel="noopener">Open on Pinterest</a></div>`;
 
       if (data.type === 'board') {
         const collage = pinterestBoardCollageHTML((data.previewPins || []).map(p => p.image));
