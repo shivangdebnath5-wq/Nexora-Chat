@@ -693,10 +693,12 @@
         </div>
         <div class="header-actions">
           <button id="pinned-messages-btn" class="icon-btn" onclick="togglePinnedMessages()" title="Pinned messages">📌</button>
+          <button id="hub-pinned-messages-btn" class="icon-btn hidden" onclick="toggleHubPinnedMessages()" title="Pinned messages" aria-label="Pinned messages">📌</button>
           <button id="hub-invite-btn" class="icon-btn hidden" onclick="openHubInvitePanel()" title="Invite a Hub member" aria-label="Invite a Hub member">👤<sup>+</sup></button>
           <button id="hub-search-btn" class="icon-btn hidden" onclick="toggleHubSearch()" title="Search Hub messages" aria-label="Search Hub messages">⌕</button>
           <button id="hub-settings-btn" class="icon-btn hidden" onclick="openHubSettings()" title="Hub settings">⋮</button>
           <div id="pinned-messages-menu" class="pinned-messages-menu hidden"></div>
+          <div id="hub-pinned-messages-menu" class="pinned-messages-menu hidden"></div>
         </div>
       </div>
       <div id="hub-search-panel" class="hub-search-panel hidden" role="search">
