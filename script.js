@@ -355,28 +355,39 @@ function selectHub(id) {
   const hub = hubById(id); if (!hub || !hub.members.includes(currentUser)) return;
   const icon = hubImageSource(hub.icon), headerImage = hubImageSource(hub.banner), chatImage = hubImageSource(hub.background);
   activeHub = id; activeFriend = null; ensureHubBanner(); const accentStyle = hub.accent ? ` style="--hub-accent:${hub.accent}"` : ''; const banner = document.getElementById('hub-banner-info'); const image = icon ? `<img class="hub-banner-icon" src="${icon}" alt="${safeHubText(hub.name)} icon"${accentStyle}>` : `<div class="hub-banner-icon fallback"${accentStyle}>${safeHubText(hub.name).charAt(0).toUpperCase()}</div>`; banner.innerHTML = `${image}<div class="hub-banner-copy"><div class="hub-banner-name" title="${safeHubText(hub.primaryContext || '')}">${safeHubText(hub.name)}</div><span class="hub-banner-meta">${safeHubText(hub.type)} · ${hub.members.length} member${hub.members.length === 1 ? '' : 's'}</span></div>`; banner.classList.add('visible'); const header=document.getElementById('chat-header'); header.style.backgroundImage = headerImage ? `linear-gradient(rgba(15,23,42,.58),rgba(15,23,42,.58)),url('${headerImage}')` : ''; header.style.backgroundSize = headerImage ? 'cover' : ''; header.style.backgroundPosition = headerImage ? 'center' : ''; document.querySelector('.main-chat').classList.add('hub-active'); document.getElementById('chat-header-avatar-container').classList.add('hidden'); document.getElementById('chat-title').innerHTML = '';
-  document.getElementById('chat-input-container').classList.remove('hidden'); document.getElementById('hub-settings-btn').classList.remove('hidden'); document.getElementById('hub-invite-btn').classList.remove('hidden'); document.getElementById('hub-search-btn').classList.remove('hidden'); document.getElementById('pinned-messages-btn').classList.add('hidden'); const messages = document.getElementById('messages-list'); messages.classList.toggle('hub-chat-bg', !!chatImage); messages.style.backgroundImage = chatImage ? `url('${chatImage}')` : '';
+  document.getElementById('chat-input-container').classList.remove('hidden'); document.getElementById('hub-settings-btn').classList.remove('hidden'); document.getElementById('hub-invite-btn').classList.remove('hidden'); document.getElementById('hub-pinned-messages-btn').classList.remove('hidden'); document.getElementById('hub-search-btn').classList.remove('hidden'); document.getElementById('pinned-messages-btn').classList.add('hidden'); const messages = document.getElementById('messages-list'); messages.classList.toggle('hub-chat-bg', !!chatImage); messages.style.backgroundImage = chatImage ? `url('${chatImage}')` : '';
   renderHubMessages(true); renderSidebar(); document.getElementById('app-screen').classList.remove('sidebar-open');
   if (typeof window.subscribeToHub === 'function') window.subscribeToHub(id);
 }
 function ensureHubBanner() { if (document.getElementById('hub-banner-info')) return; const banner=document.createElement('div'); banner.id='hub-banner-info'; banner.className='hub-banner-info'; document.getElementById('mobile-conversations').insertAdjacentElement('afterend', banner); }
 const selectFriendWithHubBanner = selectFriend;
-selectFriend = function(friend) { if (typeof window.unsubscribeFromHub === 'function') window.unsubscribeFromHub(); activeHub = null; const banner = document.getElementById('hub-banner-info'); if (banner) banner.classList.remove('visible'); document.querySelector('.main-chat').classList.remove('hub-active'); const header = document.getElementById('chat-header'); header.style.backgroundImage = ''; header.style.backgroundSize = ''; header.style.backgroundPosition = ''; const messages = document.getElementById('messages-list'); messages.classList.remove('hub-chat-bg'); applyWallpaper(localStorage.getItem('wallpaper') || ''); document.getElementById('hub-settings-btn').classList.add('hidden'); document.getElementById('hub-invite-btn').classList.add('hidden'); document.getElementById('hub-search-btn').classList.add('hidden'); closeHubSearch(); document.getElementById('pinned-messages-btn').classList.remove('hidden'); selectFriendWithHubBanner(friend); };
+selectFriend = function(friend) { if (typeof window.unsubscribeFromHub === 'function') window.unsubscribeFromHub(); activeHub = null; const banner = document.getElementById('hub-banner-info'); if (banner) banner.classList.remove('visible'); document.querySelector('.main-chat').classList.remove('hub-active'); const header = document.getElementById('chat-header'); header.style.backgroundImage = ''; header.style.backgroundSize = ''; header.style.backgroundPosition = ''; const messages = document.getElementById('messages-list'); messages.classList.remove('hub-chat-bg'); applyWallpaper(localStorage.getItem('wallpaper') || ''); document.getElementById('hub-settings-btn').classList.add('hidden'); document.getElementById('hub-invite-btn').classList.add('hidden'); document.getElementById('hub-pinned-messages-btn').classList.add('hidden'); document.getElementById('hub-pinned-messages-menu')?.classList.add('hidden'); document.getElementById('hub-search-btn').classList.add('hidden'); closeHubSearch(); document.getElementById('pinned-messages-btn').classList.remove('hidden'); selectFriendWithHubBanner(friend); };
 function renderHubMessages(scroll) {
   const hub = hubById(activeHub); if (!hub) return; const list = document.getElementById('messages-list'); const query = document.getElementById('hub-message-search')?.value.trim().toLowerCase() || ''; list.innerHTML = '';
   const visibleMessages = hub.messages.filter(message => !query || `${message.sender} ${message.text || ''}`.toLowerCase().includes(query));
   if (!visibleMessages.length && query) list.innerHTML = '<div class="hub-search-empty">No Hub messages match your search.</div>';
   visibleMessages.forEach(message => {
-    const sent = message.sender === currentUser; const row = document.createElement('div'); row.className = `message-wrapper ${sent ? 'sent' : 'received'}${scroll ? ' message-arrive' : ''}`; row.dataset.messageId = message.id; const structuredContent = (message.extension && typeof extensionHTML === 'function') ? extensionHTML(message) : ''; const locationCard = (typeof locationCardHTML === 'function') ? locationCardHTML(message.text) : null; const pinterestCard = (typeof pinterestCardSlotHTML === 'function') ? pinterestCardSlotHTML(message.text, message.id) : ''; row.innerHTML = `<div class="message-body-row"><img class="avatar" src="${(DB.getUsers()[message.sender]?.pfp) || DEFAULT_AVATAR}" style="width:26px;height:26px;"><div class="message ${sent ? 'sent' : 'received'}"><div class="hub-message-name">@${safeHubText(message.sender)}</div>${message.attachment?.type === 'image' ? `<img src="${message.attachment.data}" class="attachment-img">` : ''}${structuredContent}${locationCard || (message.text ? `<div>${parseTextLinks(message.text)}</div>` : '')}${pinterestCard}<div style="font-size:10px;opacity:.7;text-align:right;">${message.timestamp}</div></div></div>`;
+    const sent = message.sender === currentUser; const row = document.createElement('div'); row.className = `message-wrapper ${sent ? 'sent' : 'received'}${scroll ? ' message-arrive' : ''}`; row.dataset.messageId = message.id; row.classList.toggle('message-pinned', !!message.pinned); const structuredContent = (message.extension && typeof extensionHTML === 'function') ? extensionHTML(message) : ''; const locationCard = (typeof locationCardHTML === 'function') ? locationCardHTML(message.text) : null; const pinterestCard = (typeof pinterestCardSlotHTML === 'function') ? pinterestCardSlotHTML(message.text, message.id) : ''; row.innerHTML = `<div class="message-body-row"><img class="avatar" src="${(DB.getUsers()[message.sender]?.pfp) || DEFAULT_AVATAR}" style="width:26px;height:26px;"><div class="message ${sent ? 'sent' : 'received'}"><div class="hub-message-name">@${safeHubText(message.sender)}</div>${message.attachment?.type === 'image' ? `<img src="${message.attachment.data}" class="attachment-img">` : ''}${structuredContent}${locationCard || (message.text ? `<div>${parseTextLinks(message.text)}</div>` : '')}${pinterestCard}<div style="font-size:10px;opacity:.7;text-align:right;">${message.timestamp}</div></div></div>`;
 
-    // Reactions: same popover UI/behaviour as Direct Chat (buildMsgPopoverElement
-    // / buildReactionBadgeElement in index.html — shared, not duplicated).
-    // Hub messages don't get the 📌 pin button; pinning stays Direct-Chat-only.
+    // Reactions + pin: same popover UI/behaviour as Direct Chat
+    // (buildMsgPopoverElement / buildReactionBadgeElement in index.html —
+    // shared, not duplicated). The pin button itself is Hub-specific
+    // (togglePinnedHubMessage), kept entirely separate from Direct Chat's
+    // togglePinnedMessage/pinned-messages-btn/-menu, which are untouched.
     const msgEl = row.querySelector('.message');
     if (msgEl) msgEl.onclick = (e) => toggleMsgPopover(e, message.id);
     if (activePopoverMsgId === message.id && typeof buildMsgPopoverElement === 'function') {
       const bodyRow = row.querySelector('.message-body-row');
-      if (bodyRow) bodyRow.appendChild(buildMsgPopoverElement(message.id, sent));
+      if (bodyRow) {
+        const popoverEl = buildMsgPopoverElement(message.id, sent);
+        bodyRow.appendChild(popoverEl);
+        if (!popoverEl.querySelector('.pin-message-popover')) {
+          const pin = document.createElement('button'); pin.className = `pin-message-popover ${message.pinned ? 'is-pinned' : ''}`;
+          pin.title = message.pinned ? 'Unpin message' : 'Pin message'; pin.textContent = '📌';
+          pin.onclick = event => togglePinnedHubMessage(message.id, event);
+          popoverEl.appendChild(pin);
+        }
+      }
     }
     if (typeof buildReactionBadgeElement === 'function') {
       const badge = buildReactionBadgeElement(message.id, message.reactions);
@@ -387,6 +398,49 @@ function renderHubMessages(scroll) {
   });
   if (scroll) list.scrollTop = list.scrollHeight;
   if (activePopoverMsgId !== null && typeof positionMsgPopoverMobile === 'function') positionMsgPopoverMobile();
+  const hubPinnedMenu = document.getElementById('hub-pinned-messages-menu');
+  if (hubPinnedMenu && !hubPinnedMenu.classList.contains('hidden')) renderHubPinnedMessagesMenu();
+}
+function togglePinnedHubMessage(msgId, event) {
+  event?.stopPropagation();
+  const hubs = getHubs(), hub = hubs.find(h => h.id === activeHub); if (!hub) return;
+  const msg = hub.messages.find(m => m.id === msgId); if (!msg) return;
+  msg.pinned = !msg.pinned;
+  saveHubs(hubs);
+  activePopoverMsgId = null; activeMoreMenuMsgId = null;
+  renderHubMessages(false);
+}
+function hubPinnedPreview(message) {
+  if (message.text) return message.text;
+  if (message.extension?.type === 'note') return message.extension.title;
+  if (message.extension) return `${message.extension.type}: ${message.extension.title || ''}`;
+  if (message.attachment) return `Attachment: ${message.attachment.name || 'file'}`;
+  return 'Message';
+}
+function renderHubPinnedMessagesMenu() {
+  const menu = document.getElementById('hub-pinned-messages-menu'); if (!menu) return;
+  const hub = hubById(activeHub); if (!hub) return;
+  const pinned = (hub.messages || []).filter(m => m.pinned);
+  menu.innerHTML = `<div class="pinned-menu-title"><span>Pinned messages</span><span>${pinned.length}</span></div>`;
+  if (!pinned.length) { menu.innerHTML += '<div class="pinned-message-empty">No pinned messages yet</div>'; return; }
+  pinned.forEach(message => {
+    const item = document.createElement('button'); item.className = 'pinned-message-item';
+    item.innerHTML = `📌 <small>@${escapeHTML(message.sender)}: ${escapeHTML(hubPinnedPreview(message))}</small>`;
+    item.onclick = () => jumpToHubPinnedMessage(message.id);
+    menu.appendChild(item);
+  });
+}
+function toggleHubPinnedMessages() {
+  if (!activeHub) return;
+  const menu = document.getElementById('hub-pinned-messages-menu');
+  renderHubPinnedMessagesMenu(); menu.classList.toggle('hidden');
+}
+function jumpToHubPinnedMessage(messageId) {
+  document.getElementById('hub-pinned-messages-menu').classList.add('hidden');
+  const target = document.querySelector(`.message-wrapper[data-message-id="${messageId}"]`);
+  if (!target) return;
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  target.classList.remove('pin-jump'); void target.offsetWidth; target.classList.add('pin-jump');
 }
 sendMessage = function() { if (!activeHub) return directSendMessage(); const input = document.getElementById('message-input'), text = input.value.trim(); if (!text && !currentAttachment) return; const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return; if (hub.permissions?.messaging === 'owner' && hub.owner !== currentUser) return alert('Only the Hub owner can send messages in this Hub.'); hub.messages.push({id:Date.now(),sender:currentUser,text,attachment:currentAttachment,timestamp:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}); saveHubs(hubs); input.value=''; removeAttachment(); renderHubMessages(true); };
 function hubCanManage(hub) { return !!hub && (hub.owner === currentUser || hub.permissions?.management === 'members'); }
