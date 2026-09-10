@@ -423,12 +423,8 @@
     .pinterest-creator-row { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted); margin-bottom:8px; }
     .pinterest-creator-avatar { width:20px; height:20px; border-radius:50%; object-fit:cover; }
     .pinterest-pin-image { display:block; width:calc(100% + 28px); margin:-14px -14px 10px -14px; max-height:260px; object-fit:cover; border-radius:14px 14px 0 0; }
-    .pinterest-board-collage { display:flex; gap:4px; margin-top:8px; height:150px; }
-    .pinterest-board-collage-solo { height:170px; }
-    .pinterest-collage-main { flex:1.4 1 0; min-width:0; width:100%; height:100%; object-fit:cover; border-radius:8px; }
-    .pinterest-board-collage-solo .pinterest-collage-main { flex:1 1 100%; }
-    .pinterest-collage-side { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:4px; }
-    .pinterest-collage-side img { flex:1 1 0; width:100%; height:0; min-height:0; object-fit:cover; border-radius:8px; }
+    .pinterest-board-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:4px; margin-top:8px; }
+    .pinterest-board-thumb { width:100%; aspect-ratio:1; object-fit:cover; border-radius:6px; }
     .pinterest-card-actions { display:flex; gap:6px; }
     .pinterest-card-actions .poll-option { justify-content:center; text-decoration:none; font-weight:600; }
     .pinterest-attribution { font-size:11px; color:var(--text-muted); margin-top:8px; text-align:right; opacity:.8; }
@@ -2530,29 +2526,14 @@
       return `<div class="pinterest-attribution">via Pinterest</div>`;
     }
 
-    // Pinterest-style board collage: one large hero image with up to four
-    // smaller stacked images beside it, matching how Pinterest itself shows
-    // a board cover. Degrades gracefully — 1 image just shows full-width,
-    // and it uses however many images data.previewPins actually has (1-5),
-    // no changes needed here if that number changes later.
-    function pinterestBoardCollageHTML(images) {
-      const imgs = (images || []).filter(Boolean).slice(0, 5);
-      if (!imgs.length) return '';
-      if (imgs.length === 1) {
-        return `<div class="pinterest-board-collage pinterest-board-collage-solo"><img class="pinterest-collage-main" src="${escapeHTML(imgs[0])}" loading="lazy"></div>`;
-      }
-      const [main, ...side] = imgs;
-      const sideImgs = side.map(src => `<img src="${escapeHTML(src)}" loading="lazy">`).join('');
-      return `<div class="pinterest-board-collage"><img class="pinterest-collage-main" src="${escapeHTML(main)}" loading="lazy"><div class="pinterest-collage-side">${sideImgs}</div></div>`;
-    }
-
     function pinterestCardHTML(data) {
       const followUrl = data.creator?.profileUrl || data.url;
       const actions = `<div class="pinterest-card-actions"><a class="poll-option" href="${escapeHTML(data.url)}" target="_blank" rel="noopener">Open on Pinterest</a><a class="poll-option" href="${escapeHTML(followUrl)}" target="_blank" rel="noopener">Follow</a></div>`;
 
       if (data.type === 'board') {
-        const collage = pinterestBoardCollageHTML((data.previewPins || []).map(p => p.image));
-        return `<div class="extension-card pinterest-card">${pinterestCreatorRowHTML(data.creator)}<div class="extension-title">${escapeHTML(data.title || 'Pinterest board')}</div>${data.pinCount != null ? `<div class="extension-meta">${data.pinCount} Pins</div>` : ''}${collage}${actions}${pinterestAttributionHTML()}</div>`;
+        const pins = (data.previewPins || []).slice(0, 4)
+          .map(p => `<img src="${escapeHTML(p.image)}" class="pinterest-board-thumb" loading="lazy">`).join('');
+        return `<div class="extension-card pinterest-card">${pinterestCreatorRowHTML(data.creator)}<div class="extension-title">${escapeHTML(data.title || 'Pinterest board')}</div>${data.pinCount != null ? `<div class="extension-meta">${data.pinCount} Pins</div>` : ''}${pins ? `<div class="pinterest-board-grid">${pins}</div>` : ''}${actions}${pinterestAttributionHTML()}</div>`;
       }
 
       return `<div class="extension-card pinterest-card">${pinterestCreatorRowHTML(data.creator)}${data.image ? `<img src="${escapeHTML(data.image)}" class="pinterest-pin-image" loading="lazy">` : ''}<div class="extension-title">${escapeHTML(data.title || 'Pinterest pin')}</div>${data.description ? `<div class="extension-meta">${escapeHTML(data.description)}</div>` : ''}${actions}${pinterestAttributionHTML()}</div>`;
