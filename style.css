@@ -580,3 +580,87 @@
 .hub-invite-friend-row button { width:auto; padding:6px 12px; margin:0; }
 .hub-invite-friend-row button:disabled { opacity:.55; cursor:default; }
 .hub-invite-empty { color:var(--text-muted); font-size:13px; padding:10px 0; }
+/* =========================================================================
+   General UI & sidebar polish pass — visual hierarchy, spacing, depth,
+   hover states, and subtle motion. Purely additive: nothing below removes
+   or restructures an existing rule, it only refines how already-existing
+   elements look/feel. All motion is guarded by prefers-reduced-motion, and
+   nothing here touches elements that re-render on a timer (messages-list
+   redraws on a poll interval, so entrance animation is deliberately scoped
+   to the sidebar lists, which only redraw on real data changes).
+   ========================================================================= */
+
+/* --- Sidebar rhythm & section hierarchy --------------------------------- */
+.section { padding: 15px 16px; }
+.section > small { display:block; margin-bottom:8px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); }
+
+/* Header/chat-header/composer: a touch of elevation so the layout reads in
+   layers instead of one flat sheet. */
+.sidebar-header { box-shadow: 0 2px 10px -6px var(--shadow); position: relative; z-index: 1; }
+.chat-header { box-shadow: 0 2px 10px -6px var(--shadow); }
+.chat-input { box-shadow: 0 -2px 10px -6px var(--shadow); }
+#app-screen { box-shadow: 0 16px 40px -14px var(--shadow), 0 4px 16px -8px var(--shadow); }
+
+/* --- Friend / request / Hub rows: real hover + press feedback ----------- */
+.item-list li { transition: transform .16s cubic-bezier(.2,.8,.2,1), box-shadow .16s ease, border-color .16s ease, background-color .16s ease; }
+.item-list li:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); box-shadow: 0 4px 12px -4px var(--shadow); }
+.item-list li:active { transform: translateY(0) scale(.99); }
+.item-list li.hub-row, #friends-list li, #requests-list li { cursor: pointer; }
+.item-list button { cursor: pointer; }
+.active-friend { box-shadow: 0 2px 10px -4px color-mix(in srgb, var(--primary) 45%, transparent); }
+.item-list .avatar-container { transition: transform .16s ease; }
+.item-list li:hover .avatar-container { transform: scale(1.06); }
+
+/* Friendly placeholders instead of a blank gap when a list has nothing in it */
+.item-list:empty { min-height: 52px; display:flex; align-items:center; justify-content:center; }
+#requests-list:empty::after { content: 'No pending requests'; color:var(--text-muted); font-size:12.5px; font-style:italic; }
+#friends-list:empty::after { content: 'No conversations yet — add a friend to get started'; color:var(--text-muted); font-size:12.5px; font-style:italic; text-align:center; padding:0 6px; line-height:1.5; }
+
+/* --- Buttons: tactile hover/press instead of a flat color swap ---------- */
+.icon-btn { transition: transform .14s cubic-bezier(.2,.8,.2,1), background-color .16s ease, box-shadow .16s ease; }
+.icon-btn:hover { transform: translateY(-1px); box-shadow: 0 3px 8px -3px var(--shadow); }
+.icon-btn:active { transform: translateY(0) scale(.94); }
+
+.add-friend-toggle-button { transition: transform .14s cubic-bezier(.2,.8,.2,1), box-shadow .16s ease, background-color .16s ease, border-color .16s ease; }
+.add-friend-toggle-button:hover { background: color-mix(in srgb, var(--primary) 10%, var(--input-bg)); border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); box-shadow: 0 3px 10px -4px var(--shadow); }
+.add-friend-toggle-button:active { transform: scale(.98); }
+
+button:not(:disabled) { transition: transform .14s cubic-bezier(.2,.8,.2,1), box-shadow .16s ease, background-color .16s ease, filter .16s ease; }
+button:not(:disabled):active { transform: scale(.97); }
+
+#message-input:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent); }
+
+/* --- Empty conversation pane: friendly placeholder instead of a blank void */
+#messages-list:empty { display:flex; align-items:center; justify-content:center; }
+#messages-list:empty::after {
+  content: '💬  Nothing here yet\A Pick a conversation, or send the first message';
+  white-space: pre-line;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  line-height: 1.7;
+  max-width: 260px;
+}
+
+/* --- Thin, unobtrusive scrollbars for the panes that scroll internally -- */
+.item-list, .messages-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.item-list::-webkit-scrollbar, .messages-list::-webkit-scrollbar { width: 6px; }
+.item-list::-webkit-scrollbar-thumb, .messages-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+.item-list::-webkit-scrollbar-thumb:hover, .messages-list::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* --- Sidebar list entrance: a light stagger so a (re)populated list feels
+   alive rather than snapping in. Scoped to lists that only redraw on real
+   data changes (friend/request/hub lists), never on a polling timer. */
+@media (prefers-reduced-motion: no-preference) {
+  .item-list li { animation: sidebarRowIn .28s ease both; }
+  .item-list li:nth-child(1) { animation-delay: .02s; }
+  .item-list li:nth-child(2) { animation-delay: .05s; }
+  .item-list li:nth-child(3) { animation-delay: .08s; }
+  .item-list li:nth-child(4) { animation-delay: .11s; }
+  .item-list li:nth-child(5) { animation-delay: .14s; }
+  .item-list li:nth-child(n+6) { animation-delay: .16s; }
+}
+@keyframes sidebarRowIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
