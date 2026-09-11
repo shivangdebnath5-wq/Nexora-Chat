@@ -2937,43 +2937,63 @@
       renderMessages(false);
     }
 
+    // Rebuilding requests-list/friends-list via innerHTML='' on every call was
+    // firing on a 3s timer (see the setInterval below that also refreshes
+    // presence) plus every Firestore friend-request snapshot, tearing the
+    // whole list down and recreating it even when nothing had changed. That's
+    // what was causing the sidebar to visibly "pop" — these signatures let
+    // each list skip its rebuild when its underlying data is unchanged.
+    // Presence still updates every call via the loop at the bottom, in place,
+    // without touching list structure.
+    let lastRenderedRequestsSignature = null;
+    let lastRenderedFriendsSignature = null;
     function renderSidebar() {
       const users = DB.getUsers();
 
-      const reqList = document.getElementById('requests-list');
-      reqList.innerHTML = '';
-      (window.firestoreRequestRows || []).forEach(req => {
-        const li = document.createElement('li');
-        li.innerHTML = `<span>@${req.username}</span> <button onclick="acceptRequest('${req.id}')">Accept</button> <button class="secondary" onclick="declineRequest('${req.id}')">Decline</button>`;
-        reqList.appendChild(li);
-      });
+      const requestRows = window.firestoreRequestRows || [];
+      const requestsSignature = JSON.stringify(requestRows);
+      if (requestsSignature !== lastRenderedRequestsSignature) {
+        lastRenderedRequestsSignature = requestsSignature;
+        const reqList = document.getElementById('requests-list');
+        reqList.innerHTML = '';
+        requestRows.forEach(req => {
+          const li = document.createElement('li');
+          li.innerHTML = `<span>@${req.username}</span> <button onclick="acceptRequest('${req.id}')">Accept</button> <button class="secondary" onclick="declineRequest('${req.id}')">Decline</button>`;
+          reqList.appendChild(li);
+        });
+      }
 
-      const friendList = document.getElementById('friends-list');
-      friendList.innerHTML = '';
-      (window.firestoreFriendUsernames || []).forEach(f => {
-        const li = document.createElement('li');
-        if (f === activeFriend) li.classList.add('active-friend');
+      const friendUsernames = window.firestoreFriendUsernames || [];
+      const friendsSignature = JSON.stringify([friendUsernames, activeFriend]);
+      if (friendsSignature !== lastRenderedFriendsSignature) {
+        lastRenderedFriendsSignature = friendsSignature;
+        const friendList = document.getElementById('friends-list');
+        friendList.innerHTML = '';
+        friendUsernames.forEach(f => {
+          const li = document.createElement('li');
+          if (f === activeFriend) li.classList.add('active-friend');
 
-        const friendPfp = (users[f] && users[f].pfp) ? users[f].pfp : DEFAULT_AVATAR;
-        const friendFrame = (users[f] && users[f].frame) ? users[f].frame : '';
-        const friendStatus = getBadgeStatusForUser(f);
+          const friendPfp = (users[f] && users[f].pfp) ? users[f].pfp : DEFAULT_AVATAR;
+          const friendFrame = (users[f] && users[f].frame) ? users[f].frame : '';
 
-        li.innerHTML = `
-          <div class="user-profile-info">
-            <div class="avatar-container">
-              <img class="avatar ${friendFrame}" src="${friendPfp}" alt="${f}">
-              <span class="status-badge"></span>
+          li.innerHTML = `
+            <div class="user-profile-info">
+              <div class="avatar-container">
+                <img class="avatar ${friendFrame}" src="${friendPfp}" alt="${f}">
+                <span class="status-badge" id="friend-status-${f}"></span>
+              </div>
+              <span>@${f}</span>
             </div>
-            <span>@${f}</span>
-          </div>
-        `;
-        const badge = li.querySelector('.status-badge');
-        updateStatusBadgeUI(badge?.id || '', friendStatus);
-        badge.id = `friend-status-${f}`;
-        updateStatusBadgeUI(badge.id, friendStatus);
-        li.onclick = () => selectFriend(f);
-        friendList.appendChild(li);
-      });
+          `;
+          li.onclick = () => selectFriend(f);
+          friendList.appendChild(li);
+        });
+      }
+
+      // Presence badges refresh every call regardless of the guards above —
+      // updateStatusBadgeUI() already no-ops internally when a badge's status
+      // hasn't changed, so this stays cheap on every 3s tick.
+      friendUsernames.forEach(f => updateStatusBadgeUI(`friend-status-${f}`, getBadgeStatusForUser(f)));
     }
 
     function parseTextLinks(text) {

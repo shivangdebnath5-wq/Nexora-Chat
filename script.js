@@ -25,6 +25,7 @@ renderSidebar = function() {
   rows.forEach(row => {
     const friend = row.querySelector('.user-profile-info > span')?.textContent.replace('@',''); if (!friend) return;
     const pinned = pins.includes(friend); row.classList.toggle('pinned-chat', pinned);
+    row.querySelector('.pin-chat-btn')?.remove();
     const button = document.createElement('button'); button.className = `pin-chat-btn ${pinned ? 'pinned' : ''}`; button.title = pinned ? 'Unpin chat' : 'Pin chat'; button.textContent = pinned ? '★' : '☆';
     button.onclick = event => togglePinnedChat(friend, event); row.appendChild(button);
   });
@@ -591,12 +592,26 @@ function saveHubSettings() {
     });
   });
 }
+let lastHubSidebarSignature = null;
 const sidebarWithHubs = renderSidebar;
 renderSidebar = function() {
-  document.getElementById('hub-sidebar-section')?.remove(); sidebarWithHubs(); if (!currentUser) return;
+  sidebarWithHubs();
+  if (!currentUser) return;
   const list = document.getElementById('friends-list'), hubs = getHubs();
   const visible = hubs.filter(hub => hub.members.includes(currentUser)).filter((hub,index,all) => all.findIndex(item => item.owner === hub.owner && item.name === hub.name && item.type === hub.type) === index);
   const invites = hubs.filter(hub => hub.invites.includes(currentUser));
+  // Same fix as the friends/requests lists in index.html: this section was
+  // being removed and rebuilt from scratch on every renderSidebar() call —
+  // including the 3s presence-refresh timer — which is what made the Hubs
+  // section visibly pop in/out. Skip the rebuild when nothing that affects
+  // it (membership, names, icons, active selection) has actually changed.
+  const signature = JSON.stringify({
+    v: visible.map(h => [h.id, h.name, h.type, h.icon, h.accent, h.members.length, activeHub === h.id]),
+    i: invites.map(h => [h.id, h.name])
+  });
+  if (signature === lastHubSidebarSignature) return;
+  lastHubSidebarSignature = signature;
+  document.getElementById('hub-sidebar-section')?.remove();
   if (visible.length || invites.length) {
     const section=document.createElement('div'); section.id='hub-sidebar-section'; section.className='section'; section.innerHTML='<div class="hub-list-title">Hubs</div><ul class="item-list hub-list"></ul>'; const hubList=section.querySelector('.hub-list'); list.parentElement.parentElement.insertBefore(section,list.parentElement);
     visible.forEach(hub => { const row=document.createElement('li'); const icon = hubImageSource(hub.icon); const accentStyle = hub.accent ? ` style="--hub-accent:${hub.accent}"` : ''; row.className=`hub-row ${activeHub===hub.id?'active-friend':''}`; row.innerHTML=`<div class="user-profile-info">${icon ? `<img class="hub-icon" src="${icon}" alt="">` : `<div class="hub-icon"${accentStyle}>#</div>`}<div><span>${safeHubText(hub.name)}</span><small>${safeHubText(hub.type)} · ${hub.members.length} member${hub.members.length === 1 ? '' : 's'}</small></div></div>`; row.onclick=()=>selectHub(hub.id); hubList.appendChild(row); });
