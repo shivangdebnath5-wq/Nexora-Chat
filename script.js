@@ -25,7 +25,6 @@ renderSidebar = function() {
   rows.forEach(row => {
     const friend = row.querySelector('.user-profile-info > span')?.textContent.replace('@',''); if (!friend) return;
     const pinned = pins.includes(friend); row.classList.toggle('pinned-chat', pinned);
-    row.querySelector('.pin-chat-btn')?.remove();
     const button = document.createElement('button'); button.className = `pin-chat-btn ${pinned ? 'pinned' : ''}`; button.title = pinned ? 'Unpin chat' : 'Pin chat'; button.textContent = pinned ? '★' : '☆';
     button.onclick = event => togglePinnedChat(friend, event); row.appendChild(button);
   });
@@ -356,13 +355,13 @@ function selectHub(id) {
   const hub = hubById(id); if (!hub || !hub.members.includes(currentUser)) return;
   const icon = hubImageSource(hub.icon), headerImage = hubImageSource(hub.banner), chatImage = hubImageSource(hub.background);
   activeHub = id; activeFriend = null; ensureHubBanner(); const accentStyle = hub.accent ? ` style="--hub-accent:${hub.accent}"` : ''; const banner = document.getElementById('hub-banner-info'); const image = icon ? `<img class="hub-banner-icon" src="${icon}" alt="${safeHubText(hub.name)} icon"${accentStyle}>` : `<div class="hub-banner-icon fallback"${accentStyle}>${safeHubText(hub.name).charAt(0).toUpperCase()}</div>`; banner.innerHTML = `${image}<div class="hub-banner-copy"><div class="hub-banner-name" title="${safeHubText(hub.primaryContext || '')}">${safeHubText(hub.name)}</div><span class="hub-banner-meta">${safeHubText(hub.type)} · ${hub.members.length} member${hub.members.length === 1 ? '' : 's'}</span></div>`; banner.classList.add('visible'); const header=document.getElementById('chat-header'); header.style.backgroundImage = headerImage ? `linear-gradient(rgba(15,23,42,.58),rgba(15,23,42,.58)),url('${headerImage}')` : ''; header.style.backgroundSize = headerImage ? 'cover' : ''; header.style.backgroundPosition = headerImage ? 'center' : ''; document.querySelector('.main-chat').classList.add('hub-active'); document.getElementById('chat-header-avatar-container').classList.add('hidden'); document.getElementById('chat-title').innerHTML = '';
-  document.getElementById('chat-input-container').classList.remove('hidden'); document.getElementById('hub-settings-btn').classList.remove('hidden'); document.getElementById('hub-invite-btn').classList.remove('hidden'); document.getElementById('hub-pinned-messages-btn')?.classList.remove('hidden'); document.getElementById('hub-search-btn').classList.remove('hidden'); document.getElementById('pinned-messages-btn').classList.add('hidden'); const messages = document.getElementById('messages-list'); messages.classList.toggle('hub-chat-bg', !!chatImage); messages.style.backgroundImage = chatImage ? `url('${chatImage}')` : '';
+  document.getElementById('chat-input-container').classList.remove('hidden'); document.getElementById('hub-settings-btn').classList.remove('hidden'); document.getElementById('hub-invite-btn').classList.remove('hidden'); document.getElementById('hub-pinned-messages-btn').classList.remove('hidden'); document.getElementById('hub-search-btn').classList.remove('hidden'); document.getElementById('pinned-messages-btn').classList.add('hidden'); const messages = document.getElementById('messages-list'); messages.classList.toggle('hub-chat-bg', !!chatImage); messages.style.backgroundImage = chatImage ? `url('${chatImage}')` : '';
   renderHubMessages(true); renderSidebar(); document.getElementById('app-screen').classList.remove('sidebar-open');
   if (typeof window.subscribeToHub === 'function') window.subscribeToHub(id);
 }
 function ensureHubBanner() { if (document.getElementById('hub-banner-info')) return; const banner=document.createElement('div'); banner.id='hub-banner-info'; banner.className='hub-banner-info'; document.getElementById('mobile-conversations').insertAdjacentElement('afterend', banner); }
 const selectFriendWithHubBanner = selectFriend;
-selectFriend = function(friend) { if (typeof window.unsubscribeFromHub === 'function') window.unsubscribeFromHub(); activeHub = null; const banner = document.getElementById('hub-banner-info'); if (banner) banner.classList.remove('visible'); document.querySelector('.main-chat').classList.remove('hub-active'); const header = document.getElementById('chat-header'); header.style.backgroundImage = ''; header.style.backgroundSize = ''; header.style.backgroundPosition = ''; const messages = document.getElementById('messages-list'); messages.classList.remove('hub-chat-bg'); applyWallpaper(localStorage.getItem('wallpaper') || ''); document.getElementById('hub-settings-btn').classList.add('hidden'); document.getElementById('hub-invite-btn').classList.add('hidden'); document.getElementById('hub-pinned-messages-btn')?.classList.add('hidden'); document.getElementById('hub-pinned-messages-menu')?.classList.add('hidden'); document.getElementById('hub-search-btn').classList.add('hidden'); closeHubSearch(); document.getElementById('pinned-messages-btn').classList.remove('hidden'); selectFriendWithHubBanner(friend); };
+selectFriend = function(friend) { if (typeof window.unsubscribeFromHub === 'function') window.unsubscribeFromHub(); activeHub = null; const banner = document.getElementById('hub-banner-info'); if (banner) banner.classList.remove('visible'); document.querySelector('.main-chat').classList.remove('hub-active'); const header = document.getElementById('chat-header'); header.style.backgroundImage = ''; header.style.backgroundSize = ''; header.style.backgroundPosition = ''; const messages = document.getElementById('messages-list'); messages.classList.remove('hub-chat-bg'); applyWallpaper(localStorage.getItem('wallpaper') || ''); document.getElementById('hub-settings-btn').classList.add('hidden'); document.getElementById('hub-invite-btn').classList.add('hidden'); document.getElementById('hub-pinned-messages-btn').classList.add('hidden'); document.getElementById('hub-pinned-messages-menu')?.classList.add('hidden'); document.getElementById('hub-search-btn').classList.add('hidden'); closeHubSearch(); document.getElementById('pinned-messages-btn').classList.remove('hidden'); selectFriendWithHubBanner(friend); };
 function renderHubMessages(scroll) {
   const hub = hubById(activeHub); if (!hub) return; const list = document.getElementById('messages-list'); const query = document.getElementById('hub-message-search')?.value.trim().toLowerCase() || ''; list.innerHTML = '';
   const visibleMessages = hub.messages.filter(message => !query || `${message.sender} ${message.text || ''}`.toLowerCase().includes(query));
@@ -592,26 +591,12 @@ function saveHubSettings() {
     });
   });
 }
-let lastHubSidebarSignature = null;
 const sidebarWithHubs = renderSidebar;
 renderSidebar = function() {
-  sidebarWithHubs();
-  if (!currentUser) return;
+  document.getElementById('hub-sidebar-section')?.remove(); sidebarWithHubs(); if (!currentUser) return;
   const list = document.getElementById('friends-list'), hubs = getHubs();
   const visible = hubs.filter(hub => hub.members.includes(currentUser)).filter((hub,index,all) => all.findIndex(item => item.owner === hub.owner && item.name === hub.name && item.type === hub.type) === index);
   const invites = hubs.filter(hub => hub.invites.includes(currentUser));
-  // Same fix as the friends/requests lists in index.html: this section was
-  // being removed and rebuilt from scratch on every renderSidebar() call —
-  // including the 3s presence-refresh timer — which is what made the Hubs
-  // section visibly pop in/out. Skip the rebuild when nothing that affects
-  // it (membership, names, icons, active selection) has actually changed.
-  const signature = JSON.stringify({
-    v: visible.map(h => [h.id, h.name, h.type, h.icon, h.accent, h.members.length, activeHub === h.id]),
-    i: invites.map(h => [h.id, h.name])
-  });
-  if (signature === lastHubSidebarSignature) return;
-  lastHubSidebarSignature = signature;
-  document.getElementById('hub-sidebar-section')?.remove();
   if (visible.length || invites.length) {
     const section=document.createElement('div'); section.id='hub-sidebar-section'; section.className='section'; section.innerHTML='<div class="hub-list-title">Hubs</div><ul class="item-list hub-list"></ul>'; const hubList=section.querySelector('.hub-list'); list.parentElement.parentElement.insertBefore(section,list.parentElement);
     visible.forEach(hub => { const row=document.createElement('li'); const icon = hubImageSource(hub.icon); const accentStyle = hub.accent ? ` style="--hub-accent:${hub.accent}"` : ''; row.className=`hub-row ${activeHub===hub.id?'active-friend':''}`; row.innerHTML=`<div class="user-profile-info">${icon ? `<img class="hub-icon" src="${icon}" alt="">` : `<div class="hub-icon"${accentStyle}>#</div>`}<div><span>${safeHubText(hub.name)}</span><small>${safeHubText(hub.type)} · ${hub.members.length} member${hub.members.length === 1 ? '' : 's'}</small></div></div>`; row.onclick=()=>selectHub(hub.id); hubList.appendChild(row); });
