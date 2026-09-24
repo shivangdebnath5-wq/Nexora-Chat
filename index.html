@@ -345,6 +345,13 @@
     .emoji-picker { position: absolute; bottom: 75px; left: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; box-shadow: 0 8px 20px var(--shadow); z-index: 100; max-height: 180px; overflow-y: auto; width: 240px; }
     .emoji-picker span { font-size: 20px; cursor: pointer; text-align: center; border-radius: 6px; padding: 4px; }
     .emoji-picker span:hover { background: var(--input-bg); }
+    .gif-picker { position: absolute; bottom: 75px; left: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; box-shadow: 0 8px 20px var(--shadow); z-index: 100; width: 280px; }
+    .gif-picker input#gif-search-input { width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); margin-bottom: 8px; }
+    .gif-picker-results { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; max-height: 220px; overflow-y: auto; }
+    .gif-picker-results img { width: 100%; border-radius: 8px; cursor: pointer; object-fit: cover; aspect-ratio: 1; }
+    .gif-picker-results img:hover { opacity: .85; transform: scale(1.02); }
+    .gif-picker-status { grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-size: 12px; padding: 16px 0; }
+    .gif-picker-attribution { text-align: right; font-size: 10px; color: var(--text-muted); opacity: .7; margin-top: 6px; }
 
     /* Settings Modal */
     .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
@@ -719,6 +726,13 @@
           <span onclick="addEmoji('😊')">😊</span><span onclick="addEmoji('🙌')">🙌</span><span onclick="addEmoji('✨')">✨</span>
         </div>
 
+        <!-- GIF Picker -->
+        <div id="gif-picker" class="gif-picker hidden">
+          <input type="text" id="gif-search-input" placeholder="Search GIFs..." oninput="onGifSearchInput(this.value)">
+          <div id="gif-picker-results" class="gif-picker-results"><div class="gif-picker-status">Loading…</div></div>
+          <div class="gif-picker-attribution">Powered by GIPHY</div>
+        </div>
+
         <!-- Attachment Preview -->
         <div id="attachment-preview" class="attachment-preview hidden">
           <span id="preview-filename"></span>
@@ -727,6 +741,7 @@
 
         <div class="input-row">
           <button class="icon-btn" onclick="toggleEmojiPicker()" title="Add Emoji">😊</button>
+          <button class="icon-btn" onclick="toggleGifPicker()" title="GIFs">GIF</button>
           <button class="icon-btn" onclick="toggleExtensionMenu()" title="Chat extensions">+</button>
           <label class="icon-btn" title="Attach File">
             📎
@@ -1941,6 +1956,7 @@
     function toggleExtensionMenu() {
       document.getElementById('extension-menu').classList.toggle('hidden');
       document.getElementById('emoji-picker').classList.add('hidden');
+      document.getElementById('gif-picker')?.classList.add('hidden');
       // Games stay Direct-Chat-only — hide the option entirely in a Hub
       // rather than let someone pick it and get turned away.
       const gameOption = document.getElementById('ext-opt-game');
@@ -2591,11 +2607,85 @@
       loadPinterestPreview(url, cardId);
       return pinterestCardPlaceholderHTML(cardId);
     }
+
+    // --- GIPHY GIF search/picker (DM + Hub) ---------------------------------
+    // Same backend (PINTEREST_BACKEND_URL, defined above) as the Pinterest
+    // integration — server.js proxies GIPHY too, so the GIPHY API key stays
+    // server-side only, same as Pinterest's credentials.
+    //
+    // A sent GIF is just a normal image attachment: currentAttachment gets
+    // set to the GIF's URL and the existing sendMessage() is called
+    // directly, so it flows through the same DM/Hub branching, Firestore
+    // sync, and rendering (message.attachment?.type === 'image') that file
+    // uploads already use — no changes needed anywhere else for this to
+    // work in both Direct Chats and Hubs.
+    let gifSearchTimeout = null;
+
+    function toggleGifPicker() {
+      const picker = document.getElementById('gif-picker');
+      if (!picker) return;
+      const opening = picker.classList.contains('hidden');
+      picker.classList.toggle('hidden');
+      document.getElementById('emoji-picker').classList.add('hidden');
+      document.getElementById('extension-menu').classList.add('hidden');
+      if (opening) {
+        document.getElementById('gif-search-input').focus();
+        if (!picker.dataset.loaded) { picker.dataset.loaded = '1'; searchGiphy(''); }
+      }
+    }
+
+    function renderGifResults(gifs) {
+      const resultsEl = document.getElementById('gif-picker-results');
+      resultsEl.innerHTML = '';
+      if (!gifs || !gifs.length) {
+        resultsEl.innerHTML = '<div class="gif-picker-status">No GIFs found.</div>';
+        return;
+      }
+      gifs.forEach(g => {
+        const img = document.createElement('img');
+        img.src = g.preview;
+        img.loading = 'lazy';
+        img.alt = g.title || 'GIF';
+        img.onclick = () => sendGif(g.url);
+        resultsEl.appendChild(img);
+      });
+    }
+
+    async function searchGiphy(query) {
+      const resultsEl = document.getElementById('gif-picker-results');
+      resultsEl.innerHTML = '<div class="gif-picker-status">Loading…</div>';
+      try {
+        const endpoint = query.trim()
+          ? `${PINTEREST_BACKEND_URL}/api/giphy/search?q=${encodeURIComponent(query.trim())}`
+          : `${PINTEREST_BACKEND_URL}/api/giphy/trending`;
+        const res = await fetch(endpoint);
+        const json = await res.json();
+        if (!json.ok) { resultsEl.innerHTML = '<div class="gif-picker-status">Couldn\'t load GIFs.</div>'; return; }
+        renderGifResults(json.gifs);
+      } catch (error) {
+        console.error('GIPHY search failed:', error);
+        resultsEl.innerHTML = '<div class="gif-picker-status">Couldn\'t load GIFs.</div>';
+      }
+    }
+
+    function onGifSearchInput(value) {
+      clearTimeout(gifSearchTimeout);
+      gifSearchTimeout = setTimeout(() => searchGiphy(value), 350);
+    }
+
+    function sendGif(url) {
+      if (!activeFriend && !activeHub) return;
+      currentAttachment = { name: 'GIF', type: 'image', data: url };
+      document.getElementById('gif-picker').classList.add('hidden');
+      sendMessage();
+    }
+
     function refreshCountdowns() { document.querySelectorAll('.countdown-card').forEach(card => { const diff = Math.max(0, new Date(card.dataset.end).getTime() - Date.now()); const h = Math.floor(diff/3600000); const min = Math.floor(diff%3600000/60000); const s = Math.floor(diff%60000/1000); card.querySelector('.timer-display').textContent = diff ? `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}` : 'Time is up!'; }); }
     setInterval(refreshCountdowns, 1000);
 
     function toggleEmojiPicker() {
       document.getElementById('emoji-picker').classList.toggle('hidden');
+      document.getElementById('gif-picker')?.classList.add('hidden');
     }
 
     function addEmoji(emoji) {
