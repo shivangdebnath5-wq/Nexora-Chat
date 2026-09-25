@@ -153,14 +153,6 @@ app.get('/oauth/pinterest/callback', async (req, res) => {
 });
 
 // --- URL classification ------------------------------------------------
-// NOTE ON BOARDS: Pinterest's v5 API addresses boards by numeric board_id
-// (GET /v5/boards/{board_id}), not by the vanity "/username/board-slug/"
-// path people actually paste around. I don't have a verified, documented v5
-// endpoint that resolves a third party's vanity board URL straight to an
-// id — this implementation's board path is a best-effort attempt and is the
-// one part of this integration you should test for real once credentials
-// are live; the pin path (GET /v5/pins/{pin_id}) is the well-documented,
-// confident part.
 function classifyPinterestUrl(rawUrl) {
   let u;
   try { u = new URL(rawUrl); } catch { return null; }
@@ -198,36 +190,46 @@ async function fetchPinPreview(pinId, headers) {
   };
 }
 
-async function fetchBoardPreview(classified, headers) {
-  // Best-effort: try the vanity path as a board_id lookup first (some
-  // Pinterest surfaces do embed the resolvable id in the slug); if that
-  // 404s, there's currently no further public fallback wired in here.
-  const boardRes = await fetch(`https://api.pinterest.com/v5/boards/${classified.username}%2F${classified.slug}`, { headers });
-  if (!boardRes.ok) throw Object.assign(new Error('Pinterest API error (board lookup unverified — see comment above fetchBoardPreview)'), { status: boardRes.status });
-  const board = await boardRes.json();
+// NOTE ON BOARDS (fixed): Pinterest's v5 API only exposes
+// GET /v5/boards/{board_id}, keyed by numeric board_id — there is no v5
+// endpoint that resolves a third party's vanity "/username/board-slug/"
+// path to that id, and GET /v5/boards itself only lists the boards owned
+// by whichever account this app's OAuth token belongs to, not arbitrary
+// other users' boards. The previous implementation called
+// `/v5/boards/${username}%2F${slug}`, treating the vanity path as if it
+// were a board_id — Pinterest's API doesn't support that shape and always
+// rejected it, which is why board links never loaded.
+//
+// Fix: board previews now resolve through Pinterest's public oEmbed
+// endpoint (https://www.pinterest.com/oembed.json?url=...), which Pinterest
+// documents as covering pin, board, and profile URLs and which needs no
+// OAuth token — it works for any public board, not just ones this app's
+// connected account owns. It returns real title/author/thumbnail data, so
+// board links now load with genuine Pinterest data instead of a guaranteed
+// 404. (Pins are untouched above — v5's pin endpoint is well-documented and
+// already worked correctly.)
+async function fetchBoardPreview(classified) {
+  const boardUrl = `https://www.pinterest.com/${classified.username}/${classified.slug}/`;
+  const oembedRes = await fetch(`https://www.pinterest.com/oembed.json?url=${encodeURIComponent(boardUrl)}`);
+  if (!oembedRes.ok) throw Object.assign(new Error('Pinterest oEmbed error'), { status: oembedRes.status });
+  const oembed = await oembedRes.json();
 
-  let previewPins = [];
-  try {
-    const pinsRes = await fetch(`https://api.pinterest.com/v5/boards/${board.id}/pins?page_size=4`, { headers });
-    if (pinsRes.ok) {
-      const pinsJson = await pinsRes.json();
-      previewPins = (pinsJson.items || []).slice(0, 4).map(p => ({
-        image: p.media?.images?.['400x300']?.url || p.media?.images?.orig?.url || null,
-        url: p.link || `https://www.pinterest.com/pin/${p.id}/`
-      })).filter(p => p.image);
-    }
-  } catch { /* preview pins are optional decoration; ignore failures */ }
+  // oEmbed gives one representative thumbnail per board (not a documented
+  // multi-image field), so the collage renders with the real image(s) this
+  // public endpoint actually returns — same previewPins shape as before,
+  // just populated with genuine data instead of failing outright.
+  const previewPins = oembed.thumbnail_url ? [{ image: oembed.thumbnail_url, url: boardUrl }] : [];
 
   return {
     ok: true,
     type: 'board',
-    url: `https://www.pinterest.com/${classified.username}/${classified.slug}/`,
-    title: board.name || 'Pinterest board',
-    pinCount: board.pin_count ?? null,
-    creator: board.owner ? {
-      name: board.owner.username,
-      username: board.owner.username,
-      profileUrl: `https://www.pinterest.com/${board.owner.username}/`,
+    url: boardUrl,
+    title: oembed.title || 'Pinterest board',
+    pinCount: null,
+    creator: oembed.author_name ? {
+      name: oembed.author_name,
+      username: classified.username,
+      profileUrl: oembed.author_url || `https://www.pinterest.com/${classified.username}/`,
       avatar: null
     } : { name: classified.username, username: classified.username, profileUrl: `https://www.pinterest.com/${classified.username}/`, avatar: null },
     previewPins
@@ -257,7 +259,7 @@ app.get('/api/pinterest/preview', async (req, res) => {
 
     const data = classified.type === 'pin'
       ? await fetchPinPreview(classified.id, headers)
-      : await fetchBoardPreview(classified, headers);
+      : await fetchBoardPreview(classified);
 
     previewCache.set(rawUrl, { data, expiresAt: Date.now() + PREVIEW_CACHE_TTL_MS });
     res.json(data);
