@@ -29,13 +29,22 @@ const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 
 const {
-  PINTEREST_CLIENT_ID,
-  PINTEREST_CLIENT_SECRET,
+  PINTEREST_CLIENT_ID: RAW_PINTEREST_CLIENT_ID,
+  PINTEREST_CLIENT_SECRET: RAW_PINTEREST_CLIENT_SECRET,
   PINTEREST_REDIRECT_URI,
-  PINTEREST_REFRESH_TOKEN,
+  PINTEREST_REFRESH_TOKEN: RAW_PINTEREST_REFRESH_TOKEN,
   ALLOWED_ORIGIN,
   PORT
 } = process.env;
+
+// Defensive .trim(): a trailing newline or space on a credential pasted into
+// Render's env var UI is invisible in the dashboard but corrupts the Basic
+// auth header / refresh_token body param below byte-for-byte, and Pinterest
+// reports that as a generic 401 "code 2: Authentication failed" — the exact
+// symptom reported. Scoped to only the 3 values that feed the refresh call.
+const PINTEREST_CLIENT_ID = RAW_PINTEREST_CLIENT_ID?.trim();
+const PINTEREST_CLIENT_SECRET = RAW_PINTEREST_CLIENT_SECRET?.trim();
+const PINTEREST_REFRESH_TOKEN = RAW_PINTEREST_REFRESH_TOKEN?.trim();
 
 if (!PINTEREST_CLIENT_ID || !PINTEREST_CLIENT_SECRET) {
   console.warn('⚠️  PINTEREST_CLIENT_ID / PINTEREST_CLIENT_SECRET are not set in .env — Pinterest endpoints will fail until they are.');
@@ -67,6 +76,12 @@ const PREVIEW_CACHE_TTL_MS = 5 * 60 * 1000;
 
 async function getAccessToken() {
   if (accessToken && Date.now() < accessTokenExpiresAt) return accessToken;
+  if (!PINTEREST_CLIENT_ID || !PINTEREST_CLIENT_SECRET) {
+    // Fail fast with a clear reason rather than sending a Basic-auth header
+    // built from `undefined` (which Pinterest would also reject as 401, but
+    // with a far more confusing trail to follow in the logs).
+    throw new Error('PINTEREST_CLIENT_ID and/or PINTEREST_CLIENT_SECRET are not set in the environment.');
+  }
   if (!PINTEREST_REFRESH_TOKEN) {
     throw new Error('No PINTEREST_REFRESH_TOKEN in .env yet. Visit /oauth/pinterest/start once to get one.');
   }
@@ -80,7 +95,17 @@ async function getAccessToken() {
     body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: PINTEREST_REFRESH_TOKEN })
   });
   if (!res.ok) {
-    throw new Error(`Pinterest token refresh failed (${res.status}): ${await res.text()}`);
+    // Surface Pinterest's own { code, message } instead of just the raw
+    // response text, so the real reason (e.g. "code 2: Authentication
+    // failed") is immediately visible in Render's logs, not just an HTTP
+    // status. Falls back to the raw text if Pinterest didn't return JSON.
+    const rawBody = await res.text();
+    let detail = rawBody;
+    try {
+      const parsed = JSON.parse(rawBody);
+      detail = `Pinterest code ${parsed.code ?? '?'}: ${parsed.message || parsed.error_description || rawBody}`;
+    } catch { /* not JSON — rawBody stands as-is */ }
+    throw new Error(`Pinterest token refresh failed (HTTP ${res.status}) — ${detail}`);
   }
   const json = await res.json();
   accessToken = json.access_token;
