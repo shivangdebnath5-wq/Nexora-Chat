@@ -50,6 +50,15 @@ if (!PINTEREST_CLIENT_ID || !PINTEREST_CLIENT_SECRET) {
   console.warn('⚠️  PINTEREST_CLIENT_ID / PINTEREST_CLIENT_SECRET are not set in .env — Pinterest endpoints will fail until they are.');
 }
 
+// TEMPORARY DIAGNOSTIC — logs only lengths/shapes, never the actual secret
+// values, so this is safe to leave in logs or share. Delete this block once
+// the "code 2: Authentication failed" issue is resolved; it's not meant to
+// stay long-term.
+console.log('[pinterest-debug] CLIENT_ID length:', PINTEREST_CLIENT_ID?.length ?? 0, '| looks numeric:', /^\d+$/.test(PINTEREST_CLIENT_ID || ''));
+console.log('[pinterest-debug] CLIENT_SECRET length:', PINTEREST_CLIENT_SECRET?.length ?? 0);
+console.log('[pinterest-debug] REFRESH_TOKEN length:', PINTEREST_REFRESH_TOKEN?.length ?? 0, '| first 4 chars:', PINTEREST_REFRESH_TOKEN?.slice(0, 4) ?? '(none)');
+console.log('[pinterest-debug] REDIRECT_URI:', PINTEREST_REDIRECT_URI || '(not set)');
+
 const app = express();
 
 // Lock CORS down to your actual frontend origin(s). Never '*' here — this
