@@ -29,13 +29,22 @@ const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 
 const {
-  PINTEREST_CLIENT_ID,
-  PINTEREST_CLIENT_SECRET,
+  PINTEREST_CLIENT_ID: RAW_PINTEREST_CLIENT_ID,
+  PINTEREST_CLIENT_SECRET: RAW_PINTEREST_CLIENT_SECRET,
   PINTEREST_REDIRECT_URI,
-  PINTEREST_REFRESH_TOKEN,
+  PINTEREST_REFRESH_TOKEN: RAW_PINTEREST_REFRESH_TOKEN,
   ALLOWED_ORIGIN,
   PORT
 } = process.env;
+
+// Defensive .trim(): a trailing newline or space on a credential pasted into
+// Render's env var UI is invisible in the dashboard but corrupts the Basic
+// auth header / refresh_token body param below byte-for-byte, and Pinterest
+// reports that as a generic 401 "code 2: Authentication failed" — the exact
+// symptom reported. Scoped to only the 3 values that feed the refresh call.
+const PINTEREST_CLIENT_ID = RAW_PINTEREST_CLIENT_ID?.trim();
+const PINTEREST_CLIENT_SECRET = RAW_PINTEREST_CLIENT_SECRET?.trim();
+const PINTEREST_REFRESH_TOKEN = RAW_PINTEREST_REFRESH_TOKEN?.trim();
 
 if (!PINTEREST_CLIENT_ID || !PINTEREST_CLIENT_SECRET) {
   console.warn('⚠️  PINTEREST_CLIENT_ID / PINTEREST_CLIENT_SECRET are not set in .env — Pinterest endpoints will fail until they are.');
@@ -67,6 +76,12 @@ const PREVIEW_CACHE_TTL_MS = 5 * 60 * 1000;
 
 async function getAccessToken() {
   if (accessToken && Date.now() < accessTokenExpiresAt) return accessToken;
+  if (!PINTEREST_CLIENT_ID || !PINTEREST_CLIENT_SECRET) {
+    // Fail fast with a clear reason rather than sending a Basic-auth header
+    // built from `undefined` (which Pinterest would also reject as 401, but
+    // with a far more confusing trail to follow in the logs).
+    throw new Error('PINTEREST_CLIENT_ID and/or PINTEREST_CLIENT_SECRET are not set in the environment.');
+  }
   if (!PINTEREST_REFRESH_TOKEN) {
     throw new Error('No PINTEREST_REFRESH_TOKEN in .env yet. Visit /oauth/pinterest/start once to get one.');
   }
@@ -80,7 +95,17 @@ async function getAccessToken() {
     body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: PINTEREST_REFRESH_TOKEN })
   });
   if (!res.ok) {
-    throw new Error(`Pinterest token refresh failed (${res.status}): ${await res.text()}`);
+    // Surface Pinterest's own { code, message } instead of just the raw
+    // response text, so the real reason (e.g. "code 2: Authentication
+    // failed") is immediately visible in Render's logs, not just an HTTP
+    // status. Falls back to the raw text if Pinterest didn't return JSON.
+    const rawBody = await res.text();
+    let detail = rawBody;
+    try {
+      const parsed = JSON.parse(rawBody);
+      detail = `Pinterest code ${parsed.code ?? '?'}: ${parsed.message || parsed.error_description || rawBody}`;
+    } catch { /* not JSON — rawBody stands as-is */ }
+    throw new Error(`Pinterest token refresh failed (HTTP ${res.status}) — ${detail}`);
   }
   const json = await res.json();
   accessToken = json.access_token;
@@ -244,6 +269,68 @@ app.get('/api/pinterest/preview', async (req, res) => {
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 app.get('/healthz', (req, res) => res.json({ ok: true }));
+
+// --- GIPHY integration ------------------------------------------------------
+// Same reasoning as Pinterest above: the GIPHY API key lives only in this
+// process's environment (already set on Render), never in the frontend.
+// Reuses the /api/ rate limiter and CORS setup already configured above —
+// nothing about those needed to change for this to be covered by them.
+const { GIPHY_API_KEY } = process.env;
+if (!GIPHY_API_KEY) {
+  console.warn('⚠️  GIPHY_API_KEY is not set in the environment — GIPHY endpoints will fail until it is. (Expected env var name: GIPHY_API_KEY — rename in Render if you used a different one.)');
+}
+
+const giphyCache = new Map(); // cacheKey -> { data, expiresAt } — in-memory only, same data-retention posture as the Pinterest cache above.
+const GIPHY_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function mapGiphyResults(json) {
+  return (json.data || []).map(g => ({
+    id: g.id,
+    title: g.title || '',
+    preview: g.images?.fixed_width?.url || g.images?.downsized?.url || g.images?.original?.url,
+    url: g.images?.original?.url || g.images?.downsized?.url
+  })).filter(g => g.preview && g.url);
+}
+
+async function giphyRequest(cacheKey, giphyUrl) {
+  const cached = giphyCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) return cached.data;
+  if (!GIPHY_API_KEY) throw new Error('GIPHY_API_KEY not configured');
+  const res = await fetch(giphyUrl);
+  if (!res.ok) throw Object.assign(new Error('GIPHY API error'), { status: res.status });
+  const json = await res.json();
+  const data = { ok: true, gifs: mapGiphyResults(json) };
+  giphyCache.set(cacheKey, { data, expiresAt: Date.now() + GIPHY_CACHE_TTL_MS });
+  return data;
+}
+
+app.get('/api/giphy/search', async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q) return res.status(400).json({ ok: false, error: 'Missing q' });
+  try {
+    const data = await giphyRequest(
+      `search:${q.toLowerCase()}`,
+      `https://api.giphy.com/v1/gifs/search?api_key=${encodeURIComponent(GIPHY_API_KEY)}&q=${encodeURIComponent(q)}&limit=24&rating=pg-13`
+    );
+    res.json(data);
+  } catch (err) {
+    console.error('GIPHY search error:', err.message);
+    res.status(err.status || 500).json({ ok: false, error: 'Failed to search GIPHY' });
+  }
+});
+
+app.get('/api/giphy/trending', async (req, res) => {
+  try {
+    const data = await giphyRequest(
+      'trending',
+      `https://api.giphy.com/v1/gifs/trending?api_key=${encodeURIComponent(GIPHY_API_KEY)}&limit=24&rating=pg-13`
+    );
+    res.json(data);
+  } catch (err) {
+    console.error('GIPHY trending error:', err.message);
+    res.status(err.status || 500).json({ ok: false, error: 'Failed to load trending GIFs' });
+  }
+});
 
 const port = PORT || 3001;
 app.listen(port, '0.0.0.0', () => console.log(`Nexora Pinterest backend listening on :${port}`));
