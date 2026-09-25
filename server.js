@@ -208,6 +208,26 @@ async function fetchPinPreview(pinId, headers) {
 // board links now load with genuine Pinterest data instead of a guaranteed
 // 404. (Pins are untouched above — v5's pin endpoint is well-documented and
 // already worked correctly.)
+// Pulls the board's og:image meta tag from its public page. oEmbed covers
+// title/author reliably but its thumbnail_url is frequently absent for
+// board URLs specifically (confirmed after the oEmbed-only fix shipped —
+// title/creator loaded fine, cover image didn't); og:image is the stable,
+// publicly-documented field every site (Pinterest included) sets
+// specifically for link-preview purposes, so it's a safe small addition
+// rather than parsing any undocumented internal page data.
+async function fetchBoardCoverImage(boardUrl) {
+  try {
+    const pageRes = await fetch(boardUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NexoraLinkPreview/1.0)' } });
+    if (!pageRes.ok) return null;
+    const html = await pageRes.text();
+    const match = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+    return match ? match[1] : null;
+  } catch {
+    return null; // cover image is decoration — a failed fetch here shouldn't break the rest of the card
+  }
+}
+
 async function fetchBoardPreview(classified) {
   const boardUrl = `https://www.pinterest.com/${classified.username}/${classified.slug}/`;
   const oembedRes = await fetch(`https://www.pinterest.com/oembed.json?url=${encodeURIComponent(boardUrl)}`);
@@ -215,10 +235,13 @@ async function fetchBoardPreview(classified) {
   const oembed = await oembedRes.json();
 
   // oEmbed gives one representative thumbnail per board (not a documented
-  // multi-image field), so the collage renders with the real image(s) this
-  // public endpoint actually returns — same previewPins shape as before,
-  // just populated with genuine data instead of failing outright.
-  const previewPins = oembed.thumbnail_url ? [{ image: oembed.thumbnail_url, url: boardUrl }] : [];
+  // multi-image field) when it includes one at all; when it doesn't, fall
+  // back to the board page's own og:image so the cover still shows up.
+  let previewPins = oembed.thumbnail_url ? [{ image: oembed.thumbnail_url, url: boardUrl }] : [];
+  if (!previewPins.length) {
+    const cover = await fetchBoardCoverImage(boardUrl);
+    if (cover) previewPins = [{ image: cover, url: boardUrl }];
+  }
 
   return {
     ok: true,
