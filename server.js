@@ -61,6 +61,15 @@ console.log('[pinterest-debug] REDIRECT_URI:', PINTEREST_REDIRECT_URI || '(not s
 
 const app = express();
 
+// Render (like Heroku, and most PaaS hosts) sits its own reverse proxy in
+// front of this app, which sets X-Forwarded-For. Without telling Express to
+// trust that one hop, express-rate-limit refuses to use the header at all
+// (ERR_ERL_UNEXPECTED_X_FORWARDED_FOR) — it's a safety check against
+// IP-spoofing on setups where the header could come from an untrusted
+// client instead of a real proxy. `1` means "trust exactly one hop," which
+// matches Render's setup.
+app.set('trust proxy', 1);
+
 // Lock CORS down to your actual frontend origin(s). Never '*' here — this
 // server holds a secret and (after setup) a live access token, so only your
 // own deployed Nexora frontend should be allowed to call it.
