@@ -71,10 +71,16 @@ app.use('/api/', rateLimit({ windowMs: 60 * 1000, max: 30 }));
 // --- In-memory only, see data-retention note above -------------------------
 let accessToken = null;
 let accessTokenExpiresAt = 0;
+// Pinterest can issue a new refresh_token alongside an access_token refresh;
+// if it does, this is what subsequent refreshes in this process use instead
+// of the original .env value — otherwise a rotated token would go stale
+// silently. Falls back to the .env value until/unless that ever happens.
+let activeRefreshToken = PINTEREST_REFRESH_TOKEN;
 const previewCache = new Map(); // url -> { data, expiresAt }
 const PREVIEW_CACHE_TTL_MS = 5 * 60 * 1000;
 
-async function getAccessToken() {
+async function getAccessToken(forceRefresh) {
+  if (forceRefresh) { accessToken = null; accessTokenExpiresAt = 0; }
   if (accessToken && Date.now() < accessTokenExpiresAt) return accessToken;
   if (!PINTEREST_CLIENT_ID || !PINTEREST_CLIENT_SECRET) {
     // Fail fast with a clear reason rather than sending a Basic-auth header
@@ -82,7 +88,7 @@ async function getAccessToken() {
     // with a far more confusing trail to follow in the logs).
     throw new Error('PINTEREST_CLIENT_ID and/or PINTEREST_CLIENT_SECRET are not set in the environment.');
   }
-  if (!PINTEREST_REFRESH_TOKEN) {
+  if (!activeRefreshToken) {
     throw new Error('No PINTEREST_REFRESH_TOKEN in .env yet. Visit /oauth/pinterest/start once to get one.');
   }
   const basicAuth = Buffer.from(`${PINTEREST_CLIENT_ID}:${PINTEREST_CLIENT_SECRET}`).toString('base64');
@@ -92,7 +98,7 @@ async function getAccessToken() {
       Authorization: `Basic ${basicAuth}`,
       'Content-Type': 'application/x-www-form-urlencoded'
     },
-    body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: PINTEREST_REFRESH_TOKEN })
+    body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: activeRefreshToken })
   });
   if (!res.ok) {
     // Surface Pinterest's own { code, message } instead of just the raw
@@ -110,6 +116,7 @@ async function getAccessToken() {
   const json = await res.json();
   accessToken = json.access_token;
   accessTokenExpiresAt = Date.now() + (json.expires_in - 60) * 1000; // refresh a minute early
+  if (json.refresh_token) activeRefreshToken = json.refresh_token;
   return accessToken;
 }
 
@@ -170,8 +177,16 @@ function classifyPinterestUrl(rawUrl) {
   return null;
 }
 
-async function fetchPinPreview(pinId, headers) {
-  const res = await fetch(`https://api.pinterest.com/v5/pins/${pinId}`, { headers });
+async function fetchPinPreview(pinId) {
+  let res = await fetch(`https://api.pinterest.com/v5/pins/${pinId}`, { headers: { Authorization: `Bearer ${await getAccessToken()}` } });
+  if (res.status === 401) {
+    // The cached token was rejected even though our own clock still
+    // considered it valid — Pinterest can invalidate a token earlier than
+    // the expires_in it handed us. This was the actual bug: nothing used to
+    // react to that, so every request kept reusing the same dead token
+    // forever once it happened. Force exactly one fresh refresh and retry.
+    res = await fetch(`https://api.pinterest.com/v5/pins/${pinId}`, { headers: { Authorization: `Bearer ${await getAccessToken(true)}` } });
+  }
   if (!res.ok) throw Object.assign(new Error('Pinterest API error'), { status: res.status });
   const pin = await res.json();
   return {
@@ -277,11 +292,8 @@ app.get('/api/pinterest/preview', async (req, res) => {
       if (!classified) return res.status(422).json({ ok: false, error: 'Could not resolve short link' });
     }
 
-    const token = await getAccessToken();
-    const headers = { Authorization: `Bearer ${token}` };
-
     const data = classified.type === 'pin'
-      ? await fetchPinPreview(classified.id, headers)
+      ? await fetchPinPreview(classified.id)
       : await fetchBoardPreview(classified);
 
     previewCache.set(rawUrl, { data, expiresAt: Date.now() + PREVIEW_CACHE_TTL_MS });
