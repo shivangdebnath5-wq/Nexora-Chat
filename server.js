@@ -160,8 +160,19 @@ function classifyPinterestUrl(rawUrl) {
 
   if (/(^|\.)pin\.it$/i.test(u.hostname)) return { type: 'short', url: rawUrl };
 
-  const pinMatch = u.pathname.match(/\/pin\/(\d+)/);
-  if (pinMatch) return { type: 'pin', id: pinMatch[1] };
+  // Find a literal "pin" path segment (covers the canonical /pin/{id}/ as
+  // well as prefixed variants like the AMP path /amp/pin/{id}/) and require
+  // the segment right after it to be made up ENTIRELY of digits. Pinterest
+  // pin ids are always purely numeric — the previous /\/pin\/(\d+)/ substring
+  // match only required a leading numeric *prefix*, so a segment mixing
+  // digits with anything else (e.g. "1234567890123456789-abcxyz") would
+  // silently produce a truncated, wrong id instead of correctly failing to
+  // recognize it as a pin at all.
+  const pinSegments = u.pathname.split('/').filter(Boolean);
+  const pinIndex = pinSegments.indexOf('pin');
+  if (pinIndex !== -1 && pinSegments[pinIndex + 1] && /^\d+$/.test(pinSegments[pinIndex + 1])) {
+    return { type: 'pin', id: pinSegments[pinIndex + 1] };
+  }
 
   const parts = u.pathname.split('/').filter(Boolean);
   if (parts.length >= 2 && !['pin', 'search', 'today', 'ideas', 'topics'].includes(parts[0])) {
