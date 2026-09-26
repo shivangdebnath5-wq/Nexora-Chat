@@ -172,7 +172,21 @@ function classifyPinterestUrl(rawUrl) {
 
 async function fetchPinPreview(pinId, headers) {
   const res = await fetch(`https://api.pinterest.com/v5/pins/${pinId}`, { headers });
-  if (!res.ok) throw Object.assign(new Error('Pinterest API error'), { status: res.status });
+  if (!res.ok) {
+    // Surface Pinterest's actual status + response body in the log (same
+    // pattern getAccessToken already uses for token-refresh failures) —
+    // the thrown error keeps the same generic message/shape for the
+    // frontend, this just makes the real cause visible in Render's logs
+    // instead of a bare "Pinterest API error".
+    const rawBody = await res.text();
+    let detail = rawBody;
+    try {
+      const parsed = JSON.parse(rawBody);
+      detail = `Pinterest code ${parsed.code ?? '?'}: ${parsed.message || rawBody}`;
+    } catch { /* not JSON — rawBody stands as-is */ }
+    console.error(`Pinterest pin lookup failed (HTTP ${res.status}) for pin ${pinId} — ${detail}`);
+    throw Object.assign(new Error('Pinterest API error'), { status: res.status });
+  }
   const pin = await res.json();
   return {
     ok: true,
@@ -208,6 +222,58 @@ async function fetchPinPreview(pinId, headers) {
 // board links now load with genuine Pinterest data instead of a guaranteed
 // 404. (Pins are untouched above — v5's pin endpoint is well-documented and
 // already worked correctly.)
+// Pulls the board's og:image meta tag from its public page. oEmbed covers
+// title/author reliably but its thumbnail_url is frequently absent for
+// board URLs specifically (confirmed live: title/creator loaded fine, cover
+// image didn't); og:image is the stable, publicly-documented field every
+// site — Pinterest included — sets specifically for link-preview purposes.
+//
+// A first version of this fetched the whole board page with `.text()` and
+// regex-scanned the full HTML. That's the actual cause of the outage last
+// time: Pinterest board pages are large, JS-heavy SPA documents (easily
+// several MB), and Node only has one thread for running JS — buffering and
+// regex-scanning multi-MB text blocked that thread long enough to stall
+// *every* other in-flight request on this server, GIPHY included, even
+// though GIPHY's own code was never touched. Two guardrails fix that
+// without giving up the feature:
+//   1. A hard timeout (AbortController) — this can never hang a request.
+//   2. A capped, streamed partial read — og:image always sits in <head>,
+//      so we stop after ~64KB (or as soon as </head> shows up) instead of
+//      ever holding a multi-MB page in memory or feeding one to a regex.
+async function fetchBoardCoverImage(boardUrl) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4000);
+  try {
+    const pageRes = await fetch(boardUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NexoraLinkPreview/1.0)' },
+      signal: controller.signal
+    });
+    if (!pageRes.ok || !pageRes.body) return null;
+
+    const reader = pageRes.body.getReader();
+    const decoder = new TextDecoder();
+    let html = '';
+    const MAX_BYTES = 65536; // 64KB — comfortably covers <head> without ever reading the full page
+    let received = 0;
+    while (received < MAX_BYTES) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.length;
+      html += decoder.decode(value, { stream: true });
+      if (/<\/head>/i.test(html)) break;
+    }
+    reader.cancel().catch(() => {});
+
+    const match = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+    return match ? match[1] : null;
+  } catch {
+    return null; // cover image is decoration — timeout, abort, or any other failure just means no image, never a thrown error
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function fetchBoardPreview(classified) {
   const boardUrl = `https://www.pinterest.com/${classified.username}/${classified.slug}/`;
   const oembedRes = await fetch(`https://www.pinterest.com/oembed.json?url=${encodeURIComponent(boardUrl)}`);
@@ -215,10 +281,14 @@ async function fetchBoardPreview(classified) {
   const oembed = await oembedRes.json();
 
   // oEmbed gives one representative thumbnail per board (not a documented
-  // multi-image field), so the collage renders with the real image(s) this
-  // public endpoint actually returns — same previewPins shape as before,
-  // just populated with genuine data instead of failing outright.
-  const previewPins = oembed.thumbnail_url ? [{ image: oembed.thumbnail_url, url: boardUrl }] : [];
+  // multi-image field) when it includes one at all; when it doesn't, fall
+  // back to the board page's own og:image (bounded/timeboxed above) so the
+  // cover still shows up.
+  let previewPins = oembed.thumbnail_url ? [{ image: oembed.thumbnail_url, url: boardUrl }] : [];
+  if (!previewPins.length) {
+    const cover = await fetchBoardCoverImage(boardUrl);
+    if (cover) previewPins = [{ image: cover, url: boardUrl }];
+  }
 
   return {
     ok: true,
@@ -299,7 +369,20 @@ async function giphyRequest(cacheKey, giphyUrl) {
   if (cached && Date.now() < cached.expiresAt) return cached.data;
   if (!GIPHY_API_KEY) throw new Error('GIPHY_API_KEY not configured');
   const res = await fetch(giphyUrl);
-  if (!res.ok) throw Object.assign(new Error('GIPHY API error'), { status: res.status });
+  if (!res.ok) {
+    // Same reasoning as the Pinterest pin-lookup logging above: surface
+    // GIPHY's actual status + response body in the log instead of a bare
+    // "GIPHY API error", so the real cause (bad/revoked key, rate limit,
+    // etc.) is visible in Render's logs rather than having to guess.
+    const rawBody = await res.text();
+    let detail = rawBody;
+    try {
+      const parsed = JSON.parse(rawBody);
+      detail = parsed.meta ? `GIPHY code ${parsed.meta.status}: ${parsed.meta.msg || parsed.meta.error_message || rawBody}` : rawBody;
+    } catch { /* not JSON — rawBody stands as-is */ }
+    console.error(`GIPHY request failed (HTTP ${res.status}) — ${detail}`);
+    throw Object.assign(new Error('GIPHY API error'), { status: res.status });
+  }
   const json = await res.json();
   const data = { ok: true, gifs: mapGiphyResults(json) };
   giphyCache.set(cacheKey, { data, expiresAt: Date.now() + GIPHY_CACHE_TTL_MS });
