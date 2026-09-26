@@ -69,6 +69,7 @@
     [data-theme="arctic-frost"] { --bg-main:#102d3b; --bg-card:#1b4658; --bg-sidebar:#153646; --text-main:#f3fcff; --text-muted:#bddde8; --border:#52899e; --primary:rgb(125,190,220); --primary-hover:#afe2f6; --msg-sent:#4a91af; --msg-sent-text:#fff; --msg-received:#28576a; --msg-received-text:#f3fcff; --input-bg:#2c6074; --shadow:rgba(0,22,32,.58); }
     [data-theme="royal-eclipse"] { --bg-main:#19132d; --bg-card:#292044; --bg-sidebar:#201832; --text-main:#f9f6ff; --text-muted:#c9bee5; --border:#554176; --primary:rgb(73,55,115); --primary-hover:#8e78c4; --msg-sent:#59458b; --msg-sent-text:#fff; --msg-received:#352855; --msg-received-text:#f9f6ff; --input-bg:#392c5b; --shadow:rgba(10,5,24,.63); }
     [data-theme="red-velvet"] { --bg-main:#4B0000; --bg-card:#650002; --bg-sidebar:#8D0004; --text-main:#fff5f6; --text-muted:#d9a3a6; --border:#300000; --primary:#8D0004; --primary-hover:#a8000a; --msg-sent:#8D0004; --msg-sent-text:#fff; --msg-received:#650002; --msg-received-text:#fff5f6; --input-bg:#7A0003; --shadow:rgba(20,0,0,.45); }
+    [data-theme="moonlight-sparkle"] { --bg-main:#210635; --bg-card:#7B337E; --bg-sidebar:#420D4B; --text-main:#F5D5E0; --text-muted:#c9a8ce; --border:#6b2a70; --primary:#6667AB; --primary-hover:#8586c9; --msg-sent:#6667AB; --msg-sent-text:#fff; --msg-received:#420D4B; --msg-received-text:#F5D5E0; --input-bg:#340a3c; --shadow:rgba(10,2,20,.55); }
     [data-theme="sage-green"] { --bg-main:#89AF88; --bg-card:#AFAF88; --bg-sidebar:#9CAF88; --text-main:#26301e; --text-muted:#4d5c3c; --border:#7f9770; --primary:rgb(92,138,82); --primary-hover:#4a7341; --msg-sent:#5c8a52; --msg-sent-text:#fff; --msg-received:#9CAF88; --msg-received-text:#26301e; --input-bg:#cfe0c2; --shadow:rgba(60,80,45,.28); }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
@@ -206,7 +207,8 @@
     [data-theme="solar-flare"] .qsp-custom input[type="datetime-local"],
     [data-theme="arctic-frost"] .qsp-custom input[type="datetime-local"],
     [data-theme="royal-eclipse"] .qsp-custom input[type="datetime-local"],
-    [data-theme="red-velvet"] .qsp-custom input[type="datetime-local"] { color-scheme: dark; }
+    [data-theme="red-velvet"] .qsp-custom input[type="datetime-local"],
+    [data-theme="moonlight-sparkle"] .qsp-custom input[type="datetime-local"] { color-scheme: dark; }
     .qsp-custom button { margin-bottom: 0; padding: 8px; font-size: 12px; }
 
     .user-profile-info { display: flex; align-items: center; gap: 10px; }
@@ -831,7 +833,7 @@
             <option value="oceanic">Oceanic</option><option value="sakura-mist">Sakura Mist</option>
             <option value="forest-pulse">Forest Pulse</option><option value="solar-flare">Solar Flare</option>
             <option value="arctic-frost">Arctic Frost</option><option value="royal-eclipse">Royal Eclipse</option>
-            <option value="sage-green">Sage Green</option><option value="red-velvet">Red Velvet</option>
+            <option value="sage-green">Sage Green</option><option value="red-velvet">Red Velvet</option><option value="moonlight-sparkle">Moonlight Sparkle</option>
           </select>
           <div id="theme-preview-grid" class="theme-preview-grid" role="radiogroup" aria-label="Choose app theme"></div>
         </div>
@@ -1750,7 +1752,8 @@
       { id: 'arctic-frost', name: 'Arctic Frost', colors: ['#102d3b', '#1b4658', 'rgb(125, 190, 220)'] },
       { id: 'royal-eclipse', name: 'Royal Eclipse', colors: ['#19132d', '#292044', 'rgb(73, 55, 115)'] },
       { id: 'sage-green', name: 'Sage Green', colors: ['#89AF88', '#AFAF88', 'rgb(92, 138, 82)'] },
-      { id: 'red-velvet', name: 'Red Velvet', colors: ['#4B0000', '#650002', '#8D0004'] }
+      { id: 'red-velvet', name: 'Red Velvet', colors: ['#4B0000', '#650002', '#8D0004'] },
+      { id: 'moonlight-sparkle', name: 'Moonlight Sparkle', colors: ['#210635', '#7B337E', '#6667AB'] }
     ];
 
     function renderThemeSelector() {
