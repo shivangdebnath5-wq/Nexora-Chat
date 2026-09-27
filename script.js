@@ -867,3 +867,10 @@ sendMessage = function() {
   }
   return beforeWhiteboardSlashCommand();
 };
+
+/* Real-time Firebase presence (online/offline via Realtime Database) —
+   see presence.js. Loaded as a dynamic import so this file itself stays a
+   plain classic script; presence.js reuses the existing Firebase app
+   (getApp()) and only writes to Realtime Database, so nothing here touches
+   Firestore, chats, Hubs, Pinterest, GIPHY, or any UI. */
+import('./presence.js').catch(err => console.warn('Presence module failed to load:', err.message));
