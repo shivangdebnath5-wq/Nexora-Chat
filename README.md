@@ -441,69 +441,70 @@ Private keys should remain on user devices while servers store only the informat
 
 # 🗺️ Roadmap
 Nexora is being developed progressively rather than attempting to build everything at once.
-<ul>
-<li>Phase 1 — Foundation</li>
-Core messaging
-Authentication
-Basic profiles
-Direct Chats
-Firebase integration
-Backend infrastructur
+## <ul>
+## <li>Phase 1 — Foundation</li>
+<li>Core messaging</li>
+<li>Authentication</li>
+<li>Basic profiles</li>
+<li>Direct Chats</li>
+<li>Firebase integration</li>
+<li>Backend infrastructur</li>
 
-<li>Phase 2 — Messaging & Hubs</li>
-Rich previews
-GIFs
-Hubs
-Hub improvements
-Rooms
-Gaming Hubs
 
-<li>Phase 3 — Mobile</li>
-Mobile-first navigation
-Quick Actions
-Mobile composer
-Media sharing
-Notifications
-Offline/reconnect support
+## <li>Phase 2 — Messaging & Hubs</li>
+<li>Rich previews</li>
+<li>GIFs</li>
+<li>Hubs</li>
+<li>Hub improvements</li>
+<li>Rooms</li>
+<li>Gaming Hubs</li>
 
-<li>Phase 4 — Synchronization</li>
-PC ↔ Mobile sync
-Real-time presence
-Multi-device support
-Shared cloud state
-Phase 5 — Profiles
-User Profiles
-Hub Profiles
-Profile customization
-Hub identity
+## <li>Phase 3 — Mobile</li>
+<li>Mobile-first navigation
+<li>Quick Actions</li>
+<li>Mobile composer</li>
+<li>Media sharing</li>
+<li>Notifications</li>
+<li>Offline/reconnect support</li>
 
-<li>Phase 6 — Apple Platforms</li>
-iOS
-macOS
-Handoff
-Share Sheet
-Cross-device features
-Nexora Continuity
+## <li>Phase 4 — Synchronization</li>
+<li>PC ↔ Mobile sync</li>
+<li>Real-time presence</li>
+<li>Multi-device support</li>
+<li>Shared cloud state</li>
+<li>Phase 5 — Profiles</li>
+<li>User Profiles</li>
+<li>Hub Profiles</li>
+<li>Profile customization</li>
+<li>Hub identity</li>
 
-<li>Phase 7 — Intelligence & Collaboration</li>
-Nexora Intelligence
-Nexora Actions
-Nexora Flow
-Nexora Memory
-Whiteboards
-Collaboration tools
+## <li>Phase 6 — Apple Platforms</li>
+<li>iOS</li>
+<li>macOS</li>
+<li>Handoff</li>
+<li>Share Sheet</li>
+<li>Cross-device features</li>
+<li>Nexora Continuity</li>
 
-<li>Phase 8 — Security</li>
-Stronger account security
-Encryption architecture
-End-to-end encryption
+## <li>Phase 7 — Intelligence & Collaboration</li>
+<li>Nexora Intelligence</li>
+<li>Nexora Actions</li>
+<li>Nexora Flow</li>
+<li>Nexora Memory</li>
+<li>Whiteboards</li>
+<li>Collaboration tools</li>
 
-<li>Phase 9 — UI 2.0</li>
-Refined visual system
-Better animations
-Improved accessibility
-Advanced personalization
-Premium visual polish
+## <li>Phase 8 — Security</li>
+<li>Stronger account security</li>
+<li>Encryption architecture</li>
+<li>End-to-end encryption</li>
+
+## <li>Phase 9 — UI 2.0</li>
+<li>Refined visual system</li>
+<li>Better animations</li>
+<li>Improved accessibility</li>
+<li>Advanced personalization</li>
+<li>Premium visual polish</li>
 </ul>
 
 
