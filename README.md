@@ -1,6 +1,10 @@
 <p align="center">
-  <!-- Add your Nexora logo here -->
-  <img src="logo#2.png" alt="Nexora Logo" width="140">
+  <a href="https://ibb.co/ZR6RqkHy">
+    <img src="https://i.ibb.co/RGpGRVhL/d5b34859-cdfb-4a7d-9b72-6cea78857d5f.png"
+         alt="Nexora Logo"
+         width="140"
+         border="0">
+  </a>
 </p>
 
 <h1 align="center">Nexora</h1>
@@ -10,12 +14,23 @@
 </p>
 
 <p align="center">
-  A modern communication and collaboration platform built for conversations, communities, creativity, and everyday actions.
+  A modern communication and collaboration platform built for conversations,
+  communities, creativity, and everyday actions.
+</p>
+
+<p align="center">
+  <a href="https://ibb.co/WWdR8PdF">
+    <img src="https://i.ibb.co/Gv1rYt1k/Chat-GPT-Image-Sep-27-2026-05-40-03-PM.png"
+         alt="Nexora Banner"
+         border="0">
+  </a>
 </p>
 
 ---
 
-# ✨ What is Nexora?
+---
+
+## ✨ What is Nexora?
 
 Nexora is a modern communication and collaboration platform designed to bring conversations, communities, creativity, and everyday actions together in one place.
 
