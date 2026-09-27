@@ -1,6 +1,6 @@
 <p align="center">
   <!-- Add your Nexora logo here -->
-  <img src="./assets/nexora-logo.png" alt="Nexora Logo" width="140">
+  <img src="logo#2.png" alt="Nexora Logo" width="140">
 </p>
 
 <h1 align="center">Nexora</h1>
