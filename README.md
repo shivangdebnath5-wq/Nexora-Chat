@@ -441,16 +441,16 @@ Private keys should remain on user devices while servers store only the informat
 
 # 🗺️ Roadmap
 Nexora is being developed progressively rather than attempting to build everything at once.
-
-Phase 1 — Foundation
+<ul>
+<li>Phase 1 — Foundation</li>
 Core messaging
 Authentication
 Basic profiles
 Direct Chats
 Firebase integration
-Backend infrastructure
+Backend infrastructur
 
-Phase 2 — Messaging & Hubs
+<li>Phase 2 — Messaging & Hubs</li>
 Rich previews
 GIFs
 Hubs
@@ -458,7 +458,7 @@ Hub improvements
 Rooms
 Gaming Hubs
 
-Phase 3 — Mobile
+<li>Phase 3 — Mobile</li>
 Mobile-first navigation
 Quick Actions
 Mobile composer
@@ -466,7 +466,7 @@ Media sharing
 Notifications
 Offline/reconnect support
 
-Phase 4 — Synchronization
+<li>Phase 4 — Synchronization</li>
 PC ↔ Mobile sync
 Real-time presence
 Multi-device support
@@ -477,7 +477,7 @@ Hub Profiles
 Profile customization
 Hub identity
 
-Phase 6 — Apple Platforms
+<li>Phase 6 — Apple Platforms</li>
 iOS
 macOS
 Handoff
@@ -485,7 +485,7 @@ Share Sheet
 Cross-device features
 Nexora Continuity
 
-Phase 7 — Intelligence & Collaboration
+<li>Phase 7 — Intelligence & Collaboration</li>
 Nexora Intelligence
 Nexora Actions
 Nexora Flow
@@ -493,17 +493,18 @@ Nexora Memory
 Whiteboards
 Collaboration tools
 
-Phase 8 — Security
+<li>Phase 8 — Security</li>
 Stronger account security
 Encryption architecture
 End-to-end encryption
 
-Phase 9 — UI 2.0
+<li>Phase 9 — UI 2.0</li>
 Refined visual system
 Better animations
 Improved accessibility
 Advanced personalization
 Premium visual polish
+</ul>
 
 
 ---
