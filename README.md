@@ -5,8 +5,7 @@
          border="0">
   </a>
 </p>
-
-<h1 align="center">Nexora</h1>
+<h1 align="center"><font face="Arial">Nexora</font></h1>
 
 <p align="center">
   <strong>Connect • Create • Experience</strong>
