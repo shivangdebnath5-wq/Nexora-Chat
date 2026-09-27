@@ -17,17 +17,9 @@
   communities, creativity, and everyday actions.
 </p>
 
-<p align="center">
-  <a href="https://ibb.co/WWdR8PdF">
-    <img src="https://i.ibb.co/Gv1rYt1k/Chat-GPT-Image-Sep-27-2026-05-40-03-PM.png"
-         alt="Nexora Banner"
-         border="0">
-  </a>
-</p>
 
 ---
 
----
 
 ## ✨ What is Nexora?
 
