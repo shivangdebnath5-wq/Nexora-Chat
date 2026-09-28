@@ -2,10 +2,13 @@
 // Database, using the standard `.info/connected` + `onDisconnect()`
 // pattern. This is additive-only: it reuses the SAME Firebase app already
 // initialized in index.html's <script type="module"> block (via getApp(),
-// not a second initializeApp()), and does not touch Firestore, chats,
-// Hubs, Pinterest, GIPHY, or any existing UI/rendering code. It writes
-// presence data to Realtime Database only — nothing here reads from or
-// changes what's already on screen.
+// not a second initializeApp()), and does not touch chats, Hubs,
+// Pinterest, GIPHY, or any existing UI/rendering code. It writes presence
+// data to Realtime Database only — nothing here changes what's already on
+// screen; index.html's own getUserPresence()/getBadgeStatusForUser() call
+// into the small read API below (window.ensurePresenceSubscription /
+// window.isUserOnlineRTDB) to actually paint badges, exactly the "future
+// UI" this file originally left for.
 //
 // Requirements on the Firebase project itself (can't be done from this
 // file — see the security rules note near the bottom):
@@ -21,12 +24,19 @@
 // A user counts as online as long as ANY connection entry exists under
 // their uid — this is what makes multiple tabs/devices work correctly:
 // closing one tab only removes that tab's own entry (via onDisconnect),
-// leaving the others (and "online" status) intact. This module doesn't
-// render that anywhere; it's the data for a future UI to read.
+// leaving the others (and "online" status) intact.
+//
+// Read side (added below the original write-side IIFE): the UI only knows
+// usernames, but RTDB presence is keyed by uid, so a small Firestore lookup
+// on the already-public usernames/{username} doc (no rule changes needed —
+// it's already `allow read: if true`) resolves username -> uid once per
+// username, then an RTDB listener on /status/{uid}/connections keeps
+// window.isUserOnlineRTDB(username) live-updated forever after.
 
 import { getApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import { getDatabase, ref, onValue, onDisconnect, push, set, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 // script.js (classic, non-module) loads and runs before index.html's
 // Firebase <script type="module"> block actually executes (module scripts
@@ -94,6 +104,56 @@ function waitForFirebaseApp(retries = 50, delayMs = 100) {
       set(myConnectionRef, { online: true, lastChanged: serverTimestamp() });
     });
   });
+
+  // --- Read side: username -> live online/offline, for the friends list /
+  // chat header / self status badge in index.html. Entirely separate from
+  // the write-side above (different uid, other people's presence), sharing
+  // only `app`/`db`.
+  const firestore = getFirestore(app);
+  const usernameToUid = new Map();  // username -> uid, resolved once, never changes
+  const onlineCache = new Map();    // username -> true/false, live via RTDB listener below
+  const trackedUsernames = new Set(); // usernames a listener has already been started for
+
+  async function resolveUidForUsername(username) {
+    if (usernameToUid.has(username)) return usernameToUid.get(username);
+    try {
+      const snap = await getDoc(doc(firestore, 'usernames', username.toLowerCase()));
+      const uid = snap.exists() ? snap.data().uid : null;
+      if (uid) usernameToUid.set(username, uid);
+      return uid;
+    } catch (err) {
+      console.warn(`Presence: could not resolve uid for @${username}`, err.message);
+      return null;
+    }
+  }
+
+  // Idempotent — safe to call every time a badge for `username` renders.
+  // Starts (once) an RTDB listener that keeps isUserOnlineRTDB(username)
+  // live-updated, and notifies window.onPresenceChange (if index.html has
+  // defined it) so the already-drawn badge can repaint without a full
+  // re-render.
+  window.ensurePresenceSubscription = function (username) {
+    if (!username || trackedUsernames.has(username)) return;
+    trackedUsernames.add(username);
+    resolveUidForUsername(username).then((uid) => {
+      if (!uid) return;
+      const connectionsRef = ref(db, `/status/${uid}/connections`);
+      onValue(connectionsRef, (snap) => {
+        const isOnline = snap.exists() && snap.hasChildren();
+        const prev = onlineCache.get(username);
+        onlineCache.set(username, isOnline);
+        if (prev !== isOnline && typeof window.onPresenceChange === 'function') {
+          window.onPresenceChange(username, isOnline);
+        }
+      }, (err) => console.warn(`Presence: listener error for @${username}`, err.message));
+    });
+  };
+
+  // true/false once resolved; null while the uid lookup / first RTDB
+  // snapshot is still in flight (caller decides how to treat "not yet known").
+  window.isUserOnlineRTDB = function (username) {
+    return onlineCache.has(username) ? onlineCache.get(username) === true : null;
+  };
 })();
 
 // --- Realtime Database security rules needed for this to work -----------

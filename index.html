@@ -68,14 +68,7 @@
     [data-theme="solar-flare"] { --bg-main:#39290d; --bg-card:#513b13; --bg-sidebar:#43300e; --text-main:#fff9e9; --text-muted:#f0d69a; --border:#8e6b27; --primary:rgb(235,170,55); --primary-hover:#ffd06e; --msg-sent:#b87a19; --msg-sent-text:#fff; --msg-received:#664c18; --msg-received-text:#fff9e9; --input-bg:#694f1a; --shadow:rgba(34,23,1,.62); }
     [data-theme="arctic-frost"] { --bg-main:#102d3b; --bg-card:#1b4658; --bg-sidebar:#153646; --text-main:#f3fcff; --text-muted:#bddde8; --border:#52899e; --primary:rgb(125,190,220); --primary-hover:#afe2f6; --msg-sent:#4a91af; --msg-sent-text:#fff; --msg-received:#28576a; --msg-received-text:#f3fcff; --input-bg:#2c6074; --shadow:rgba(0,22,32,.58); }
     [data-theme="royal-eclipse"] { --bg-main:#19132d; --bg-card:#292044; --bg-sidebar:#201832; --text-main:#f9f6ff; --text-muted:#c9bee5; --border:#554176; --primary:rgb(73,55,115); --primary-hover:#8e78c4; --msg-sent:#59458b; --msg-sent-text:#fff; --msg-received:#352855; --msg-received-text:#f9f6ff; --input-bg:#392c5b; --shadow:rgba(10,5,24,.63); }
-    [data-theme="red-velvet"] { --bg-main:#4B0000; --bg-card:#650002; --bg-sidebar:#8D0004; --text-main:#fff5f6; --text-muted:#d9a3a6; --border:#300000; --primary:#8D0004; --primary-hover:#a8000a; --msg-sent:#8D0004; --msg-sent-text:#fff; --msg-received:#650002; --msg-received-text:#fff5f6; --input-bg:#7A0003; --shadow:rgba(20,0,0,.45); }
-    [data-theme="moonlight-sparkle"] { --bg-main:#210635; --bg-card:#7B337E; --bg-sidebar:#420D4B; --text-main:#F5D5E0; --text-muted:#c9a8ce; --border:#6b2a70; --primary:#6667AB; --primary-hover:#8586c9; --msg-sent:#6667AB; --msg-sent-text:#fff; --msg-received:#420D4B; --msg-received-text:#F5D5E0; --input-bg:#340a3c; --shadow:rgba(10,2,20,.55); }
-    /* The floating message-input dock (.chat-input) uses --bg-card. Left as
-       the default var(--bg-card), the canvas behind it (.main-chat) would be
-       the exact same color, so the dock wouldn't visually "float" against
-       its own margin gap. Darkened here to --bg-main for contrast — scoped
-       to this theme only, every other theme's .main-chat is untouched. */
-    [data-theme="moonlight-sparkle"] .main-chat { background: var(--bg-main); }
+    [data-theme="pinflare"] { --bg-main:#e60023; --bg-card:#b8001c; --bg-sidebar:#ff4d6d; --text-main:#fff5f6; --text-muted:#ffb8c2; --border:#a30020; --primary:rgb(255,77,109); --primary-hover:#ff8098; --msg-sent:#ff4d6d; --msg-sent-text:#fff; --msg-received:#8f0016; --msg-received-text:#fff5f6; --input-bg:#93001d; --shadow:rgba(120,0,15,.4); }
     [data-theme="sage-green"] { --bg-main:#89AF88; --bg-card:#AFAF88; --bg-sidebar:#9CAF88; --text-main:#26301e; --text-muted:#4d5c3c; --border:#7f9770; --primary:rgb(92,138,82); --primary-hover:#4a7341; --msg-sent:#5c8a52; --msg-sent-text:#fff; --msg-received:#9CAF88; --msg-received-text:#26301e; --input-bg:#cfe0c2; --shadow:rgba(60,80,45,.28); }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
@@ -103,7 +96,7 @@
     #wizard-username-status.bad { color:#ef4444; }
     
     /* Layout */
-    #app-screen { width: 96vw; height: 94vh; max-width: 1600px; display: flex; background: var(--bg-card); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px var(--shadow); border: 1px solid var(--border); }
+    #app-screen { width: 950px; height: 620px; display: flex; background: var(--bg-card); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px var(--shadow); border: 1px solid var(--border); }
     .sidebar { width: var(--sidebar-width, 320px); flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--bg-sidebar); }
     #sidebar-resize-handle { width: 5px; flex-shrink: 0; cursor: col-resize; background: transparent; margin-left: -5px; margin-right: -0px; z-index: 5; position: relative; }
     #sidebar-resize-handle:hover, #sidebar-resize-handle.resizing { background: var(--primary); opacity: .5; }
@@ -213,8 +206,7 @@
     [data-theme="solar-flare"] .qsp-custom input[type="datetime-local"],
     [data-theme="arctic-frost"] .qsp-custom input[type="datetime-local"],
     [data-theme="royal-eclipse"] .qsp-custom input[type="datetime-local"],
-    [data-theme="red-velvet"] .qsp-custom input[type="datetime-local"],
-    [data-theme="moonlight-sparkle"] .qsp-custom input[type="datetime-local"] { color-scheme: dark; }
+    [data-theme="pinflare"] .qsp-custom input[type="datetime-local"] { color-scheme: dark; }
     .qsp-custom button { margin-bottom: 0; padding: 8px; font-size: 12px; }
 
     .user-profile-info { display: flex; align-items: center; gap: 10px; }
@@ -353,13 +345,17 @@
     .emoji-picker { position: absolute; bottom: 75px; left: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; box-shadow: 0 8px 20px var(--shadow); z-index: 100; max-height: 180px; overflow-y: auto; width: 240px; }
     .emoji-picker span { font-size: 20px; cursor: pointer; text-align: center; border-radius: 6px; padding: 4px; }
     .emoji-picker span:hover { background: var(--input-bg); }
-    .gif-picker { position: absolute; bottom: 75px; left: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; box-shadow: 0 8px 20px var(--shadow); z-index: 100; width: 280px; }
-    .gif-picker input#gif-search-input { width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); margin-bottom: 8px; }
-    .gif-picker-results { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; max-height: 220px; overflow-y: auto; }
-    .gif-picker-results img { width: 100%; border-radius: 8px; cursor: pointer; object-fit: cover; aspect-ratio: 1; }
-    .gif-picker-results img:hover { opacity: .85; transform: scale(1.02); }
-    .gif-picker-status { grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-size: 12px; padding: 16px 0; }
-    .gif-picker-attribution { text-align: right; font-size: 10px; color: var(--text-muted); opacity: .7; margin-top: 6px; }
+
+    /* GIF picker — same positioning/depth language as .emoji-picker above */
+    .icon-btn.gif-btn { font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+    .gif-picker { position: absolute; bottom: 75px; left: 16px; right: 16px; max-width: 320px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; box-shadow: 0 8px 20px var(--shadow); z-index: 100; max-height: 320px; display: flex; flex-direction: column; gap: 8px; }
+    .gif-picker-search { display: flex; gap: 6px; }
+    .gif-picker-search input { flex: 1; min-width: 0; margin: 0; }
+    .gif-picker-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .gif-picker-grid img { width: 100%; height: 90px; object-fit: cover; border-radius: 8px; cursor: pointer; display: block; background: var(--input-bg); }
+    .gif-picker-grid img:hover, .gif-picker-grid img:active { opacity: .8; }
+    .gif-picker-status { grid-column: 1 / -1; font-size: 12px; color: var(--text-muted); text-align: center; padding: 20px 8px; }
+    @media (max-width: 480px) { .gif-picker { left: 8px; right: 8px; max-width: none; } }
 
     /* Settings Modal */
     .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
@@ -734,11 +730,12 @@
           <span onclick="addEmoji('😊')">😊</span><span onclick="addEmoji('🙌')">🙌</span><span onclick="addEmoji('✨')">✨</span>
         </div>
 
-        <!-- GIF Picker -->
+        <!-- GIF Picker (GIPHY, via the same Render backend as Pinterest previews) -->
         <div id="gif-picker" class="gif-picker hidden">
-          <input type="text" id="gif-search-input" placeholder="Search GIFs..." oninput="onGifSearchInput(this.value)">
-          <div id="gif-picker-results" class="gif-picker-results"><div class="gif-picker-status">Loading…</div></div>
-          <div class="gif-picker-attribution">Powered by GIPHY</div>
+          <div class="gif-picker-search">
+            <input type="text" id="gif-search-input" placeholder="Search GIFs..." oninput="handleGifSearchInput(this.value)" onkeypress="if(event.key==='Enter'){ event.preventDefault(); searchGifs(this.value); }">
+          </div>
+          <div id="gif-picker-grid" class="gif-picker-grid"><div class="gif-picker-status">Search for GIFs above</div></div>
         </div>
 
         <!-- Attachment Preview -->
@@ -749,7 +746,7 @@
 
         <div class="input-row">
           <button class="icon-btn" onclick="toggleEmojiPicker()" title="Add Emoji">😊</button>
-          <button class="icon-btn" onclick="toggleGifPicker()" title="GIFs">GIF</button>
+          <button class="icon-btn gif-btn" onclick="toggleGifPicker()" title="Send a GIF" aria-label="Send a GIF">GIF</button>
           <button class="icon-btn" onclick="toggleExtensionMenu()" title="Chat extensions">+</button>
           <label class="icon-btn" title="Attach File">
             📎
@@ -839,7 +836,7 @@
             <option value="oceanic">Oceanic</option><option value="sakura-mist">Sakura Mist</option>
             <option value="forest-pulse">Forest Pulse</option><option value="solar-flare">Solar Flare</option>
             <option value="arctic-frost">Arctic Frost</option><option value="royal-eclipse">Royal Eclipse</option>
-            <option value="sage-green">Sage Green</option><option value="red-velvet">Red Velvet</option><option value="moonlight-sparkle">Moonlight Sparkle</option>
+            <option value="sage-green">Sage Green</option><option value="pinflare">Pinflare 📌</option>
           </select>
           <div id="theme-preview-grid" class="theme-preview-grid" role="radiogroup" aria-label="Choose app theme"></div>
         </div>
@@ -1046,6 +1043,22 @@
     }
 
     function getUserPresence(username) {
+      // Real online/offline now comes from Firebase Realtime Database
+      // (presence.js — /.info/connected + onDisconnect(), multi-device
+      // aware) instead of the old localStorage 'presence_data' heartbeat,
+      // which only ever reflected this one browser and never told you
+      // anything true about another person's actual connection.
+      if (typeof window.ensurePresenceSubscription === 'function') window.ensurePresenceSubscription(username);
+      if (typeof window.isUserOnlineRTDB === 'function') {
+        const known = window.isUserOnlineRTDB(username);
+        if (known !== null) return known ? 'online' : 'offline';
+        // Not resolved yet (uid lookup / first RTDB snapshot still in
+        // flight): the local user is demonstrably online right now, so
+        // show that immediately rather than a false "offline" flash.
+        if (username === currentUser) return 'online';
+      }
+      // Bridge fallback only — used for other people until their real RTDB
+      // presence resolves (moments later), or if RTDB is unavailable.
       const presence = DB.getPresence();
       const p = presence[username];
       if (!p) return 'offline';
@@ -1094,8 +1107,17 @@
     }
 
     function getBadgeStatusForUser(username) {
+      // Real connection state always wins: if this person is actually
+      // disconnected, show Offline no matter what Quick Status says (a
+      // stale "Gaming"/"Studying" badge from a closed tab is worse than no
+      // badge). Otherwise, an active Quick Status (anything but the 'free'
+      // default) still displays exactly as before; once it expires back to
+      // 'free' — or was never set — show the real "Online" state rather
+      // than the 'free' placeholder (both already paint identically green
+      // via STATUS_VISUALS, this just makes the underlying state honest).
+      if (getUserPresence(username) === 'offline') return 'offline';
       const quickStatus = getQuickStatusForUser(username);
-      return quickStatus === 'free' ? 'free' : (quickStatus || getUserPresence(username));
+      return (quickStatus && quickStatus !== 'free') ? quickStatus : 'online';
     }
 
     /* ---------------- Status duration / auto-expiry ---------------- */
@@ -1281,6 +1303,18 @@
       }, 160);
     }
 
+    // Called by presence.js whenever a tracked username's real RTDB online
+    // state changes, so the already-drawn badge(s) for that person repaint
+    // live (multi-device: this fires on connect AND on disconnect, from
+    // ANY of their tabs/devices). Purely a targeted repaint — no data
+    // reload, no full re-render, nothing else on screen is touched.
+    window.onPresenceChange = function (username, isOnline) {
+      const status = getBadgeStatusForUser(username);
+      updateStatusBadgeUI(`friend-status-${username}`, status);
+      if (username === activeFriend) updateStatusBadgeUI('chat-header-status-badge', status);
+      if (username === currentUser) updateStatusBadgeUI('sidebar-status-badge', status);
+    };
+
     function playPopSound() {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = audioCtx.createOscillator();
@@ -1325,6 +1359,11 @@
             activeMoreMenuMsgId = null;
             renderMessages(false);
           }
+        }
+
+        const gifPicker = document.getElementById('gif-picker');
+        if (gifPicker && !gifPicker.classList.contains('hidden') && !e.target.closest('#gif-picker') && !e.target.closest('.gif-btn')) {
+          gifPicker.classList.add('hidden');
         }
       });
 
@@ -1758,8 +1797,7 @@
       { id: 'arctic-frost', name: 'Arctic Frost', colors: ['#102d3b', '#1b4658', 'rgb(125, 190, 220)'] },
       { id: 'royal-eclipse', name: 'Royal Eclipse', colors: ['#19132d', '#292044', 'rgb(73, 55, 115)'] },
       { id: 'sage-green', name: 'Sage Green', colors: ['#89AF88', '#AFAF88', 'rgb(92, 138, 82)'] },
-      { id: 'red-velvet', name: 'Red Velvet', colors: ['#4B0000', '#650002', '#8D0004'] },
-      { id: 'moonlight-sparkle', name: 'Moonlight Sparkle', colors: ['#210635', '#7B337E', '#6667AB'] }
+      { id: 'pinflare', name: 'Pinflare 📌', colors: ['#e60023', '#b8001c', 'rgb(255, 77, 109)'] }
     ];
 
     function renderThemeSelector() {
@@ -1965,7 +2003,6 @@
     function toggleExtensionMenu() {
       document.getElementById('extension-menu').classList.toggle('hidden');
       document.getElementById('emoji-picker').classList.add('hidden');
-      document.getElementById('gif-picker')?.classList.add('hidden');
       // Games stay Direct-Chat-only — hide the option entirely in a Hub
       // rather than let someone pick it and get turned away.
       const gameOption = document.getElementById('ext-opt-game');
@@ -2616,85 +2653,12 @@
       loadPinterestPreview(url, cardId);
       return pinterestCardPlaceholderHTML(cardId);
     }
-
-    // --- GIPHY GIF search/picker (DM + Hub) ---------------------------------
-    // Same backend (PINTEREST_BACKEND_URL, defined above) as the Pinterest
-    // integration — server.js proxies GIPHY too, so the GIPHY API key stays
-    // server-side only, same as Pinterest's credentials.
-    //
-    // A sent GIF is just a normal image attachment: currentAttachment gets
-    // set to the GIF's URL and the existing sendMessage() is called
-    // directly, so it flows through the same DM/Hub branching, Firestore
-    // sync, and rendering (message.attachment?.type === 'image') that file
-    // uploads already use — no changes needed anywhere else for this to
-    // work in both Direct Chats and Hubs.
-    let gifSearchTimeout = null;
-
-    function toggleGifPicker() {
-      const picker = document.getElementById('gif-picker');
-      if (!picker) return;
-      const opening = picker.classList.contains('hidden');
-      picker.classList.toggle('hidden');
-      document.getElementById('emoji-picker').classList.add('hidden');
-      document.getElementById('extension-menu').classList.add('hidden');
-      if (opening) {
-        document.getElementById('gif-search-input').focus();
-        if (!picker.dataset.loaded) { picker.dataset.loaded = '1'; searchGiphy(''); }
-      }
-    }
-
-    function renderGifResults(gifs) {
-      const resultsEl = document.getElementById('gif-picker-results');
-      resultsEl.innerHTML = '';
-      if (!gifs || !gifs.length) {
-        resultsEl.innerHTML = '<div class="gif-picker-status">No GIFs found.</div>';
-        return;
-      }
-      gifs.forEach(g => {
-        const img = document.createElement('img');
-        img.src = g.preview;
-        img.loading = 'lazy';
-        img.alt = g.title || 'GIF';
-        img.onclick = () => sendGif(g.url);
-        resultsEl.appendChild(img);
-      });
-    }
-
-    async function searchGiphy(query) {
-      const resultsEl = document.getElementById('gif-picker-results');
-      resultsEl.innerHTML = '<div class="gif-picker-status">Loading…</div>';
-      try {
-        const endpoint = query.trim()
-          ? `${PINTEREST_BACKEND_URL}/api/giphy/search?q=${encodeURIComponent(query.trim())}`
-          : `${PINTEREST_BACKEND_URL}/api/giphy/trending`;
-        const res = await fetch(endpoint);
-        const json = await res.json();
-        if (!json.ok) { resultsEl.innerHTML = '<div class="gif-picker-status">Couldn\'t load GIFs.</div>'; return; }
-        renderGifResults(json.gifs);
-      } catch (error) {
-        console.error('GIPHY search failed:', error);
-        resultsEl.innerHTML = '<div class="gif-picker-status">Couldn\'t load GIFs.</div>';
-      }
-    }
-
-    function onGifSearchInput(value) {
-      clearTimeout(gifSearchTimeout);
-      gifSearchTimeout = setTimeout(() => searchGiphy(value), 350);
-    }
-
-    function sendGif(url) {
-      if (!activeFriend && !activeHub) return;
-      currentAttachment = { name: 'GIF', type: 'image', data: url };
-      document.getElementById('gif-picker').classList.add('hidden');
-      sendMessage();
-    }
-
     function refreshCountdowns() { document.querySelectorAll('.countdown-card').forEach(card => { const diff = Math.max(0, new Date(card.dataset.end).getTime() - Date.now()); const h = Math.floor(diff/3600000); const min = Math.floor(diff%3600000/60000); const s = Math.floor(diff%60000/1000); card.querySelector('.timer-display').textContent = diff ? `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}` : 'Time is up!'; }); }
     setInterval(refreshCountdowns, 1000);
 
     function toggleEmojiPicker() {
-      document.getElementById('emoji-picker').classList.toggle('hidden');
       document.getElementById('gif-picker')?.classList.add('hidden');
+      document.getElementById('emoji-picker').classList.toggle('hidden');
     }
 
     function addEmoji(emoji) {
@@ -2749,6 +2713,84 @@
       currentAttachment = null;
       document.getElementById('file-input').value = '';
       document.getElementById('attachment-preview').classList.add('hidden');
+    }
+
+    // --- GIF picker (GIPHY, via the same Render backend as Pinterest
+    // previews — GIPHY_BACKEND_URL is just a readable alias, same server)
+    // Works identically for Direct Chat and Hubs: it only ever sets
+    // currentAttachment and calls the existing global sendMessage(), which
+    // already branches correctly and already clears currentAttachment
+    // afterward — no new send path, no changes to either message pipeline.
+    const GIPHY_BACKEND_URL = PINTEREST_BACKEND_URL;
+    let gifSearchDebounceTimer = null;
+
+    function toggleGifPicker() {
+      document.getElementById('emoji-picker')?.classList.add('hidden');
+      const picker = document.getElementById('gif-picker');
+      const opening = picker.classList.contains('hidden');
+      picker.classList.toggle('hidden');
+      if (opening) document.getElementById('gif-search-input')?.focus();
+    }
+    function closeGifPicker() {
+      document.getElementById('gif-picker')?.classList.add('hidden');
+    }
+    function renderGifPickerStatus(message) {
+      const grid = document.getElementById('gif-picker-grid');
+      if (grid) grid.innerHTML = `<div class="gif-picker-status">${message}</div>`;
+    }
+    function handleGifSearchInput(value) {
+      clearTimeout(gifSearchDebounceTimer);
+      gifSearchDebounceTimer = setTimeout(() => searchGifs(value), 400);
+    }
+    async function searchGifs(query) {
+      query = (query || '').trim();
+      if (!query) { renderGifPickerStatus('Search for GIFs above'); return; }
+      renderGifPickerStatus('Searching…');
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 12000);
+        let res;
+        try {
+          res = await fetch(`${GIPHY_BACKEND_URL}/api/giphy/search?q=${encodeURIComponent(query)}&limit=16`, { signal: controller.signal });
+        } finally {
+          clearTimeout(timeout);
+        }
+        if (!res.ok) {
+          console.error(`GIF search backend returned ${res.status} ${res.statusText}`);
+          renderGifPickerStatus('Could not load GIFs. Try again.');
+          return;
+        }
+        const data = await res.json();
+        if (!data.ok || !Array.isArray(data.results) || !data.results.length) {
+          renderGifPickerStatus('No GIFs found.');
+          return;
+        }
+        renderGifPickerResults(data.results);
+      } catch (error) {
+        console.error('GIF search failed:', error);
+        renderGifPickerStatus('Could not load GIFs. Try again.');
+      }
+    }
+    function renderGifPickerResults(results) {
+      const grid = document.getElementById('gif-picker-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      results.forEach(gif => {
+        if (!gif.image) return;
+        const img = document.createElement('img');
+        img.src = gif.preview || gif.image;
+        img.alt = gif.title || 'GIF';
+        img.loading = 'lazy';
+        img.onclick = () => sendGif(gif.image);
+        grid.appendChild(img);
+      });
+      if (!grid.children.length) renderGifPickerStatus('No GIFs found.');
+    }
+    function sendGif(url) {
+      if (!url || !(activeFriend || activeHub)) return;
+      closeGifPicker();
+      currentAttachment = { name: 'GIF', type: 'image', data: url };
+      sendMessage();
     }
 
     function toggleAddFriendMenu() {

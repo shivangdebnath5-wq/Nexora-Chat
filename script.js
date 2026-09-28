@@ -1,4 +1,13 @@
 /* NexoraChat interaction upgrade. Existing inline functions remain the data layer. */
+
+// Loads the real-time RTDB presence module (see presence.js). Dynamic
+// import() works fine from this classic script; presence.js itself waits
+// for the Firebase app to exist, so load order relative to index.html's
+// <script type="module"> block doesn't matter. Entirely additive: if this
+// fails for any reason, getUserPresence()'s existing fallback in index.html
+// keeps the app working exactly as before.
+import('./presence.js').catch(err => console.warn('Presence module failed to load:', err));
+
 const baseExtensionHTML = extensionHTML;
 const baseUpdateExtension = updateExtension;
 
@@ -867,10 +876,3 @@ sendMessage = function() {
   }
   return beforeWhiteboardSlashCommand();
 };
-
-/* Real-time Firebase presence (online/offline via Realtime Database) —
-   see presence.js. Loaded as a dynamic import so this file itself stays a
-   plain classic script; presence.js reuses the existing Firebase app
-   (getApp()) and only writes to Realtime Database, so nothing here touches
-   Firestore, chats, Hubs, Pinterest, GIPHY, or any UI. */
-import('./presence.js').catch(err => console.warn('Presence module failed to load:', err.message));
