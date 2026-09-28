@@ -2729,7 +2729,13 @@
       const picker = document.getElementById('gif-picker');
       const opening = picker.classList.contains('hidden');
       picker.classList.toggle('hidden');
-      if (opening) document.getElementById('gif-search-input')?.focus();
+      if (opening) {
+        document.getElementById('gif-search-input')?.focus();
+        // Load a default feed on open (only if nothing is showing yet, so
+        // re-opening doesn't refetch and a failed load retries).
+        const grid = document.getElementById('gif-picker-grid');
+        if (!document.getElementById('gif-search-input')?.value.trim() && !grid?.querySelector('img')) searchGifs('');
+      }
     }
     function closeGifPicker() {
       document.getElementById('gif-picker')?.classList.add('hidden');
@@ -2744,8 +2750,11 @@
     }
     async function searchGifs(query) {
       query = (query || '').trim();
-      if (!query) { renderGifPickerStatus('Search for GIFs above'); return; }
-      renderGifPickerStatus('Searching…');
+      // Empty search = default feed. The backend only exposes /api/giphy/search
+      // (unchanged), so this searches the term "trending".
+      const isDefaultFeed = !query;
+      if (isDefaultFeed) query = 'trending';
+      renderGifPickerStatus(isDefaultFeed ? 'Loading trending GIFs…' : 'Searching…');
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 12000);
