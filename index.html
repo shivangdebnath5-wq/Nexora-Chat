@@ -2770,11 +2770,12 @@
           return;
         }
         const data = await res.json();
-        if (!data.ok || !Array.isArray(data.results) || !data.results.length) {
+        // Backend response shape: { ok: true, gifs: [{ id, title, preview, url }] }
+        if (!data.ok || !Array.isArray(data.gifs) || !data.gifs.length) {
           renderGifPickerStatus('No GIFs found.');
           return;
         }
-        renderGifPickerResults(data.results);
+        renderGifPickerResults(data.gifs);
       } catch (error) {
         console.error('GIF search failed:', error);
         renderGifPickerStatus('Could not load GIFs. Try again.');
@@ -2785,12 +2786,12 @@
       if (!grid) return;
       grid.innerHTML = '';
       results.forEach(gif => {
-        if (!gif.image) return;
+        if (!gif.url) return;
         const img = document.createElement('img');
-        img.src = gif.preview || gif.image;
+        img.src = gif.preview || gif.url;
         img.alt = gif.title || 'GIF';
         img.loading = 'lazy';
-        img.onclick = () => sendGif(gif.image);
+        img.onclick = () => sendGif(gif.url);
         grid.appendChild(img);
       });
       if (!grid.children.length) renderGifPickerStatus('No GIFs found.');
