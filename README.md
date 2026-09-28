@@ -4,7 +4,7 @@
   </a>
 </p>
 
-<h1 align="center"><font face="Space Grotesk">Nexora</font></h1>
+<h1 align="center"><font face="Comic Sans MS">Nexora</font></h1>
 
 <p align="center">
   <strong>Connect • Create • Experience</strong>
@@ -16,7 +16,7 @@
 
 ---
 
-## <font face="Space Grotesk">✨ What is Nexora?</font>
+## <font face="Comic Sans MS">✨ What is Nexora?</font>
 
 Nexora is a modern communication and collaboration platform designed to bring conversations, communities, creativity, and everyday actions together in one place.
 
@@ -40,9 +40,9 @@ Nexora is designed to work seamlessly across devices while keeping conversations
 
 ---
 
-# <font face="Space Grotesk">🚀 Core Features</font>
+# <font face="Impact">🚀 Core Features</font>
 
-## <font face="Space Grotesk">💬 Direct Chats</font>
+## <font face="Trebuchet MS">💬 Direct Chats</font>
 
 Nexora supports private one-to-one conversations with features such as:
 
@@ -61,7 +61,7 @@ The goal is to make conversations feel lightweight while still supporting rich c
 
 ---
 
-## <font face="Space Grotesk">🏠 Hubs</font>
+## <font face="Georgia">🏠 Hubs</font>
 
 Hubs are Nexora's community and group-space system. A Hub can be created around almost anything:
 
@@ -84,7 +84,7 @@ Each Hub can have its own identity and structure.
 
 ---
 
-## <font face="Space Grotesk">🚪 Rooms</font>
+## <font face="Courier New">🚪 Rooms</font>
 
 Rooms allow large Hubs to stay organized without putting every conversation into a single channel.
 
@@ -98,7 +98,7 @@ Rooms allow large Hubs to stay organized without putting every conversation into
 
 ---
 
-## <font face="Space Grotesk">🎮 Gaming Hubs</font>
+## <font face="Impact">🎮 Gaming Hubs</font>
 
 Gaming Hubs are specialized Hubs designed specifically around gaming communities.
 
@@ -112,7 +112,7 @@ Gaming Hubs are specialized Hubs designed specifically around gaming communities
 
 ---
 
-## <font face="Space Grotesk">👤 Profiles</font>
+## <font face="Verdana">👤 Profiles</font>
 
 Profiles are a central part of Nexora's identity system. Clicking a user's name or avatar opens their Nexora Profile.
 
@@ -130,7 +130,7 @@ Profiles are a central part of Nexora's identity system. Clicking a user's name 
 
 ---
 
-## <font face="Space Grotesk">🏠 Hub Profiles</font>
+## <font face="Georgia">🏠 Hub Profiles</font>
 
 Hubs also feature dedicated public profiles containing:
 - Hub icon, banner, name, description, and tags
@@ -140,7 +140,7 @@ Hubs also feature dedicated public profiles containing:
 
 ---
 
-## <font face="Space Grotesk">📱 Mobile-First Experience</font>
+## <font face="Trebuchet MS">📱 Mobile-First Experience</font>
 
 Nexora is designed with mobile users as a primary priority.
 
@@ -156,7 +156,7 @@ Nexora is designed with mobile users as a primary priority.
 
 ---
 
-## <font face="Space Grotesk">⚡ Quick Actions</font>
+## <font face="Comic Sans MS">⚡ Quick Actions</font>
 
 Nexora uses a central Quick Actions system for fast navigation. The central `+` action button gives quick access to:
 
@@ -167,7 +167,7 @@ Nexora uses a central Quick Actions system for fast navigation. The central `+` 
 
 ---
 
-## <font face="Space Grotesk">🔄 Cross-Device Sync</font>
+## <font face="Courier New">🔄 Cross-Device Sync</font>
 
 Nexora is built around synchronized experiences across all ecosystem devices:
 
