@@ -580,3 +580,12 @@
 .hub-invite-friend-row button { width:auto; padding:6px 12px; margin:0; }
 .hub-invite-friend-row button:disabled { opacity:.55; cursor:default; }
 .hub-invite-empty { color:var(--text-muted); font-size:13px; padding:10px 0; }
+/* Profile header nudged up 5px so a small gap shows below it (floating feel).
+   Desktop only: .sidebar-header is already position:relative there, so `top`
+   is a purely visual shift — layout, the sections below, and the status menus
+   anchored inside the header all keep their positions relative to it. On
+   mobile the header is sticky and hosts fixed-position menus, so it's left
+   exactly as it was. */
+@media (min-width: 721px) {
+  .sidebar-header { top: -5px; }
+}
