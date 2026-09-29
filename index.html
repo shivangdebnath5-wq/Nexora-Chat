@@ -435,7 +435,7 @@
     .extension-menu { position:absolute; bottom:74px; left:16px; width:292px; padding:10px; border:1px solid var(--border); border-radius:16px; background:var(--bg-card); box-shadow:0 14px 32px var(--shadow); z-index:101; }
     .extension-menu h4 { font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; margin:2px 4px 10px; }
     .extension-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; }
-    .extension-option { width:100%; min-height:44px; justify-content:flex-start; padding:9px; margin:0; background:transparent; color:var(--text-main); border:1px solid transparent; font-size:13px; }
+    .extension-option { display:flex; align-items:center; width:100%; min-height:44px; justify-content:flex-start; padding:9px; margin:0; background:transparent; color:var(--text-main); border:1px solid transparent; font-size:13px; cursor:pointer; }
     .extension-option:hover { background:var(--input-bg); border-color:var(--border); }
     .extension-card { min-width:230px; max-width:310px; padding:14px; border-radius:14px; background:var(--bg-card); color:var(--text-main); border:1px solid var(--border); box-shadow:0 4px 10px rgba(15,23,42,.08); }
     .extension-card.shopping-card { min-width:260px; max-width:420px; width:min(420px, calc(100vw - 90px)); }
@@ -766,15 +766,11 @@
           <button class="icon-btn" onclick="toggleEmojiPicker()" title="Add Emoji">😊</button>
           <button class="icon-btn gif-btn" onclick="toggleGifPicker()" title="Send a GIF" aria-label="Send a GIF">GIF</button>
           <button class="icon-btn" onclick="toggleExtensionMenu()" title="Chat extensions">+</button>
-          <label class="icon-btn" title="Attach File">
-            📎
-            <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(event)">
-          </label>
           <input type="text" id="message-input" placeholder="Type a message..." oninput="sendTypingSignal()" onkeypress="if(event.key==='Enter') sendMessage()">
           <button id="send-btn" onclick="sendMessage()" title="Send message"><img src="https://i.ibb.co/ccSt9Sbz/Chat-GPT-Image-Aug-26-2026-02-07-48-PM-removebg-preview.png" alt="Send" style="width:24px; height:24px; object-fit:contain;"></button>
         </div>
         <div id="extension-menu" class="extension-menu hidden"><h4>Send something useful</h4><div class="extension-grid">
-          <button class="extension-option" onclick="openExtension('poll')">Poll</button><button class="extension-option" onclick="openExtension('countdown')">Countdown</button><button class="extension-option" onclick="openExtension('note')">Sticky note</button><button class="extension-option" onclick="openExtension('todo')">To-do list</button><button class="extension-option" onclick="openExtension('calendar')">Calendar event</button><button id="ext-opt-game" class="extension-option" onclick="openExtension('game')">Play a game</button><button class="extension-option" onclick="openExtension('shopping')">Shopping list</button><button id="ext-opt-location" class="extension-option" onclick="document.getElementById('extension-menu').classList.add('hidden'); shareLocation();">📍 Share location</button><button id="ext-opt-quiz" class="extension-option hidden" onclick="openExtension('quiz')">📝 Quiz Maker</button><button id="ext-opt-event" class="extension-option hidden" onclick="openExtension('event')">📅 Events</button><button id="ext-opt-whiteboard" class="extension-option hidden" onclick="openExtension('whiteboard')">🖊️ Whiteboard</button>
+          <button class="extension-option" onclick="openExtension('poll')">Poll</button><button class="extension-option" onclick="openExtension('countdown')">Countdown</button><button class="extension-option" onclick="openExtension('note')">Sticky note</button><button class="extension-option" onclick="openExtension('todo')">To-do list</button><button class="extension-option" onclick="openExtension('calendar')">Calendar event</button><button id="ext-opt-game" class="extension-option" onclick="openExtension('game')">Play a game</button><button class="extension-option" onclick="openExtension('shopping')">Shopping list</button><label class="extension-option" title="Send attachment" onclick="document.getElementById('extension-menu').classList.add('hidden');">📎 Send attachment<input type="file" id="file-input" class="hidden" onchange="handleFileSelect(event)"></label><button id="ext-opt-location" class="extension-option" onclick="document.getElementById('extension-menu').classList.add('hidden'); shareLocation();">📍 Share location</button><button id="ext-opt-quiz" class="extension-option hidden" onclick="openExtension('quiz')">📝 Quiz Maker</button><button id="ext-opt-event" class="extension-option hidden" onclick="openExtension('event')">📅 Events</button><button id="ext-opt-whiteboard" class="extension-option hidden" onclick="openExtension('whiteboard')">🖊️ Whiteboard</button>
         </div></div>
       </div>
     </div>
@@ -2714,6 +2710,7 @@
       const file = event.target.files[0];
       if (!file) return;
       if (file.size > 3 * 1024 * 1024) return alert("Select a file under 3MB.");
+      document.getElementById('extension-menu').classList.add('hidden'); // now launched from there, so close it once a file is picked
 
       const reader = new FileReader();
       reader.onload = function(e) {
