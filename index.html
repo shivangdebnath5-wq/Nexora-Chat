@@ -360,20 +360,27 @@
     .attachment-preview button { padding: 4px 8px; font-size: 11px; background: #ef4444; width: auto; margin-bottom: 0; }
 
     /* Emoji Picker Drawer */
-    .emoji-picker { position: absolute; bottom: 75px; left: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; box-shadow: 0 8px 20px var(--shadow); z-index: 100; max-height: 180px; overflow-y: auto; width: 240px; }
-    .emoji-picker span { font-size: 20px; cursor: pointer; text-align: center; border-radius: 6px; padding: 4px; }
-    .emoji-picker span:hover { background: var(--input-bg); }
+    .emoji-picker { position: absolute; bottom: 75px; left: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; box-shadow: 0 8px 20px var(--shadow); z-index: 100; width: 280px; max-height: 360px; display: flex; flex-direction: column; gap: 8px; }
+    .picker-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-shrink: 0; }
+    .picker-tab { width: auto; margin: 0; padding: 6px 10px; font-size: 12px; background: transparent; color: var(--text-muted); border: 1px solid transparent; border-radius: 8px; }
+    .picker-tab.active { background: var(--input-bg); color: var(--text-main); }
+    .picker-pane { flex: 1; min-height: 0; overflow-y: auto; }
+    .emoji-grid-pane { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; align-content: start; }
+    .emoji-grid-pane span { font-size: 20px; cursor: pointer; text-align: center; border-radius: 6px; padding: 4px; }
+    .emoji-grid-pane span:hover { background: var(--input-bg); }
 
-    /* GIF picker — same positioning/depth language as .emoji-picker above */
+    /* GIF pane — now a tab inside .emoji-picker rather than its own floating
+       panel. All GIF-specific classes below (search/grid/status) and the
+       GIPHY fetch/render JS are unchanged; only the wrapper around them and
+       how it's shown/hidden changed. */
     .icon-btn.gif-btn { font-size: 12px; font-weight: 700; letter-spacing: .02em; }
-    .gif-picker { position: absolute; bottom: 75px; left: 16px; right: 16px; max-width: 320px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; box-shadow: 0 8px 20px var(--shadow); z-index: 100; max-height: 320px; display: flex; flex-direction: column; gap: 8px; }
+    .gif-picker-pane { display: flex; flex-direction: column; gap: 8px; }
     .gif-picker-search { display: flex; gap: 6px; }
     .gif-picker-search input { flex: 1; min-width: 0; margin: 0; }
     .gif-picker-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
     .gif-picker-grid img { width: 100%; height: 90px; object-fit: cover; border-radius: 8px; cursor: pointer; display: block; background: var(--input-bg); }
     .gif-picker-grid img:hover, .gif-picker-grid img:active { opacity: .8; }
     .gif-picker-status { grid-column: 1 / -1; font-size: 12px; color: var(--text-muted); text-align: center; padding: 20px 8px; }
-    @media (max-width: 480px) { .gif-picker { left: 8px; right: 8px; max-width: none; } }
 
     /* Settings Modal */
     .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
@@ -742,18 +749,31 @@
       <div class="chat-input hidden" id="chat-input-container">
         <!-- Emoji Drawer -->
         <div id="emoji-picker" class="emoji-picker hidden">
-          <span onclick="addEmoji('😀')">😀</span><span onclick="addEmoji('😂')">😂</span><span onclick="addEmoji('😍')">😍</span>
-          <span onclick="addEmoji('😎')">😎</span><span onclick="addEmoji('👍')">👍</span><span onclick="addEmoji('🔥')">🔥</span>
-          <span onclick="addEmoji('🎉')">🎉</span><span onclick="addEmoji('❤️')">❤️</span><span onclick="addEmoji('🙏')">🙏</span>
-          <span onclick="addEmoji('😊')">😊</span><span onclick="addEmoji('🙌')">🙌</span><span onclick="addEmoji('✨')">✨</span>
-        </div>
-
-        <!-- GIF Picker (GIPHY, via the same Render backend as Pinterest previews) -->
-        <div id="gif-picker" class="gif-picker hidden">
-          <div class="gif-picker-search">
-            <input type="text" id="gif-search-input" placeholder="Search GIFs..." oninput="handleGifSearchInput(this.value)" onkeypress="if(event.key==='Enter'){ event.preventDefault(); searchGifs(this.value); }">
+          <div class="picker-tabs" role="tablist" aria-label="Emoji, GIF, or Stickers">
+            <button type="button" class="picker-tab active" data-picker-tab="emoji" onclick="switchPickerTab('emoji')">Emoji</button>
+            <button type="button" class="picker-tab" data-picker-tab="gif" onclick="switchPickerTab('gif')">GIF</button>
+            <button type="button" class="picker-tab" data-picker-tab="stickers" onclick="switchPickerTab('stickers')">Stickers</button>
           </div>
-          <div id="gif-picker-grid" class="gif-picker-grid"><div class="gif-picker-status">Search for GIFs above</div></div>
+
+          <div id="emoji-pane" class="picker-pane emoji-grid-pane">
+            <span onclick="addEmoji('😀')">😀</span><span onclick="addEmoji('😂')">😂</span><span onclick="addEmoji('😍')">😍</span>
+            <span onclick="addEmoji('😎')">😎</span><span onclick="addEmoji('👍')">👍</span><span onclick="addEmoji('🔥')">🔥</span>
+            <span onclick="addEmoji('🎉')">🎉</span><span onclick="addEmoji('❤️')">❤️</span><span onclick="addEmoji('🙏')">🙏</span>
+            <span onclick="addEmoji('😊')">😊</span><span onclick="addEmoji('🙌')">🙌</span><span onclick="addEmoji('✨')">✨</span>
+          </div>
+
+          <!-- GIF Picker (GIPHY, via the same Render backend as Pinterest previews) — unchanged functionality, now a tab pane -->
+          <div id="gif-picker" class="picker-pane gif-picker-pane hidden">
+            <div class="gif-picker-search">
+              <input type="text" id="gif-search-input" placeholder="Search GIFs..." oninput="handleGifSearchInput(this.value)" onkeypress="if(event.key==='Enter'){ event.preventDefault(); searchGifs(this.value); }">
+            </div>
+            <div id="gif-picker-grid" class="gif-picker-grid"><div class="gif-picker-status">Search for GIFs above</div></div>
+          </div>
+
+          <!-- Stickers: placeholder tab, no functionality yet -->
+          <div id="stickers-pane" class="picker-pane hidden">
+            <div class="gif-picker-status">Stickers coming soon!</div>
+          </div>
         </div>
 
         <!-- Attachment Preview -->
@@ -1375,9 +1395,9 @@
           }
         }
 
-        const gifPicker = document.getElementById('gif-picker');
-        if (gifPicker && !gifPicker.classList.contains('hidden') && !e.target.closest('#gif-picker') && !e.target.closest('.gif-btn')) {
-          gifPicker.classList.add('hidden');
+        const pickerShell = document.getElementById('emoji-picker');
+        if (pickerShell && !pickerShell.classList.contains('hidden') && !e.target.closest('#emoji-picker') && !e.target.closest('.gif-btn')) {
+          pickerShell.classList.add('hidden');
         }
       });
 
@@ -2671,9 +2691,30 @@
     function refreshCountdowns() { document.querySelectorAll('.countdown-card').forEach(card => { const diff = Math.max(0, new Date(card.dataset.end).getTime() - Date.now()); const h = Math.floor(diff/3600000); const min = Math.floor(diff%3600000/60000); const s = Math.floor(diff%60000/1000); card.querySelector('.timer-display').textContent = diff ? `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}` : 'Time is up!'; }); }
     setInterval(refreshCountdowns, 1000);
 
+    // Emoji / GIF / Stickers now share one picker shell (#emoji-picker) with
+    // tabs, instead of being two separate floating panels. switchPickerTab
+    // shows the requested pane and hides the others; the GIF pane's own
+    // search/grid/fetch logic below is untouched, just relocated into it.
+    function switchPickerTab(tab) {
+      document.querySelectorAll('.picker-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.pickerTab === tab));
+      document.getElementById('emoji-pane').classList.toggle('hidden', tab !== 'emoji');
+      document.getElementById('gif-picker').classList.toggle('hidden', tab !== 'gif');
+      document.getElementById('stickers-pane').classList.toggle('hidden', tab !== 'stickers');
+      if (tab === 'gif') {
+        document.getElementById('gif-search-input')?.focus();
+        // Load a default feed on open (only if nothing is showing yet, so
+        // re-opening doesn't refetch and a failed load retries).
+        const grid = document.getElementById('gif-picker-grid');
+        if (!document.getElementById('gif-search-input')?.value.trim() && !grid?.querySelector('img')) searchGifs('');
+      }
+    }
+
     function toggleEmojiPicker() {
-      document.getElementById('gif-picker')?.classList.add('hidden');
-      document.getElementById('emoji-picker').classList.toggle('hidden');
+      const shell = document.getElementById('emoji-picker');
+      const alreadyOpenHere = !shell.classList.contains('hidden') && !document.getElementById('emoji-pane').classList.contains('hidden');
+      if (alreadyOpenHere) { shell.classList.add('hidden'); return; }
+      shell.classList.remove('hidden');
+      switchPickerTab('emoji');
     }
 
     function addEmoji(emoji) {
@@ -2741,20 +2782,14 @@
     let gifSearchDebounceTimer = null;
 
     function toggleGifPicker() {
-      document.getElementById('emoji-picker')?.classList.add('hidden');
-      const picker = document.getElementById('gif-picker');
-      const opening = picker.classList.contains('hidden');
-      picker.classList.toggle('hidden');
-      if (opening) {
-        document.getElementById('gif-search-input')?.focus();
-        // Load a default feed on open (only if nothing is showing yet, so
-        // re-opening doesn't refetch and a failed load retries).
-        const grid = document.getElementById('gif-picker-grid');
-        if (!document.getElementById('gif-search-input')?.value.trim() && !grid?.querySelector('img')) searchGifs('');
-      }
+      const shell = document.getElementById('emoji-picker');
+      const alreadyOpenHere = !shell.classList.contains('hidden') && !document.getElementById('gif-picker').classList.contains('hidden');
+      if (alreadyOpenHere) { shell.classList.add('hidden'); return; }
+      shell.classList.remove('hidden');
+      switchPickerTab('gif');
     }
     function closeGifPicker() {
-      document.getElementById('gif-picker')?.classList.add('hidden');
+      document.getElementById('emoji-picker')?.classList.add('hidden');
     }
     function renderGifPickerStatus(message) {
       const grid = document.getElementById('gif-picker-grid');
