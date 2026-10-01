@@ -3030,6 +3030,12 @@
         const dropdown = document.createElement('div');
         dropdown.className = 'popover-dropdown';
 
+        const copyItem = document.createElement('div');
+        copyItem.className = 'popover-dropdown-item';
+        copyItem.innerHTML = '📋 Copy';
+        copyItem.onclick = (e) => { e.stopPropagation(); copyMsgText(msgId); };
+        dropdown.appendChild(copyItem);
+
         if (isSent) {
           const editItem = document.createElement('div');
           editItem.className = 'popover-dropdown-item';
@@ -3118,6 +3124,16 @@
       activePopoverMsgId = null;
       activeMoreMenuMsgId = null;
       renderMessages(false);
+    }
+
+    function copyMsgText(msgId) {
+      const message = typeof messageById === 'function' ? messageById(msgId) : null;
+      const text = message?.text || '';
+      activePopoverMsgId = null;
+      activeMoreMenuMsgId = null;
+      if (navigator.clipboard?.writeText && text) navigator.clipboard.writeText(text).catch(() => {});
+      if (activeHub) { if (typeof renderHubMessages === 'function') renderHubMessages(false); }
+      else if (typeof renderMessages === 'function') renderMessages(false);
     }
 
     function deleteMsg(msgId) {

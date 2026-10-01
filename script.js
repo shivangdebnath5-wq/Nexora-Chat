@@ -852,6 +852,20 @@ document.addEventListener('pointercancel', () => { if (!swipeStart) return; swip
 window.closeForwardSheet = closeForwardSheet;
 window.forwardMessageTo = forwardMessageTo;
 
+/* Mobile long-press on a message opens the same reaction/action popover a
+   normal tap already opens (toggleMsgPopover in index.html) — normal tap
+   itself is completely untouched. Entirely separate tracking from the
+   swipe-to-reply/forward listeners above; only clears swipeStart (so the
+   same press can't also fire a swipe) and never reads/depends on it. */
+let longPressTimer = null;
+let longPressTarget = null;
+let suppressNextMsgClick = false;
+document.addEventListener('pointerdown', event => { const wrapper = event.target.closest('.message-wrapper[data-message-id]'); if (!wrapper || event.pointerType === 'mouse') return; longPressTarget = { wrapper, x: event.clientX, y: event.clientY }; longPressTimer = setTimeout(() => { longPressTimer = null; if (!longPressTarget) return; longPressTarget = null; swipeStart = null; suppressNextMsgClick = true; activePopoverMsgId = wrapper.dataset.messageId; activeMoreMenuMsgId = null; if (activeHub) renderHubMessages(false); else renderMessages(false); }, 500); });
+document.addEventListener('pointermove', event => { if (!longPressTimer || !longPressTarget) return; if (Math.abs(event.clientX - longPressTarget.x) > 10 || Math.abs(event.clientY - longPressTarget.y) > 10) { clearTimeout(longPressTimer); longPressTimer = null; longPressTarget = null; } });
+document.addEventListener('pointerup', () => { clearTimeout(longPressTimer); longPressTimer = null; longPressTarget = null; });
+document.addEventListener('pointercancel', () => { clearTimeout(longPressTimer); longPressTimer = null; longPressTarget = null; });
+document.addEventListener('click', event => { if (!suppressNextMsgClick) return; suppressNextMsgClick = false; if (event.target.closest('.message-wrapper[data-message-id]')) { event.stopPropagation(); event.preventDefault(); } }, true);
+
 const renderMessagesWithMotion = renderMessages;
 renderMessages = function(forceScroll) {
   renderMessagesWithMotion(forceScroll);
