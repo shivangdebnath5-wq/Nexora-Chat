@@ -783,7 +783,7 @@
         </div>
 
         <div class="input-row">
-          <button class="icon-btn" onclick="toggleEmojiPicker()" title="Add Emoji">😊</button>
+          <button class="icon-btn emoji-btn" onclick="toggleEmojiPicker()" title="Add Emoji">😊</button>
           <button class="icon-btn" onclick="toggleExtensionMenu()" title="Chat extensions">+</button>
           <input type="text" id="message-input" placeholder="Type a message..." oninput="sendTypingSignal()" onkeypress="if(event.key==='Enter') sendMessage()">
           <button id="send-btn" onclick="sendMessage()" title="Send message"><img src="https://i.ibb.co/ccSt9Sbz/Chat-GPT-Image-Aug-26-2026-02-07-48-PM-removebg-preview.png" alt="Send" style="width:24px; height:24px; object-fit:contain;"></button>
@@ -1395,7 +1395,7 @@
         }
 
         const pickerShell = document.getElementById('emoji-picker');
-        if (pickerShell && !pickerShell.classList.contains('hidden') && !e.target.closest('#emoji-picker') && !e.target.closest('.gif-btn')) {
+        if (pickerShell && !pickerShell.classList.contains('hidden') && !e.target.closest('#emoji-picker') && !e.target.closest('.emoji-btn')) {
           pickerShell.classList.add('hidden');
         }
       });
