@@ -265,8 +265,6 @@
 
     /* Messages & Attachments */
     .message-wrapper { display: flex; flex-direction: column; position: relative; width: 100%; user-select: none; }
-    .date-separator { display: flex; justify-content: center; margin: 14px 0; }
-    .date-separator span { font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-card); padding: 3px 10px; border-radius: 10px; border: 1px solid var(--border); }
     .message-wrapper.sent { align-items: flex-end; }
     .message-wrapper.received { align-items: flex-start; }
     
@@ -328,6 +326,21 @@
     .popover-dropdown-item { padding: 8px 12px; font-size: 12px; cursor: pointer; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
     .popover-dropdown-item:hover { background: var(--input-bg); }
     .popover-dropdown-item.danger { color: #ef4444; }
+
+    /* PC-only hover bar (😊 Reaction | 📌 Pin | ⋯ More) — a shortcut into
+       the exact same popover/pin/more-menu functions above, nothing new.
+       Gated entirely by this media query, so it's structurally absent on
+       touch devices regardless of any :hover quirks there; mobile tap/
+       long-press behavior (unchanged) is the only way in on phones. */
+    .message-hover-bar { display: none; }
+    @media (hover: hover) and (pointer: fine) {
+      .message-hover-bar { position: absolute; top: -34px; align-items: center; gap: 2px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 3px 6px; box-shadow: 0 4px 12px var(--shadow); z-index: 45; }
+      .message-wrapper.sent .message-hover-bar { right: 0; }
+      .message-wrapper.received .message-hover-bar { left: 40px; }
+      .message-wrapper:hover .message-hover-bar { display: flex; }
+      .hover-bar-btn { cursor: pointer; font-size: 13px; padding: 3px 5px; border-radius: 6px; border: none; background: transparent; color: var(--text-main); display: flex; align-items: center; justify-content: center; }
+      .hover-bar-btn:hover { background: var(--input-bg); }
+    }
 
     /* Emoji Reaction Badge below message */
     .active-reactions {
@@ -3007,6 +3020,46 @@
        generically, so it works for both without any extra wiring). Hub
        messages don't get a 📌 pin button here — pinning is a Direct-Chat-only
        feature (see togglePinnedMessage/DB.getMessages), unrelated to this. */
+    /* PC hover bar: 3 buttons, each just a shortcut into existing behavior
+       (same toggleMsgPopover reactions, same Pin functions, same More
+       dropdown) — right-click and normal click/tap are untouched. */
+    function toggleMsgPinFromHoverBar(event, msgId) {
+      event.stopPropagation();
+      if (activeHub) { if (typeof togglePinnedHubMessage === 'function') togglePinnedHubMessage(msgId, event); }
+      else if (typeof togglePinnedMessage === 'function') togglePinnedMessage(msgId, event);
+    }
+    function openMsgMoreMenuDirect(event, msgId) {
+      event.stopPropagation();
+      activePopoverMsgId = msgId;
+      activeMoreMenuMsgId = msgId;
+      if (activeHub) { if (typeof renderHubMessages === 'function') renderHubMessages(false); }
+      else renderMessages(false);
+    }
+    function buildMsgHoverBarElement(msgId) {
+      const bar = document.createElement('div');
+      bar.className = 'message-hover-bar';
+
+      const reactBtn = document.createElement('button');
+      reactBtn.type = 'button'; reactBtn.className = 'hover-bar-btn'; reactBtn.title = 'React'; reactBtn.setAttribute('aria-label', 'React');
+      reactBtn.textContent = '😊';
+      reactBtn.onclick = (e) => toggleMsgPopover(e, msgId);
+
+      const pinBtn = document.createElement('button');
+      pinBtn.type = 'button'; pinBtn.className = 'hover-bar-btn'; pinBtn.title = 'Pin'; pinBtn.setAttribute('aria-label', 'Pin');
+      pinBtn.textContent = '📌';
+      pinBtn.onclick = (e) => toggleMsgPinFromHoverBar(e, msgId);
+
+      const moreBtn = document.createElement('button');
+      moreBtn.type = 'button'; moreBtn.className = 'hover-bar-btn'; moreBtn.title = 'More'; moreBtn.setAttribute('aria-label', 'More');
+      moreBtn.textContent = '⋯';
+      moreBtn.onclick = (e) => openMsgMoreMenuDirect(e, msgId);
+
+      bar.appendChild(reactBtn);
+      bar.appendChild(pinBtn);
+      bar.appendChild(moreBtn);
+      return bar;
+    }
+
     function buildMsgPopoverElement(msgId, isSent) {
       const popover = document.createElement('div');
       popover.className = 'msg-popover';
@@ -3069,30 +3122,6 @@
         .join(' ');
       reactionBadge.onclick = (e) => toggleMsgPopover(e, msgId);
       return reactionBadge;
-    }
-
-    // Date separators: message ids are always Date.now() at send time (see
-    // every push into DB messages / hub.messages), so the real calendar
-    // date is derived from the id itself — no new field, no change to how
-    // messages are created or stored. Shared by both renderMessages (DM,
-    // below) and renderHubMessages (script.js), same as the popover/badge
-    // builders above.
-    function formatDateSeparatorLabel(ms) {
-      const d = new Date(ms);
-      const now = new Date();
-      const startOfDay = date => new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const dayDiff = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
-      if (dayDiff === 0) return 'Today';
-      if (dayDiff === 1) return 'Yesterday';
-      if (dayDiff > 1 && dayDiff < 7) return d.toLocaleDateString([], { weekday: 'long' });
-      const sameYear = d.getFullYear() === now.getFullYear();
-      return d.toLocaleDateString([], sameYear ? { month: 'long', day: 'numeric' } : { month: 'long', day: 'numeric', year: 'numeric' });
-    }
-    function buildDateSeparatorElement(ms) {
-      const el = document.createElement('div');
-      el.className = 'date-separator';
-      el.innerHTML = `<span>${formatDateSeparatorLabel(ms)}</span>`;
-      return el;
     }
 
     function reactToMsg(msgId, emoji) {
@@ -3246,13 +3275,7 @@
       const msgList = document.getElementById('messages-list');
       msgList.innerHTML = '';
 
-      let lastDateKey = null;
       messages.forEach(m => {
-        const msgDateKey = new Date(m.id).toDateString();
-        if (msgDateKey !== lastDateKey) {
-          msgList.appendChild(buildDateSeparatorElement(m.id));
-          lastDateKey = msgDateKey;
-        }
         const isSent = m.sender === currentUser;
         const wrapper = document.createElement('div');
         wrapper.className = `message-wrapper ${isSent ? 'sent' : 'received'}`;
@@ -3297,6 +3320,8 @@
 
         if (activePopoverMsgId === m.id) {
           bodyRow.appendChild(buildMsgPopoverElement(m.id, isSent));
+        } else {
+          bodyRow.appendChild(buildMsgHoverBarElement(m.id));
         }
 
         wrapper.appendChild(bodyRow);

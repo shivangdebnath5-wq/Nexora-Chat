@@ -375,13 +375,7 @@ function renderHubMessages(scroll) {
   const hub = hubById(activeHub); if (!hub) return; const list = document.getElementById('messages-list'); const query = document.getElementById('hub-message-search')?.value.trim().toLowerCase() || ''; list.innerHTML = '';
   const visibleMessages = hub.messages.filter(message => !query || `${message.sender} ${message.text || ''}`.toLowerCase().includes(query));
   if (!visibleMessages.length && query) list.innerHTML = '<div class="hub-search-empty">No Hub messages match your search.</div>';
-  let lastDateKey = null;
   visibleMessages.forEach(message => {
-    const msgDateKey = new Date(message.id).toDateString();
-    if (msgDateKey !== lastDateKey) {
-      list.appendChild(buildDateSeparatorElement(message.id));
-      lastDateKey = msgDateKey;
-    }
     const sent = message.sender === currentUser; const row = document.createElement('div'); row.className = `message-wrapper ${sent ? 'sent' : 'received'}${scroll ? ' message-arrive' : ''}`; row.dataset.messageId = message.id; row.classList.toggle('message-pinned', !!message.pinned); const structuredContent = (message.extension && typeof extensionHTML === 'function') ? extensionHTML(message) : ''; const locationCard = (typeof locationCardHTML === 'function') ? locationCardHTML(message.text) : null; const pinterestCard = (typeof pinterestCardSlotHTML === 'function') ? pinterestCardSlotHTML(message.text, message.id) : ''; row.innerHTML = `<div class="message-body-row"><img class="avatar" src="${(DB.getUsers()[message.sender]?.pfp) || DEFAULT_AVATAR}" style="width:26px;height:26px;"><div class="message ${sent ? 'sent' : 'received'}"><div class="hub-message-name">@${safeHubText(message.sender)}</div>${message.attachment?.type === 'image' ? `<img src="${message.attachment.data}" class="attachment-img">` : ''}${structuredContent}${locationCard || (message.text ? `<div>${parseTextLinks(message.text)}</div>` : '')}${pinterestCard}<div style="font-size:10px;opacity:.7;text-align:right;">${message.timestamp}</div></div></div>`;
 
     // Reactions + pin: same popover UI/behaviour as Direct Chat
@@ -403,6 +397,9 @@ function renderHubMessages(scroll) {
           popoverEl.appendChild(pin);
         }
       }
+    } else if (typeof buildMsgHoverBarElement === 'function') {
+      const bodyRow = row.querySelector('.message-body-row');
+      if (bodyRow) bodyRow.appendChild(buildMsgHoverBarElement(message.id));
     }
     if (typeof buildReactionBadgeElement === 'function') {
       const badge = buildReactionBadgeElement(message.id, message.reactions);
