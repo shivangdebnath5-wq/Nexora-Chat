@@ -265,8 +265,6 @@
 
     /* Messages & Attachments */
     .message-wrapper { display: flex; flex-direction: column; position: relative; width: 100%; user-select: none; }
-    .date-separator { display: flex; justify-content: center; margin: 14px 0; }
-    .date-separator span { font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-card); padding: 3px 10px; border-radius: 10px; border: 1px solid var(--border); }
     .message-wrapper.sent { align-items: flex-end; }
     .message-wrapper.received { align-items: flex-start; }
     
@@ -374,6 +372,22 @@
     .icon-btn:hover { background: var(--border); }
     
     .attachment-preview { display: flex; align-items: center; justify-content: space-between; background: var(--input-bg); padding: 8px 12px; border-radius: 8px; font-size: 12px; color: var(--text-muted); }
+
+    /* Composer "replying to" draft bar */
+    .reply-preview-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--input-bg); border-left: 3px solid var(--primary); padding: 6px 10px; border-radius: 6px; font-size: 12px; }
+    .reply-preview-bar-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
+    .reply-preview-bar-text span#reply-preview-bar-sender { color: var(--primary); font-weight: 600; }
+    .reply-preview-bar-close { background: none; border: none; color: var(--text-muted); font-size: 16px; line-height: 1; cursor: pointer; padding: 0 2px; width: auto; }
+    .reply-preview-bar-close:hover { color: var(--text-main); }
+
+    /* Compact reply preview chip shown above a message that replied to
+       another one. Tap/click jumps to and briefly highlights the original
+       (jumpToRepliedMessage), reusing the same .pin-jump flash animation
+       already used by pinned-message jump-to. */
+    .reply-preview-chip { display: flex; flex-direction: column; gap: 1px; padding: 4px 8px; margin-bottom: 3px; border-left: 3px solid var(--primary); border-radius: 4px; background: rgba(127,127,127,0.12); font-size: 11px; cursor: pointer; max-width: 100%; }
+    .reply-preview-chip:hover { background: rgba(127,127,127,0.2); }
+    .reply-preview-chip-sender { color: var(--primary); font-weight: 600; }
+    .reply-preview-chip-snippet { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .attachment-preview button { padding: 4px 8px; font-size: 11px; background: #ef4444; width: auto; margin-bottom: 0; }
 
     /* Emoji Picker Drawer */
@@ -797,6 +811,15 @@
         <div id="attachment-preview" class="attachment-preview hidden">
           <span id="preview-filename"></span>
           <button onclick="removeAttachment()">Remove</button>
+        </div>
+
+        <!-- Reply preview: shown above the composer while replyingToMessage
+             is set (see replyToMessage/cancelReply). Same trigger as before
+             (swipe-right), just a structured draft instead of a text prefix,
+             so the sent message can carry real reply metadata. -->
+        <div id="reply-preview-bar" class="reply-preview-bar hidden">
+          <div class="reply-preview-bar-text">↩ <span id="reply-preview-bar-sender"></span>: <span id="reply-preview-bar-snippet"></span></div>
+          <button type="button" class="reply-preview-bar-close" onclick="cancelReply()" aria-label="Cancel reply">×</button>
         </div>
 
         <div class="input-row">
@@ -2221,6 +2244,16 @@
       DB.saveMessages(messages); renderMessages(false);
     }
     function escapeHTML(value='') { const div = document.createElement('div'); div.textContent = value; return div.innerHTML; }
+    // Compact reply preview chip — shared by DM (renderMessages) and Hub
+    // (renderHubMessages) rendering. Tap/click jumps to and highlights the
+    // original via jumpToRepliedMessage (script.js), reusing the same
+    // .pin-jump flash the pinned-message jump-to already uses.
+    function replyChipHTML(m) {
+      if (!m || !m.replyTo) return '';
+      const sender = escapeHTML(m.replyTo.sender || '');
+      const snippet = escapeHTML((m.replyTo.text || '').slice(0, 80));
+      return `<div class="reply-preview-chip" onclick="event.stopPropagation(); jumpToRepliedMessage('${m.replyTo.id}')"><span class="reply-preview-chip-sender">↩ @${sender}</span><span class="reply-preview-chip-snippet">${snippet}</span></div>`;
+    }
     // Builds a Google Calendar "quick add" link — no API key or OAuth needed,
     // since it just opens Google Calendar's own web UI pre-filled; whoever
     // clicks it adds the event to THEIR OWN calendar with their own account.
@@ -2988,10 +3021,12 @@
           text: text,
           attachment: currentAttachment,
           reactions: {},
+          replyTo: (typeof replyingToMessage !== 'undefined' && replyingToMessage) ? { ...replyingToMessage } : null,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         });
         DB.saveMessages(messages);
         removeAttachment();
+        if (typeof cancelReply === 'function') cancelReply();
         renderMessages(true);
       }
 
@@ -3124,30 +3159,6 @@
         .join(' ');
       reactionBadge.onclick = (e) => toggleMsgPopover(e, msgId);
       return reactionBadge;
-    }
-
-    // Date separators: message ids are always Date.now() at send time (see
-    // every push into DB messages / hub.messages), so the real calendar
-    // date is derived from the id itself — no new field, no change to how
-    // messages are created or stored. Shared by both renderMessages (DM,
-    // below) and renderHubMessages (script.js), same as the popover/badge
-    // builders above.
-    function formatDateSeparatorLabel(ms) {
-      const d = new Date(ms);
-      const now = new Date();
-      const startOfDay = date => new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const dayDiff = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
-      if (dayDiff === 0) return 'Today';
-      if (dayDiff === 1) return 'Yesterday';
-      if (dayDiff > 1 && dayDiff < 7) return d.toLocaleDateString([], { weekday: 'long' });
-      const sameYear = d.getFullYear() === now.getFullYear();
-      return d.toLocaleDateString([], sameYear ? { month: 'long', day: 'numeric' } : { month: 'long', day: 'numeric', year: 'numeric' });
-    }
-    function buildDateSeparatorElement(ms) {
-      const el = document.createElement('div');
-      el.className = 'date-separator';
-      el.innerHTML = `<span>${formatDateSeparatorLabel(ms)}</span>`;
-      return el;
     }
 
     function reactToMsg(msgId, emoji) {
@@ -3301,13 +3312,7 @@
       const msgList = document.getElementById('messages-list');
       msgList.innerHTML = '';
 
-      let lastDateKey = null;
       messages.forEach(m => {
-        const msgDateKey = new Date(m.id).toDateString();
-        if (msgDateKey !== lastDateKey) {
-          msgList.appendChild(buildDateSeparatorElement(m.id));
-          lastDateKey = msgDateKey;
-        }
         const isSent = m.sender === currentUser;
         const wrapper = document.createElement('div');
         wrapper.className = `message-wrapper ${isSent ? 'sent' : 'received'}`;
@@ -3338,6 +3343,7 @@
         const pinterestCard = pinterestCardSlotHTML(m.text, m.id);
 
         msgDiv.innerHTML = `
+          ${replyChipHTML(m)}
           ${attachmentHTML}
           ${structuredContent}
           ${locationCard || (formattedText ? `<div>${formattedText}</div>` : '')}

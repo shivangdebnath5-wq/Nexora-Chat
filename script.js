@@ -375,14 +375,8 @@ function renderHubMessages(scroll) {
   const hub = hubById(activeHub); if (!hub) return; const list = document.getElementById('messages-list'); const query = document.getElementById('hub-message-search')?.value.trim().toLowerCase() || ''; list.innerHTML = '';
   const visibleMessages = hub.messages.filter(message => !query || `${message.sender} ${message.text || ''}`.toLowerCase().includes(query));
   if (!visibleMessages.length && query) list.innerHTML = '<div class="hub-search-empty">No Hub messages match your search.</div>';
-  let lastDateKey = null;
   visibleMessages.forEach(message => {
-    const msgDateKey = new Date(message.id).toDateString();
-    if (msgDateKey !== lastDateKey) {
-      list.appendChild(buildDateSeparatorElement(message.id));
-      lastDateKey = msgDateKey;
-    }
-    const sent = message.sender === currentUser; const row = document.createElement('div'); row.className = `message-wrapper ${sent ? 'sent' : 'received'}${scroll ? ' message-arrive' : ''}`; row.dataset.messageId = message.id; row.classList.toggle('message-pinned', !!message.pinned); const structuredContent = (message.extension && typeof extensionHTML === 'function') ? extensionHTML(message) : ''; const locationCard = (typeof locationCardHTML === 'function') ? locationCardHTML(message.text) : null; const pinterestCard = (typeof pinterestCardSlotHTML === 'function') ? pinterestCardSlotHTML(message.text, message.id) : ''; row.innerHTML = `<div class="message-body-row"><img class="avatar" src="${(DB.getUsers()[message.sender]?.pfp) || DEFAULT_AVATAR}" style="width:26px;height:26px;"><div class="message ${sent ? 'sent' : 'received'}"><div class="hub-message-name">@${safeHubText(message.sender)}</div>${message.attachment?.type === 'image' ? `<img src="${message.attachment.data}" class="attachment-img">` : ''}${structuredContent}${locationCard || (message.text ? `<div>${parseTextLinks(message.text)}</div>` : '')}${pinterestCard}<div style="font-size:10px;opacity:.7;text-align:right;">${message.timestamp}</div></div></div>`;
+    const sent = message.sender === currentUser; const row = document.createElement('div'); row.className = `message-wrapper ${sent ? 'sent' : 'received'}${scroll ? ' message-arrive' : ''}`; row.dataset.messageId = message.id; row.classList.toggle('message-pinned', !!message.pinned); const structuredContent = (message.extension && typeof extensionHTML === 'function') ? extensionHTML(message) : ''; const locationCard = (typeof locationCardHTML === 'function') ? locationCardHTML(message.text) : null; const pinterestCard = (typeof pinterestCardSlotHTML === 'function') ? pinterestCardSlotHTML(message.text, message.id) : ''; row.innerHTML = `<div class="message-body-row"><img class="avatar" src="${(DB.getUsers()[message.sender]?.pfp) || DEFAULT_AVATAR}" style="width:26px;height:26px;"><div class="message ${sent ? 'sent' : 'received'}"><div class="hub-message-name">@${safeHubText(message.sender)}</div>${typeof replyChipHTML === 'function' ? replyChipHTML(message) : ''}${message.attachment?.type === 'image' ? `<img src="${message.attachment.data}" class="attachment-img">` : ''}${structuredContent}${locationCard || (message.text ? `<div>${parseTextLinks(message.text)}</div>` : '')}${pinterestCard}<div style="font-size:10px;opacity:.7;text-align:right;">${message.timestamp}</div></div></div>`;
 
     // Reactions + pin: same popover UI/behaviour as Direct Chat
     // (buildMsgPopoverElement / buildReactionBadgeElement in index.html —
@@ -460,7 +454,7 @@ function jumpToHubPinnedMessage(messageId) {
   target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   target.classList.remove('pin-jump'); void target.offsetWidth; target.classList.add('pin-jump');
 }
-sendMessage = function() { if (!activeHub) return directSendMessage(); const input = document.getElementById('message-input'), text = input.value.trim(); if (!text && !currentAttachment) return; const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return; if (hub.permissions?.messaging === 'owner' && hub.owner !== currentUser) return alert('Only the Hub owner can send messages in this Hub.'); hub.messages.push({id:Date.now(),sender:currentUser,text,attachment:currentAttachment,timestamp:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}); saveHubs(hubs); input.value=''; removeAttachment(); renderHubMessages(true); };
+sendMessage = function() { if (!activeHub) return directSendMessage(); const input = document.getElementById('message-input'), text = input.value.trim(); if (!text && !currentAttachment) return; const hubs = getHubs(), hub = hubs.find(item => item.id === activeHub); if (!hub) return; if (hub.permissions?.messaging === 'owner' && hub.owner !== currentUser) return alert('Only the Hub owner can send messages in this Hub.'); hub.messages.push({id:Date.now(),sender:currentUser,text,attachment:currentAttachment,replyTo:replyingToMessage?{...replyingToMessage}:null,timestamp:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}); saveHubs(hubs); input.value=''; removeAttachment(); cancelReply(); renderHubMessages(true); };
 function hubCanManage(hub) { return !!hub && (hub.owner === currentUser || hub.permissions?.management === 'members'); }
 function openHubSettings() { const hub = hubById(activeHub); if (!hub) return; addHubModals(); ensureHubAppearanceSettings(); if (!hubCanManage(hub)) return alert('Only the Hub owner can change settings or manage members.'); document.getElementById('hub-edit-name').value = hub.name; document.getElementById('hub-edit-description').value = hub.description; document.getElementById('hub-edit-context').value = hub.primaryContext || ''; hubEditSelectAccent(hub.accent || ''); renderHubMembers(hub); document.getElementById('hub-settings-modal').classList.remove('hidden'); }
 // Small, focused "Invite to Hub" menu — opened by the people-plus icon
@@ -832,11 +826,28 @@ function messageById(id) {
   if (activeHub) return hubById(activeHub)?.messages.find(message => String(message.id) === String(id));
   return DB.getMessages().find(message => String(message.id) === String(id));
 }
+let replyingToMessage = null; // { id, sender, text } while a reply draft is active, else null
 function replyToMessage(message) {
   const input = document.getElementById('message-input'); if (!input || !message) return;
   const text = message.text || pinnedPreview(message);
-  input.value = `↩ @${message.sender}: ${text.slice(0, 100)}\n`;
-  input.focus(); input.setSelectionRange(input.value.length, input.value.length);
+  replyingToMessage = { id: message.id, sender: message.sender, text: (text || '').slice(0, 140) };
+  const bar = document.getElementById('reply-preview-bar');
+  if (bar) {
+    document.getElementById('reply-preview-bar-sender').textContent = `@${replyingToMessage.sender}`;
+    document.getElementById('reply-preview-bar-snippet').textContent = replyingToMessage.text;
+    bar.classList.remove('hidden');
+  }
+  input.focus();
+}
+function cancelReply() {
+  replyingToMessage = null;
+  document.getElementById('reply-preview-bar')?.classList.add('hidden');
+}
+function jumpToRepliedMessage(messageId) {
+  const target = document.querySelector(`.message-wrapper[data-message-id="${messageId}"]`);
+  if (!target) return;
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  target.classList.remove('pin-jump'); void target.offsetWidth; target.classList.add('pin-jump');
 }
 function openForwardSheet(message) {
   if (!message || document.getElementById('forward-message-sheet')) return;
