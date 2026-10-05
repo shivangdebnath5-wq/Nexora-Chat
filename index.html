@@ -122,6 +122,8 @@
     .main-chat { flex: 1; display: flex; flex-direction: column; background: var(--bg-card); position: relative; }
     .chat-header { padding: 16px 20px; border-bottom: 1px solid var(--border); font-weight: 600; display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); z-index: 2; }
     .messages-list { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; background-size: cover; background-position: center; background-repeat: no-repeat; }
+    .jump-to-latest { position: absolute; bottom: 90px; right: 24px; width: 36px; height: 36px; border-radius: 50%; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border); box-shadow: 0 4px 14px var(--shadow); font-size: 16px; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 40; }
+    .jump-to-latest:hover { background: var(--input-bg); }
     
     /* Profile Pictures & Status Badges */
     .avatar-container { position: relative; display: inline-block; flex-shrink: 0; cursor: pointer; }
@@ -777,6 +779,7 @@
       </div>
       
       <div id="messages-list" class="messages-list"></div>
+      <button id="jump-to-latest-btn" class="jump-to-latest hidden" onclick="scrollToLatestMessage()" title="Jump to latest" aria-label="Jump to latest messages">↓</button>
       <div id="typing-status" class="typing-status"></div>
       
       <div class="chat-input hidden" id="chat-input-container">
@@ -1413,6 +1416,7 @@
       applyTheme(localStorage.getItem('theme') || 'light');
       applyWallpaper(localStorage.getItem('wallpaper') || '');
       applySidebarWidth(localStorage.getItem('sidebar_width'));
+      document.getElementById('messages-list')?.addEventListener('scroll', updateJumpToLatestVisibility);
       if ('Notification' in window && Notification.permission !== 'granted') {
         Notification.requestPermission();
       }
@@ -3187,6 +3191,23 @@
       return el;
     }
 
+    // Jump-to-latest button: shown once scrolled far enough from the
+    // bottom of #messages-list (shared by DM and Hub views), hidden when
+    // already near it. Re-checked on scroll and after each render, since a
+    // render can change scrollHeight without moving scrollTop (e.g. a new
+    // message arriving while scrolled up).
+    function updateJumpToLatestVisibility() {
+      const list = document.getElementById('messages-list');
+      const btn = document.getElementById('jump-to-latest-btn');
+      if (!list || !btn) return;
+      const distanceFromBottom = list.scrollHeight - list.scrollTop - list.clientHeight;
+      btn.classList.toggle('hidden', distanceFromBottom < 120);
+    }
+    function scrollToLatestMessage() {
+      const list = document.getElementById('messages-list');
+      if (list) list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
+    }
+
     function reactToMsg(msgId, emoji) {
       if (activeHub) {
         const hubs = getHubs(), hub = hubs.find(h => h.id === activeHub); if (!hub) return;
@@ -3405,6 +3426,7 @@
       if (forceScroll) {
         msgList.scrollTop = msgList.scrollHeight;
       }
+      updateJumpToLatestVisibility();
 
       if (activePopoverMsgId !== null) positionMsgPopoverMobile();
     }

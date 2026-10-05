@@ -415,6 +415,7 @@ function renderHubMessages(scroll) {
     list.appendChild(row);
   });
   if (scroll) list.scrollTop = list.scrollHeight;
+  if (typeof updateJumpToLatestVisibility === 'function') updateJumpToLatestVisibility();
   if (activePopoverMsgId !== null && typeof positionMsgPopoverMobile === 'function') positionMsgPopoverMobile();
   const hubPinnedMenu = document.getElementById('hub-pinned-messages-menu');
   if (hubPinnedMenu && !hubPinnedMenu.classList.contains('hidden')) renderHubPinnedMessagesMenu();
