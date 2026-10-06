@@ -127,6 +127,8 @@
     
     /* Profile Pictures & Status Badges */
     .avatar-container { position: relative; display: inline-block; flex-shrink: 0; cursor: pointer; }
+    .unread-dot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: #ef4444; border: 2px solid var(--bg-sidebar, var(--bg-card)); display: none; }
+    .unread-dot.show { display: block; }
     .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); background: #dce3e6; display: block; }
     .avatar-large { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); display: block; margin: 0 auto 12px auto; }
     
@@ -2939,6 +2941,7 @@
       knownMsgCount = 0;
       activePopoverMsgId = null;
       activeMoreMenuMsgId = null;
+      if (typeof clearFriendUnread === 'function') clearFriendUnread(friend);
       
       const users = DB.getUsers();
       const friendPfp = (users[friend] && users[friend].pfp) ? users[friend].pfp : DEFAULT_AVATAR;
@@ -3319,6 +3322,7 @@
             <div class="avatar-container">
               <img class="avatar ${friendFrame}" src="${friendPfp}" alt="${f}">
               <span class="status-badge"></span>
+              <span class="unread-dot ${isFriendUnread(f) ? 'show' : ''}"></span>
             </div>
             <span>@${f}</span>
           </div>
@@ -3329,8 +3333,37 @@
         updateStatusBadgeUI(badge.id, friendStatus);
         li.onclick = () => selectFriend(f);
         friendList.appendChild(li);
+        if (typeof window.subscribeToUnread === 'function') window.subscribeToUnread(currentUser, f, window.onUnreadLatestMessage);
       });
     }
+
+    // --- Unread dot (DM conversations only) ------------------------------
+    // Minimal, localStorage-based: a per-friend "last read message id" plus
+    // a boolean unread flag, both scoped to currentUser. The Firestore side
+    // (window.subscribeToUnread, module script below) just reports the
+    // latest message id/sender per friend whenever it changes; all the
+    // read/unread logic lives here.
+    function getLastReadMap() { return JSON.parse(localStorage.getItem(`lastread_${currentUser}`) || '{}'); }
+    function saveLastReadMap(map) { localStorage.setItem(`lastread_${currentUser}`, JSON.stringify(map)); }
+    function getUnreadMap() { return JSON.parse(localStorage.getItem(`unread_${currentUser}`) || '{}'); }
+    function saveUnreadMap(map) { localStorage.setItem(`unread_${currentUser}`, JSON.stringify(map)); }
+    function isFriendUnread(friend) { return !!getUnreadMap()[friend]; }
+    function clearFriendUnread(friend) {
+      const unread = getUnreadMap();
+      if (unread[friend]) { delete unread[friend]; saveUnreadMap(unread); }
+    }
+    window.onUnreadLatestMessage = function (friend, latest) {
+      if (!latest || !currentUser || latest.sender === currentUser) return;
+      const lastRead = getLastReadMap();
+      if (lastRead[friend] && Number(lastRead[friend]) >= Number(latest.id)) return;
+      if (friend === activeFriend) {
+        lastRead[friend] = latest.id;
+        saveLastReadMap(lastRead);
+        return;
+      }
+      const unread = getUnreadMap();
+      if (!unread[friend]) { unread[friend] = true; saveUnreadMap(unread); renderSidebar(); }
+    };
 
     function parseTextLinks(text) {
       if (!text) return '';
@@ -3471,7 +3504,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, EmailAuthProvider, linkWithCredential, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, collection, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, getDocs, onSnapshot, runTransaction, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, collection, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, getDocs, onSnapshot, runTransaction, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -3738,6 +3771,27 @@
 
   window.unsubscribeFromConversation = function () {
     if (unsubscribeCurrentConversation) { unsubscribeCurrentConversation(); unsubscribeCurrentConversation = null; }
+  };
+
+  // --- Unread dot support: lightweight, latest-message-only listener per
+  // friend (separate from the full-history subscribeToConversation above,
+  // which only ever tracks the one active chat). Read/unread decisions all
+  // happen in the classic script (onUnreadLatestMessage) — this just
+  // reports the latest message id/sender whenever it changes.
+  const unreadListeners = new Map(); // friendUsername -> unsubscribe
+  window.subscribeToUnread = function (myUsername, friendUsername, onLatest) {
+    if (!myUsername || !friendUsername || unreadListeners.has(friendUsername)) return;
+    const convId = conversationId(myUsername, friendUsername);
+    const q = query(collection(db, 'conversations', convId, 'messages'), orderBy('updatedAt', 'desc'), limit(1));
+    let isFirstSnapshot = true; // skip the initial fire — it's existing history, not a new message
+    const unsub = onSnapshot(q, (snap) => {
+      if (snap.empty) { isFirstSnapshot = false; return; }
+      if (isFirstSnapshot) { isFirstSnapshot = false; return; }
+      if (typeof onLatest !== 'function') return;
+      const data = snap.docs[0].data();
+      onLatest(friendUsername, { id: snap.docs[0].id, sender: data.sender });
+    }, (error) => console.error("❌ Unread listener error:", error));
+    unreadListeners.set(friendUsername, unsub);
   };
 
   // Called from DB.saveMessages() whenever the local DM store changes for a
