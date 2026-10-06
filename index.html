@@ -4134,4 +4134,58 @@
 </script>
   <script src="script.js"></script>
 </body>
+</html>eturn { ok: false, message };
+    }
+  };
+ 
+  // Real-time listeners: incoming pending requests, plus accepted
+  // relationships from either side (a friendship can have been sent by
+  // either party). Torn down on sign-out, (re)started on sign-in — this
+  // never touches Google Sign-In/email-password sign-in themselves.
+  let unsubIncoming = null, unsubAcceptedAsReceiver = null, unsubAcceptedAsSender = null;
+  let acceptedAsReceiverDocs = [], acceptedAsSenderDocs = [];
+
+  function teardownFriendListeners() {
+    [unsubIncoming, unsubAcceptedAsReceiver, unsubAcceptedAsSender].forEach(unsub => unsub && unsub());
+    unsubIncoming = unsubAcceptedAsReceiver = unsubAcceptedAsSender = null;
+    acceptedAsReceiverDocs = []; acceptedAsSenderDocs = [];
+    if (typeof window.renderFirestoreRequests === 'function') window.renderFirestoreRequests([]);
+    if (typeof window.renderFirestoreFriends === 'function') window.renderFirestoreFriends([]);
+  }
+
+  async function recomputeFriends() {
+    const otherUids = [...acceptedAsReceiverDocs.map(d => d.data().senderUid), ...acceptedAsSenderDocs.map(d => d.data().receiverUid)];
+    const usernames = await Promise.all(otherUids.map(usernameForUid));
+    if (typeof window.renderFirestoreFriends === 'function') window.renderFirestoreFriends(usernames.filter(Boolean));
+  }
+
+  function setupFriendListeners(uid) {
+    teardownFriendListeners();
+
+    unsubIncoming = onSnapshot(
+      query(collection(db, 'friendRequests'), where('receiverUid', '==', uid), where('status', '==', 'pending')),
+      async snap => {
+        const rows = await Promise.all(snap.docs.map(async d => ({ id: d.id, username: await usernameForUid(d.data().senderUid) })));
+        if (typeof window.renderFirestoreRequests === 'function') window.renderFirestoreRequests(rows.filter(r => r.username));
+      },
+      error => console.error('Requests listener error:', error)
+    );
+
+    unsubAcceptedAsReceiver = onSnapshot(
+      query(collection(db, 'friendRequests'), where('receiverUid', '==', uid), where('status', '==', 'accepted')),
+      snap => { acceptedAsReceiverDocs = snap.docs; recomputeFriends(); },
+      error => console.error('Friends listener error:', error)
+    );
+
+    unsubAcceptedAsSender = onSnapshot(
+      query(collection(db, 'friendRequests'), where('senderUid', '==', uid), where('status', '==', 'accepted')),
+      snap => { acceptedAsSenderDocs = snap.docs; recomputeFriends(); },
+      error => console.error('Friends listener error:', error)
+    );
+  }
+
+  onAuthStateChanged(auth, user => { if (user) setupFriendListeners(user.uid); else teardownFriendListeners(); });
+</script>
+  <script src="script.js"></script>
+</body>
 </html>
