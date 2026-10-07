@@ -3137,6 +3137,18 @@
         copyItem.onclick = (e) => { e.stopPropagation(); copyMsgText(msgId); };
         dropdown.appendChild(copyItem);
 
+        const replyItem = document.createElement('div');
+        replyItem.className = 'popover-dropdown-item';
+        replyItem.innerHTML = '↩️ Reply';
+        replyItem.onclick = (e) => { e.stopPropagation(); if (typeof replyToMessage === 'function') replyToMessage(messageById(msgId)); };
+        dropdown.appendChild(replyItem);
+
+        const forwardItem = document.createElement('div');
+        forwardItem.className = 'popover-dropdown-item';
+        forwardItem.innerHTML = '↪️ Forward';
+        forwardItem.onclick = (e) => { e.stopPropagation(); if (typeof openForwardSheet === 'function') openForwardSheet(messageById(msgId)); };
+        dropdown.appendChild(forwardItem);
+
         if (isSent) {
           const editItem = document.createElement('div');
           editItem.className = 'popover-dropdown-item';
