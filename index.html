@@ -271,6 +271,10 @@
     .message-wrapper { display: flex; flex-direction: column; position: relative; width: 100%; user-select: none; }
     .date-separator { display: flex; justify-content: center; margin: 14px 0; }
     .date-separator span { font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-card); padding: 3px 10px; border-radius: 10px; border: 1px solid var(--border); }
+    /* "New messages" divider — marks where unread messages begin when they arrive while scrolled up */
+    .new-messages-divider { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+    .new-messages-divider::before, .new-messages-divider::after { content: ''; flex: 1; height: 1px; background: var(--primary); opacity: .55; }
+    .new-messages-divider span { font-size: 11px; font-weight: 700; color: #fff; background: var(--primary); padding: 3px 10px; border-radius: 10px; }
     .message-wrapper.sent { align-items: flex-end; }
     .message-wrapper.received { align-items: flex-start; }
     
@@ -1419,6 +1423,7 @@
       applyWallpaper(localStorage.getItem('wallpaper') || '');
       applySidebarWidth(localStorage.getItem('sidebar_width'));
       document.getElementById('messages-list')?.addEventListener('scroll', updateJumpToLatestVisibility);
+      document.getElementById('messages-list')?.addEventListener('scroll', clearNewMessagesDividerIfAtBottom);
       if ('Notification' in window && Notification.permission !== 'granted') {
         Notification.requestPermission();
       }
@@ -3223,6 +3228,41 @@
       if (list) list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
     }
 
+    // "New messages" divider: when messages from someone else arrive while the
+    // user is scrolled up, a divider is placed above the first of them. It is
+    // cleared once they scroll back to the latest messages. Shared by DM and
+    // Hub rendering; state is per conversation, so switching chats never
+    // carries a divider over. Re-inserted on every render while pending,
+    // because both renderers rebuild the whole list.
+    const newMsgState = { key: null, lastId: 0, anchorId: null };
+    function isNearBottom(list) { return list.scrollHeight - list.scrollTop - list.clientHeight < 60; }
+    // Call BEFORE the list is cleared, with the full (unfiltered) conversation.
+    function trackNewMessages(key, messages, list, forceScroll) {
+      const maxId = messages.reduce((max, m) => Math.max(max, m.id), 0);
+      if (newMsgState.key !== key) { newMsgState.key = key; newMsgState.lastId = maxId; newMsgState.anchorId = null; return; }
+      if (forceScroll) newMsgState.anchorId = null;
+      else if (newMsgState.anchorId === null && !isNearBottom(list)) {
+        const firstNew = messages.find(m => m.id > newMsgState.lastId && m.sender !== currentUser);
+        if (firstNew) newMsgState.anchorId = firstNew.id;
+      }
+      newMsgState.lastId = maxId;
+    }
+    function buildNewMessagesDividerElement() {
+      const el = document.createElement('div');
+      el.className = 'new-messages-divider';
+      el.setAttribute('role', 'separator');
+      el.innerHTML = '<span>New messages</span>';
+      return el;
+    }
+    function newMessagesDividerFor(msgId) { return newMsgState.anchorId === msgId ? buildNewMessagesDividerElement() : null; }
+    function clearNewMessagesDividerIfAtBottom() {
+      if (newMsgState.anchorId === null) return;
+      const list = document.getElementById('messages-list');
+      if (!list || !isNearBottom(list)) return;
+      newMsgState.anchorId = null;
+      list.querySelector('.new-messages-divider')?.remove();
+    }
+
     function reactToMsg(msgId, emoji) {
       if (activeHub) {
         const hubs = getHubs(), hub = hubs.find(h => h.id === activeHub); if (!hub) return;
@@ -3402,6 +3442,7 @@
       knownMsgCount = messages.length;
 
       const msgList = document.getElementById('messages-list');
+      trackNewMessages('dm:' + activeFriend, messages, msgList, forceScroll);
       msgList.innerHTML = '';
 
       let lastDateKey = null;
@@ -3411,6 +3452,8 @@
           msgList.appendChild(buildDateSeparatorElement(m.id));
           lastDateKey = msgDateKey;
         }
+        const newMsgDivider = newMessagesDividerFor(m.id);
+        if (newMsgDivider) msgList.appendChild(newMsgDivider);
         const isSent = m.sender === currentUser;
         const wrapper = document.createElement('div');
         wrapper.className = `message-wrapper ${isSent ? 'sent' : 'received'}`;
