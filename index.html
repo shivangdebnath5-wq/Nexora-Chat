@@ -1896,7 +1896,7 @@
       const grid = document.getElementById('theme-preview-grid');
       if (!grid) return;
       const selectedTheme = document.documentElement.getAttribute('data-theme') || localStorage.getItem('theme') || 'light';
-      grid.innerHTML = THEMES.map(theme => `<button type="button" class="theme-preview${theme.id === selectedTheme ? ' selected' : ''}" role="radio" aria-checked="${theme.id === selectedTheme}" onclick="changeTheme('${theme.id}')" title="${theme.name}"><span class="theme-preview-swatch" style="--theme-a:${theme.colors[0]};--theme-b:${theme.colors[1]};--theme-c:${theme.colors[2]}"><i></i><b></b></span><span>${theme.name}</span></button>`).join('');
+      grid.innerHTML = THEMES.map(theme => `<button type="button" class="theme-preview${theme.id === selectedTheme ? ' selected' : ''}" data-theme-preview="${theme.id}" role="radio" aria-checked="${theme.id === selectedTheme}" onclick="changeTheme('${theme.id}')" title="${theme.name}"><span class="theme-preview-swatch" style="--theme-a:${theme.colors[0]};--theme-b:${theme.colors[1]};--theme-c:${theme.colors[2]}"><i></i><b></b></span><span>${theme.name}</span></button>`).join('');
     }
 
     function changeTheme(theme) {
