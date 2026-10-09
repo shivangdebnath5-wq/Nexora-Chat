@@ -1896,7 +1896,7 @@
       const grid = document.getElementById('theme-preview-grid');
       if (!grid) return;
       const selectedTheme = document.documentElement.getAttribute('data-theme') || localStorage.getItem('theme') || 'light';
-      grid.innerHTML = THEMES.map(theme => `<button type="button" class="theme-preview${theme.id === selectedTheme ? ' selected' : ''}" data-theme-preview="${theme.id}" role="radio" aria-checked="${theme.id === selectedTheme}" onclick="changeTheme('${theme.id}')" title="${theme.name}"><span class="theme-preview-swatch" style="--theme-a:${theme.colors[0]};--theme-b:${theme.colors[1]};--theme-c:${theme.colors[2]}"><i></i><b></b></span><span>${theme.name}</span></button>`).join('');
+      grid.innerHTML = THEMES.map(theme => `<button type="button" class="theme-preview${theme.id === selectedTheme ? ' selected' : ''}" data-theme-preview="${theme.id}" role="radio" aria-checked="${theme.id === selectedTheme}" onclick="changeTheme('${theme.id}')" title="${theme.name}"><span class="theme-preview-swatch" style="--theme-a:${theme.colors[0]};--theme-b:${theme.colors[1]};--theme-c:${theme.colors[2]}"><i></i><b></b>${theme.id === 'durga-puja' ? '<svg class="durga-puja-glint" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13.4 8.6 15.4 10.6 24 12C15.4 13.4 13.4 15.4 12 24C10.6 15.4 8.6 13.4 0 12C8.6 10.6 10.6 8.6 12 0Z"/></svg>' : ''}</span><span>${theme.name}</span></button>`).join('');
     }
 
     function changeTheme(theme) {
