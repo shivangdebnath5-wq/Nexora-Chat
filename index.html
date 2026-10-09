@@ -87,9 +87,11 @@
     [data-theme="moonlight-sparkle"] .message.received { box-shadow: inset 0 0 0 1px var(--border); }
     [data-theme="moonlight-sparkle"] input::placeholder, [data-theme="moonlight-sparkle"] textarea::placeholder { color: var(--text-muted); opacity: .8; }
     [data-theme="sage-green"] { --bg-main:#89AF88; --bg-card:#AFAF88; --bg-sidebar:#9CAF88; --text-main:#26301e; --text-muted:#4d5c3c; --border:#7f9770; --primary:rgb(92,138,82); --primary-hover:#4a7341; --msg-sent:#5c8a52; --msg-sent-text:#fff; --msg-received:#9CAF88; --msg-received-text:#26301e; --input-bg:#cfe0c2; --shadow:rgba(60,80,45,.28); }
+    [data-theme="durga-puja"] { --bg-main:#171719; --bg-card:#202023; --bg-sidebar:#1b1b1e; --text-main:#FFF8E7; --text-muted:#c9bea8; --border:#51443a; --primary:#8B1E3F; --primary-hover:#a82a4f; --msg-sent:#8B1E3F; --msg-sent-text:#FFF8E7; --msg-received:#292629; --msg-received-text:#FFF8E7; --input-bg:#29272a; --shadow:rgba(0,0,0,.62); --durga-gradient:linear-gradient(110deg,#FDD835 0%,#D6A84B 52%,#8B1E3F 100%); }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
     body { background-color: var(--bg-main); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    [data-theme="durga-puja"] body { background-image:linear-gradient(rgba(23,23,25,.76),rgba(23,23,25,.88)),url('https://i.ibb.co/nM1Dm8y3/Gemini-Generated-Image-xkiolcxkiolcxkio.png'); background-position:center; background-size:cover; background-attachment:fixed; }
     .card { background: var(--bg-card); width: 100%; max-width: 420px; padding: 32px; border-radius: 16px; box-shadow: 0 10px 25px var(--shadow); border: 1px solid var(--border); }
     h2, h3 { margin-bottom: 20px; color: var(--text-main); text-align: center; font-weight: 700; }
     input, select { width: 100%; padding: 12px 14px; margin-bottom: 14px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
@@ -114,6 +116,8 @@
     
     /* Layout */
     #app-screen { width: calc(100vw - 32px); height: calc(100vh - 32px); display: flex; background: var(--bg-card); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px var(--shadow); border: 1px solid var(--border); }
+    [data-theme="durga-puja"] #app-screen, [data-theme="durga-puja"] .main-chat { background:transparent; }
+    [data-theme="durga-puja"] #send-btn, [data-theme="durga-puja"] .settings-tab.active, [data-theme="durga-puja"] .wizard-chip.selected { background:var(--durga-gradient); color:#171719; border-color:#D6A84B; }
     .sidebar { width: var(--sidebar-width, 320px); flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--bg-sidebar); }
     #sidebar-resize-handle { width: 5px; flex-shrink: 0; cursor: col-resize; background: transparent; margin-left: -5px; margin-right: -0px; z-index: 5; position: relative; }
     #sidebar-resize-handle:hover, #sidebar-resize-handle.resizing { background: var(--primary); opacity: .5; }
@@ -1884,7 +1888,8 @@
       { id: 'royal-eclipse', name: 'Royal Eclipse', colors: ['#19132d', '#292044', 'rgb(73, 55, 115)'] },
       { id: 'sage-green', name: 'Sage Green', colors: ['#89AF88', '#AFAF88', 'rgb(92, 138, 82)'] },
       { id: 'red-velvet', name: 'Red Velvet', colors: ['#4B0000', '#650002', '#8D0004'] },
-      { id: 'moonlight-sparkle', name: 'Moonlight Sparkle', colors: ['#210635', '#7B337E', '#6667AB'] }
+      { id: 'moonlight-sparkle', name: 'Moonlight Sparkle', colors: ['#210635', '#7B337E', '#6667AB'] },
+      { id: 'durga-puja', name: 'Durga Puja', colors: ['#171719', '#FFF8E7', '#D6A84B'] }
     ];
 
     function renderThemeSelector() {
