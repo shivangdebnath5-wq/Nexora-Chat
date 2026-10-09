@@ -919,3 +919,25 @@ sendMessage = function() {
   }
   return beforeWhiteboardSlashCommand();
 };
+/* Message grouping — consecutive messages from the same sender collapse
+   under one avatar/name with tighter spacing (the CSS for .msg-grouped is
+   in style.css). Purely a class toggle on the wrappers the DM and Hub
+   renderers already create, so nothing that indexes into
+   .message-wrapper (pin/reply/swipe handlers) is affected. An observer on
+   the list re-runs it after every render, whichever renderer produced it. */
+function applyMessageGrouping() {
+  const list = document.getElementById('messages-list'); if (!list) return;
+  let prevEl = null, prevKey = null;
+  Array.from(list.children).forEach(el => {
+    if (!el.classList.contains('message-wrapper')) { prevEl = null; return; }
+    // Direct chats: sent/received identifies the sender. Hubs: received
+    // messages also carry the sender's name.
+    const key = el.classList.contains('sent') ? '__me__' : (el.querySelector('.hub-message-name')?.textContent || '__them__');
+    el.classList.toggle('msg-grouped', !!prevEl && key === prevKey);
+    prevEl = el; prevKey = key;
+  });
+}
+(function () {
+  const list = document.getElementById('messages-list');
+  if (list) new MutationObserver(applyMessageGrouping).observe(list, { childList: true });
+})();

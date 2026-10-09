@@ -589,3 +589,11 @@
 @media (min-width: 721px) {
   .sidebar-header { top: -5px; }
 }
+/* Message grouping (see applyMessageGrouping in script.js): later messages
+   in a run from the same sender drop their avatar/name and sit closer.
+   The avatar is hidden, not removed, so bubbles stay aligned and the
+   popover offsets that assume the avatar column still line up. */
+.messages-list .message-wrapper.msg-grouped { margin-top:-14px; }
+.message-wrapper.msg-grouped .avatar { visibility:hidden; }
+.message-wrapper.msg-grouped .hub-message-name { display:none; }
+@media (max-width:720px) { .messages-list .message-wrapper.msg-grouped { margin-top:-8px; } }
