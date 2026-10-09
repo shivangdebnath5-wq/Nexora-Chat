@@ -730,7 +730,7 @@ function renderPinnedMessagesMenu() {
   if (!pinned.length) { menu.innerHTML += '<div class="pinned-message-empty">No pinned messages yet</div>'; return; }
   pinned.forEach(message => {
     const item = document.createElement('button'); item.className = 'pinned-message-item';
-    item.innerHTML = `📌 <small>${escapeHTML(pinnedPreview(message))}</small>`;
+    item.innerHTML = `🔖 <small>${escapeHTML(pinnedPreview(message))}</small>`;
     item.onclick = () => jumpToPinnedMessage(message.id);
     menu.appendChild(item);
   });
@@ -762,7 +762,7 @@ renderMessages = function(forceScroll) {
     const popover = document.querySelector('.msg-popover');
     if (active && popover && !popover.querySelector('.pin-message-popover')) {
       const pin = document.createElement('button'); pin.className = `pin-message-popover ${active.pinned ? 'is-pinned' : ''}`;
-      pin.title = active.pinned ? 'Unpin message' : 'Pin message'; pin.textContent = '📌';
+      pin.title = active.pinned ? 'Unpin message' : 'Pin message'; pin.textContent = '🔖';
       pin.onclick = event => togglePinnedMessage(active.id, event);
       popover.appendChild(pin);
     }
