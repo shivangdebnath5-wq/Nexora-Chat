@@ -730,7 +730,7 @@ function renderPinnedMessagesMenu() {
   if (!pinned.length) { menu.innerHTML += '<div class="pinned-message-empty">No pinned messages yet</div>'; return; }
   pinned.forEach(message => {
     const item = document.createElement('button'); item.className = 'pinned-message-item';
-    item.innerHTML = `🔖 <small>${escapeHTML(pinnedPreview(message))}</small>`;
+    item.innerHTML = `📌 <small>${escapeHTML(pinnedPreview(message))}</small>`;
     item.onclick = () => jumpToPinnedMessage(message.id);
     menu.appendChild(item);
   });
@@ -762,7 +762,7 @@ renderMessages = function(forceScroll) {
     const popover = document.querySelector('.msg-popover');
     if (active && popover && !popover.querySelector('.pin-message-popover')) {
       const pin = document.createElement('button'); pin.className = `pin-message-popover ${active.pinned ? 'is-pinned' : ''}`;
-      pin.title = active.pinned ? 'Unpin message' : 'Pin message'; pin.textContent = '🔖';
+      pin.title = active.pinned ? 'Unpin message' : 'Pin message'; pin.textContent = '📌';
       pin.onclick = event => togglePinnedMessage(active.id, event);
       popover.appendChild(pin);
     }
@@ -941,3 +941,98 @@ function applyMessageGrouping() {
   const list = document.getElementById('messages-list');
   if (list) new MutationObserver(applyMessageGrouping).observe(list, { childList: true });
 })();
+/* ---- Home header: time-based greeting + live clock, and the header ⋯ menu ----
+   The greeting/clock only show while no chat and no Hub is open (the old
+   "Select a friend to message" state). Visibility is a single `is-home` class
+   on #chat-header, kept in sync by a MutationObserver on the elements the
+   existing selectFriend()/selectHub() already toggle, so none of that code
+   needed to change. The ⋯ button reuses the original #pinned-messages-btn id
+   (selectFriend/selectHub already show/hide it by id) and hosts the existing
+   togglePinnedMessages() as a menu item. */
+(function initHomeHeader() {
+  const header = document.getElementById('chat-header');
+  if (!header) return;
+  const helloEl = document.getElementById('home-greeting-hello');
+  const nameEl = document.getElementById('home-greeting-name');
+  const subEl = document.getElementById('home-greeting-sub');
+  const timeEl = document.getElementById('home-clock-time');
+  const dateEl = document.getElementById('home-clock-date');
+
+  function greetingFor(now) {
+    const hour = now.getHours();
+    if (hour >= 5 && hour < 12) return ['Good morning', 'Pick a chat to say hi.'];
+    if (hour >= 12 && hour < 17) return ['Good afternoon', 'Pick a chat to continue.'];
+    return ['Good evening', 'Pick a chat to catch up.'];
+  }
+  // Only touch the DOM when the text actually changed (no needless repaints).
+  function setText(el, text) { if (el && el.textContent !== text) el.textContent = text; }
+
+  function refreshHomeHeader() {
+    const isHome = !activeFriend && !activeHub;
+    header.classList.toggle('is-home', isHome);
+    if (!isHome) return;
+    const now = new Date();
+    const [hello, sub] = greetingFor(now);
+    setText(helloEl, hello);
+    setText(nameEl, currentUser ? `, ${currentUser}` : '');
+    setText(subEl, sub);
+    setText(timeEl, now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }));
+    setText(dateEl, now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }));
+  }
+
+  // Instant sync with the existing navigation code, without editing it:
+  // selectFriend() un-hides the avatar container, selectHub() toggles
+  // .hub-active on .main-chat, and login/logout toggles #app-screen.
+  const observer = new MutationObserver(refreshHomeHeader);
+  [document.querySelector('.main-chat'), document.getElementById('chat-header-avatar-container'), document.getElementById('app-screen')]
+    .forEach(node => { if (node) observer.observe(node, { attributes: true, attributeFilter: ['class'] }); });
+
+  // Clock: tick on the minute boundary (the display has no seconds), and
+  // catch up immediately when the tab/window comes back to the foreground.
+  (function scheduleTick() {
+    setTimeout(() => { refreshHomeHeader(); scheduleTick(); }, 60000 - (Date.now() % 60000) + 50);
+  })();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshHomeHeader(); });
+  window.addEventListener('focus', refreshHomeHeader);
+
+  refreshHomeHeader();
+})();
+
+function closeHeaderMoreMenu() {
+  document.getElementById('header-more-menu')?.classList.add('hidden');
+  document.getElementById('pinned-messages-btn')?.setAttribute('aria-expanded', 'false');
+}
+function toggleHeaderMoreMenu(event) {
+  if (event) event.stopPropagation();
+  const menu = document.getElementById('header-more-menu'); if (!menu) return;
+  // The pinned list used to be toggled by this very button, so if it's open,
+  // the button keeps acting as its close control.
+  const pinnedList = document.getElementById('pinned-messages-menu');
+  if (pinnedList && !pinnedList.classList.contains('hidden')) { pinnedList.classList.add('hidden'); closeHeaderMoreMenu(); return; }
+  const willOpen = menu.classList.contains('hidden');
+  menu.classList.toggle('hidden', !willOpen);
+  document.getElementById('pinned-messages-btn')?.setAttribute('aria-expanded', String(willOpen));
+  // Pinned messages belong to a conversation, so the item is only usable once one is open.
+  const item = document.getElementById('header-more-pinned');
+  if (item) { item.disabled = !activeFriend; item.title = activeFriend ? '' : 'Open a conversation to see its pinned messages'; }
+}
+function openPinnedMessagesFromMenu() {
+  if (!activeFriend) return;
+  closeHeaderMoreMenu();
+  togglePinnedMessages();
+}
+document.addEventListener('click', event => {
+  if (event.target.closest('.header-actions')) return;
+  closeHeaderMoreMenu();
+  document.getElementById('pinned-messages-menu')?.classList.add('hidden');
+});
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape') return;
+  const menu = document.getElementById('header-more-menu');
+  const wasOpen = menu && !menu.classList.contains('hidden');
+  closeHeaderMoreMenu();
+  document.getElementById('pinned-messages-menu')?.classList.add('hidden');
+  if (wasOpen) document.getElementById('pinned-messages-btn')?.focus();
+});
+window.toggleHeaderMoreMenu = toggleHeaderMoreMenu;
+window.openPinnedMessagesFromMenu = openPinnedMessagesFromMenu;
