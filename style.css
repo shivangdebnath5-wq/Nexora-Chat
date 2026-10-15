@@ -410,11 +410,14 @@
 .theme-preview-swatch { position:relative; display:block; width:34px; height:34px; overflow:hidden; border:1px solid rgba(255,255,255,.2); border-radius:10px; background:linear-gradient(145deg,var(--theme-a) 0 48%,var(--theme-b) 48%); box-shadow:inset 0 1px rgba(255,255,255,.16); }
 .theme-preview-swatch i { position:absolute; right:4px; bottom:5px; width:15px; height:7px; border-radius:5px; background:var(--theme-c); box-shadow:0 0 7px var(--theme-c); }
 .theme-preview-swatch b { position:absolute; top:5px; left:5px; width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.8); }
-.theme-preview[data-theme-preview="durga-puja"] .durga-puja-glint-badge { position:absolute; z-index:2; top:8px; right:8px; width:22px; height:22px; margin:0; display:grid; place-items:center; border:1px solid rgba(253,216,53,.46); border-radius:50%; background:rgba(23,23,25,.78); box-shadow:0 0 8px rgba(253,216,53,.3); transform-origin:center; animation:durgaBadgePulse 2.8s ease-in-out infinite; }
-.durga-puja-glint-badge svg { display:block; width:12px; height:12px; fill:#FDD835; filter:drop-shadow(0 0 2px rgba(253,216,53,.8)); }
-@media (max-width:720px) { .theme-preview[data-theme-preview="durga-puja"] .theme-preview-art { position:relative; }.theme-preview[data-theme-preview="durga-puja"] .durga-puja-glint-badge { top:2px; right:2px; width:16px; height:16px; }.durga-puja-glint-badge svg { width:9px; height:9px; } }
-@media (prefers-reduced-motion:reduce) { .durga-puja-glint-badge { animation:none; } }
-@keyframes durgaBadgePulse { 0%,100% { transform:scale(1); box-shadow:0 0 7px rgba(253,216,53,.24); } 50% { transform:scale(1.07); box-shadow:0 0 10px rgba(253,216,53,.4); } }
+.theme-preview[data-theme-preview="halloween"] .theme-preview-swatch { background:linear-gradient(110deg,#71351F 0%,#9B451F 28%,#C56B2D 54%,#D99A46 78%,#35221D 100%); }
+.theme-preview[data-theme-preview="durga-puja"] .theme-limited-glint-badge, .theme-preview[data-theme-preview="halloween"] .theme-limited-glint-badge { position:absolute; z-index:2; top:8px; right:8px; width:22px; height:22px; margin:0; display:grid; place-items:center; border:1px solid rgba(253,216,53,.46); border-radius:50%; background:rgba(23,23,25,.78); box-shadow:0 0 8px rgba(253,216,53,.3); transform-origin:center; animation:limitedThemeBadgePulse 2.8s ease-in-out infinite; }
+.theme-limited-glint-badge svg { display:block; width:12px; height:12px; fill:#FDD835; filter:drop-shadow(0 0 2px rgba(253,216,53,.8)); }
+.theme-preview[data-theme-preview="halloween"] .theme-limited-glint-badge { border-color:rgba(217,154,70,.5); box-shadow:0 0 8px rgba(217,154,70,.3); }
+.theme-preview[data-theme-preview="halloween"] .theme-limited-glint-badge svg { fill:#D99A46; filter:drop-shadow(0 0 2px rgba(217,154,70,.8)); }
+@media (max-width:720px) { .theme-preview[data-theme-preview="durga-puja"] .theme-preview-art, .theme-preview[data-theme-preview="halloween"] .theme-preview-art { position:relative; }.theme-preview[data-theme-preview="durga-puja"] .theme-limited-glint-badge, .theme-preview[data-theme-preview="halloween"] .theme-limited-glint-badge { top:2px; right:2px; width:16px; height:16px; }.theme-limited-glint-badge svg { width:9px; height:9px; } }
+@media (prefers-reduced-motion:reduce) { .theme-limited-glint-badge { animation:none; } }
+@keyframes limitedThemeBadgePulse { 0%,100% { transform:scale(1); box-shadow:0 0 7px rgba(217,154,70,.18); } 50% { transform:scale(1.07); box-shadow:0 0 10px rgba(217,154,70,.34); } }
 
 @media (max-width:360px) { .theme-preview-grid { grid-template-columns:1fr; }.theme-preview { min-height:54px; } }
 
