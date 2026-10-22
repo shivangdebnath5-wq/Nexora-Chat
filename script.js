@@ -897,8 +897,24 @@ document.addEventListener('click', event => { if (!suppressNextMsgClick) return;
 
 const renderMessagesWithMotion = renderMessages;
 renderMessages = function(forceScroll) {
+  const list = document.getElementById('messages-list');
+  const prevTop = list ? list.scrollTop : 0;
   renderMessagesWithMotion(forceScroll);
   if (forceScroll) document.querySelector('.message-wrapper:last-of-type')?.classList.add('message-arrive');
+  if (!list) return;
+  // Everything that changes the list's height (messages, pins, Smart Context
+  // cards, motion) has now run. A forced render scrolls to the latest message
+  // only now, and keeps it there while attachments load (settleDmScroll in
+  // index.html). A plain re-render (Firestore snapshot, 3s poll, reaction...)
+  // puts the reading position back. That has to wait for the message-grouping
+  // observer below, which tightens message spacing in a microtask AFTER this
+  // render; when the list shrinks, scroll anchoring drags scrollTop up and the
+  // view ends up short of where it was. A microtask queued now runs after the
+  // observer's, so it sees the final layout.
+  if (forceScroll) { settleDmScroll(false); return; }
+  queueMicrotask(() => {
+    if (Math.abs(list.scrollTop - prevTop) > 1) { list.scrollTop = prevTop; updateJumpToLatestVisibility(); }
+  });
 };
 
 /* Chat Extensions: /whiteboard slash command. Hub-only, and only opens

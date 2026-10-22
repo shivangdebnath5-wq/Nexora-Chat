@@ -1446,6 +1446,7 @@
       applySidebarWidth(localStorage.getItem('sidebar_width'));
       document.getElementById('messages-list')?.addEventListener('scroll', updateJumpToLatestVisibility);
       document.getElementById('messages-list')?.addEventListener('scroll', clearNewMessagesDividerIfAtBottom);
+      ['wheel', 'touchstart', 'pointerdown'].forEach(evt => document.getElementById('messages-list')?.addEventListener(evt, () => { dmSettleRun++; }, { passive: true }));
       if ('Notification' in window && Notification.permission !== 'granted') {
         Notification.requestPermission();
       }
@@ -3253,8 +3254,42 @@
       btn.classList.toggle('hidden', distanceFromBottom < 120);
     }
     function scrollToLatestMessage() {
+      if (activeFriend && !activeHub) { settleDmScroll(true); return; }
       const list = document.getElementById('messages-list');
       if (list) list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
+    }
+
+    // DM only. Scrolls #messages-list to the TRUE bottom and keeps it there
+    // until the content stops changing size. One scroll can't be right on its
+    // own because the list keeps growing after it's built: Smart Context cards
+    // are added by a later wrapper in script.js, and image attachments / GIFs
+    // only get their height once they load. So this re-pins every frame until
+    // the list height has been stable for 250ms and no attachment is still
+    // loading (hard cap 3s), instead of trusting the first scrollHeight. A
+    // wheel/touch/click on the list cancels it (see window.onload), so it never
+    // fights the user, and a newer call supersedes an older one. smooth=true is
+    // Jump to Latest: it animates, then re-targets if the animation ends short.
+    let dmSettleRun = 0;
+    function settleDmScroll(smooth) {
+      const list = document.getElementById('messages-list');
+      if (!list) return;
+      const run = ++dmSettleRun;
+      const start = performance.now();
+      let lastHeight = -1, lastTop = list.scrollTop, stableSince = start;
+      requestAnimationFrame(function step(now) {
+        if (run !== dmSettleRun || !activeFriend || activeHub) return;
+        const height = list.scrollHeight;
+        if (height !== lastHeight) { lastHeight = height; stableSince = now; }
+        const moving = Math.abs(list.scrollTop - lastTop) > 0.5;
+        const atBottom = height - list.scrollTop - list.clientHeight < 2;
+        if (!atBottom && (!smooth || !moving)) {
+          if (smooth) list.scrollTo({ top: height, behavior: 'smooth' }); else list.scrollTop = height;
+        }
+        lastTop = list.scrollTop;
+        const loading = Array.from(list.querySelectorAll('.message img:not([loading="lazy"])')).some(img => !img.complete);
+        if ((atBottom && !moving && !loading && now - stableSince > 250) || now - start > 3000) { updateJumpToLatestVisibility(); return; }
+        requestAnimationFrame(step);
+      });
     }
 
     // "New messages" divider: when messages from someone else arrive while the
@@ -3540,9 +3575,10 @@
         msgList.appendChild(wrapper);
       });
 
-      if (forceScroll) {
-        msgList.scrollTop = msgList.scrollHeight;
-      }
+      // No scroll here: this runs BEFORE the pin / Smart Context / motion wrappers
+      // in script.js change the list's height, so scrolling now lands short of the
+      // real bottom. The final scroll-to-latest happens after all of them, in the
+      // outermost renderMessages wrapper (settleDmScroll).
       updateJumpToLatestVisibility();
 
       if (activePopoverMsgId !== null) positionMsgPopoverMobile();
