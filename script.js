@@ -741,11 +741,106 @@ function togglePinnedMessages() {
   renderPinnedMessagesMenu(); menu.classList.toggle('hidden');
 }
 function jumpToPinnedMessage(messageId) {
-  document.getElementById('pinned-messages-menu').classList.add('hidden');
+  document.getElementById('pinned-messages-menu')?.classList.add('hidden');
   const target = document.querySelector(`.message-wrapper[data-message-id="${messageId}"]`);
   if (!target) return;
   target.scrollIntoView({ behavior:'smooth', block:'center' });
   target.classList.remove('pin-jump'); void target.offsetWidth; target.classList.add('pin-jump');
+}
+
+/* Saved Messages (private bookmarks) — Direct Chat only.
+   A DM message can be privately "bookmarked" by the signed-in user. Stored
+   locally per-account (bookmarks_<username> in localStorage) and NEVER
+   synced to Firestore, so the other participant in the DM never sees it —
+   unlike the old shared `message.pinned` field above, which is visible to
+   both sides. This is what the DM "Pin message" action/label now does.
+   Hub pinning (togglePinnedHubMessage, hub-pinned-messages-btn/-menu,
+   hub.messages[].pinned) is a separate, shared, permission-gated feature
+   and is completely untouched by this. */
+function getBookmarks() {
+  if (!currentUser) return [];
+  return JSON.parse(localStorage.getItem(`bookmarks_${currentUser}`) || '[]');
+}
+function saveBookmarksList(list) {
+  if (!currentUser) return;
+  localStorage.setItem(`bookmarks_${currentUser}`, JSON.stringify(list));
+}
+function isMessageBookmarked(messageId) {
+  return getBookmarks().some(b => b.messageId === messageId);
+}
+function toggleBookmarkMessage(messageId, event) {
+  event?.stopPropagation();
+  const messages = DB.getMessages(); const message = messages.find(m => m.id === messageId); if (!message) return;
+  const bookmarks = getBookmarks();
+  const existingIndex = bookmarks.findIndex(b => b.messageId === messageId);
+  if (existingIndex !== -1) {
+    bookmarks.splice(existingIndex, 1);
+  } else {
+    bookmarks.unshift({
+      messageId: message.id,
+      type: 'dm',
+      withUser: message.sender === currentUser ? message.receiver : message.sender,
+      sender: message.sender,
+      text: pinnedPreview(message),
+      originalTimestamp: message.id,
+      savedAt: Date.now()
+    });
+  }
+  saveBookmarksList(bookmarks);
+  activePopoverMsgId = null; activeMoreMenuMsgId = null;
+  renderMessages(false);
+  const modal = document.getElementById('saved-messages-modal');
+  if (modal && !modal.classList.contains('hidden') && typeof renderSavedMessages === 'function') renderSavedMessages();
+}
+function removeBookmark(messageId) {
+  saveBookmarksList(getBookmarks().filter(b => b.messageId !== messageId));
+  renderMessages(false);
+  if (typeof renderSavedMessages === 'function') renderSavedMessages();
+}
+function formatBookmarkTimestamp(ms) {
+  if (!ms) return '';
+  return new Date(ms).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+function renderSavedMessages() {
+  const list = document.getElementById('saved-messages-list'); if (!list) return;
+  const bookmarks = getBookmarks();
+  if (!bookmarks.length) { list.innerHTML = '<div class="saved-message-empty">No saved messages yet. Bookmark a Direct Message to see it here.</div>'; return; }
+  list.innerHTML = '';
+  bookmarks.forEach(b => {
+    const item = document.createElement('div'); item.className = 'saved-message-item';
+    const locationLabel = b.type === 'hub' ? `Hub · ${escapeHTML(b.hubName || '')}` : `DM · @${escapeHTML(b.withUser || '')}`;
+    item.innerHTML = `
+      <div class="saved-message-top">
+        <span class="saved-message-sender">@${escapeHTML(b.sender)}</span>
+        <span class="saved-message-location">${locationLabel}</span>
+      </div>
+      <div class="saved-message-text">${escapeHTML(b.text || '(no text)')}</div>
+      <div class="saved-message-meta">
+        <span>Sent ${formatBookmarkTimestamp(b.originalTimestamp)}</span>
+        <span>Saved ${formatBookmarkTimestamp(b.savedAt)}</span>
+      </div>
+      <div class="saved-message-actions">
+        <button type="button" class="secondary saved-message-open-btn">Open</button>
+        <button type="button" class="saved-message-remove-btn">Remove</button>
+      </div>`;
+    item.querySelector('.saved-message-open-btn').onclick = () => openBookmarkedMessage(b);
+    item.querySelector('.saved-message-remove-btn').onclick = () => removeBookmark(b.messageId);
+    list.appendChild(item);
+  });
+}
+function openBookmarkedMessage(bookmark) {
+  closeSavedMessages();
+  if (bookmark.type === 'dm' && bookmark.withUser) {
+    selectFriend(bookmark.withUser);
+    setTimeout(() => jumpToPinnedMessage(bookmark.messageId), 150);
+  }
+}
+function openSavedMessages() {
+  document.getElementById('saved-messages-modal')?.classList.remove('hidden');
+  renderSavedMessages();
+}
+function closeSavedMessages() {
+  document.getElementById('saved-messages-modal')?.classList.add('hidden');
 }
 
 const renderMessagesWithDoubleClick = renderMessages;
@@ -761,9 +856,10 @@ renderMessages = function(forceScroll) {
     const active = shown.find(m => m.id === activePopoverMsgId);
     const popover = document.querySelector('.msg-popover');
     if (active && popover && !popover.querySelector('.pin-message-popover')) {
-      const pin = document.createElement('button'); pin.className = `pin-message-popover ${active.pinned ? 'is-pinned' : ''}`;
-      pin.title = active.pinned ? 'Unpin message' : 'Pin message'; pin.textContent = '📌';
-      pin.onclick = event => togglePinnedMessage(active.id, event);
+      const bookmarked = isMessageBookmarked(active.id);
+      const pin = document.createElement('button'); pin.className = `pin-message-popover ${bookmarked ? 'is-pinned' : ''}`;
+      pin.title = bookmarked ? 'Remove bookmark' : 'Bookmark message'; pin.textContent = '🔖';
+      pin.onclick = event => toggleBookmarkMessage(active.id, event);
       popover.appendChild(pin);
     }
   }
@@ -963,8 +1059,8 @@ function applyMessageGrouping() {
    on #chat-header, kept in sync by a MutationObserver on the elements the
    existing selectFriend()/selectHub() already toggle, so none of that code
    needed to change. The ⋯ button reuses the original #pinned-messages-btn id
-   (selectFriend/selectHub already show/hide it by id) and hosts the existing
-   togglePinnedMessages() as a menu item. */
+   (selectFriend/selectHub already show/hide it by id) and now hosts the
+   Saved Messages entry (openSavedMessagesFromMenu) as a menu item. */
 (function initHomeHeader() {
   const header = document.getElementById('chat-header');
   if (!header) return;
@@ -1028,14 +1124,13 @@ function toggleHeaderMoreMenu(event) {
   const willOpen = menu.classList.contains('hidden');
   menu.classList.toggle('hidden', !willOpen);
   document.getElementById('pinned-messages-btn')?.setAttribute('aria-expanded', String(willOpen));
-  // Pinned messages belong to a conversation, so the item is only usable once one is open.
-  const item = document.getElementById('header-more-pinned');
-  if (item) { item.disabled = !activeFriend; item.title = activeFriend ? '' : 'Open a conversation to see its pinned messages'; }
 }
-function openPinnedMessagesFromMenu() {
-  if (!activeFriend) return;
+// Saved Messages is a home-menu entry (private bookmarks across every DM,
+// not tied to whichever conversation happens to be open), so unlike the old
+// per-conversation pinned list it never needs activeFriend to be set.
+function openSavedMessagesFromMenu() {
   closeHeaderMoreMenu();
-  togglePinnedMessages();
+  if (typeof openSavedMessages === 'function') openSavedMessages();
 }
 document.addEventListener('click', event => {
   if (event.target.closest('.header-actions')) return;
@@ -1051,4 +1146,4 @@ document.addEventListener('keydown', event => {
   if (wasOpen) document.getElementById('pinned-messages-btn')?.focus();
 });
 window.toggleHeaderMoreMenu = toggleHeaderMoreMenu;
-window.openPinnedMessagesFromMenu = openPinnedMessagesFromMenu;
+window.openSavedMessagesFromMenu = openSavedMessagesFromMenu;
