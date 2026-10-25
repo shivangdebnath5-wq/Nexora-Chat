@@ -655,3 +655,10 @@
 @media (max-width: 340px) {
   .chat-header.is-home .home-clock { display:none; }
 }
+/* Hub header ⋮ menu (Invite member + Pinned messages live here). Reuses the
+   .header-more-menu / .header-more-item look. The menu is only meaningful
+   in a Hub, so it never shows over a Direct Chat even if left open. The
+   "+" on the invite icon was absolutely positioned for the old round
+   button; in a menu row it just sits inline. */
+.main-chat:not(.hub-active) #hub-more-menu { display:none !important; }
+#hub-more-menu #hub-invite-btn sup { position:static; margin-left:1px; font-size:9px; }
