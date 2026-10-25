@@ -805,10 +805,15 @@
           <div id="header-more-menu" class="header-more-menu hidden" role="menu" aria-labelledby="pinned-messages-btn">
             <button type="button" id="header-more-pinned" class="header-more-item" role="menuitem" onclick="openSavedMessagesFromMenu()"><span class="header-more-item-icon" aria-hidden="true">🔖</span><span>Saved Messages</span></button>
           </div>
-          <button id="hub-pinned-messages-btn" class="icon-btn hidden" onclick="toggleHubPinnedMessages()" title="Pinned messages" aria-label="Pinned messages">📌</button>
-          <button id="hub-invite-btn" class="icon-btn hidden" onclick="openHubInvitePanel()" title="Invite a Hub member" aria-label="Invite a Hub member">👤<sup>+</sup></button>
           <button id="hub-search-btn" class="icon-btn hidden" onclick="toggleHubSearch()" title="Search Hub messages" aria-label="Search Hub messages">⌕</button>
-          <button id="hub-settings-btn" class="icon-btn hidden" onclick="openHubSettings()" title="Hub settings">⋮</button>
+          <button id="hub-settings-btn" class="icon-btn hidden" onclick="toggleHubMoreMenu(event)" title="More" aria-label="More options" aria-haspopup="menu" aria-expanded="false">⋮</button>
+          <!-- Hub ⋮ menu. Invite + Pinned moved here from the header; they keep their ids because
+               selectHub()/selectFriend() show/hide them by id. -->
+          <div id="hub-more-menu" class="header-more-menu hidden" role="menu" aria-labelledby="hub-settings-btn">
+            <button type="button" id="hub-invite-btn" class="header-more-item hidden" role="menuitem" onclick="openHubInvitePanel()" title="Invite a Hub member" aria-label="Invite a Hub member"><span class="header-more-item-icon" aria-hidden="true">👤<sup>+</sup></span><span>Invite member</span></button>
+            <button type="button" id="hub-pinned-messages-btn" class="header-more-item hidden" role="menuitem" onclick="toggleHubPinnedMessages()" title="Pinned messages" aria-label="Pinned messages"><span class="header-more-item-icon" aria-hidden="true">📌</span><span>Pinned messages</span></button>
+            <button type="button" class="header-more-item" role="menuitem" onclick="openHubSettings()" title="Hub settings"><span class="header-more-item-icon" aria-hidden="true">⚙️</span><span>Hub settings</span></button>
+          </div>
           <div id="pinned-messages-menu" class="pinned-messages-menu hidden"></div>
           <div id="hub-pinned-messages-menu" class="pinned-messages-menu hidden"></div>
         </div>
