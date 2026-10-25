@@ -1147,3 +1147,38 @@ document.addEventListener('keydown', event => {
 });
 window.toggleHeaderMoreMenu = toggleHeaderMoreMenu;
 window.openSavedMessagesFromMenu = openSavedMessagesFromMenu;
+
+/* Hub header ⋮ menu — Invite member and Pinned messages moved off the header
+   into this dropdown. Same open/close conventions as the header "More"
+   menu above (outside click, Escape, aria-expanded). Each item still runs
+   its original handler, so permissions are unchanged. */
+function closeHubMoreMenu() {
+  document.getElementById('hub-more-menu')?.classList.add('hidden');
+  document.getElementById('hub-settings-btn')?.setAttribute('aria-expanded', 'false');
+}
+function toggleHubMoreMenu(event) {
+  if (event) event.stopPropagation();
+  const menu = document.getElementById('hub-more-menu'); if (!menu) return;
+  // If the pinned list is open, the ⋮ acts as its close control instead of
+  // stacking the menu on top of it (both open from the same corner).
+  const pinnedList = document.getElementById('hub-pinned-messages-menu');
+  if (pinnedList && !pinnedList.classList.contains('hidden')) { pinnedList.classList.add('hidden'); closeHubMoreMenu(); return; }
+  const willOpen = menu.classList.contains('hidden');
+  menu.classList.toggle('hidden', !willOpen);
+  document.getElementById('hub-settings-btn')?.setAttribute('aria-expanded', String(willOpen));
+}
+document.getElementById('hub-more-menu')?.addEventListener('click', event => {
+  if (event.target.closest('button')) closeHubMoreMenu();   // runs after the item's own handler
+});
+document.addEventListener('click', event => {
+  if (event.target.closest('.header-actions')) return;
+  closeHubMoreMenu();
+});
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape') return;
+  const menu = document.getElementById('hub-more-menu');
+  const wasOpen = menu && !menu.classList.contains('hidden');
+  closeHubMoreMenu();
+  if (wasOpen) document.getElementById('hub-settings-btn')?.focus();
+});
+window.toggleHubMoreMenu = toggleHubMoreMenu;
