@@ -1110,6 +1110,44 @@ function applyMessageGrouping() {
   refreshHomeHeader();
 })();
 
+/* Back arrow in the chat header (DMs and Hubs): returns to the home state, i.e.
+   no chat and no Hub open. It is the inverse of selectFriend()/selectHub(): drop
+   the live Firestore stream, clear the active chat, and undo every piece of
+   header/chat chrome those two switched on. The greeting, clock and the arrow's
+   own visibility then follow automatically from the .is-home sync in
+   initHomeHeader(). Works the same on desktop and mobile; on mobile the home
+   screen keeps its existing ☰ button for opening the conversations drawer. */
+function goHome() {
+  if (!activeFriend && !activeHub) return;
+  if (typeof window.unsubscribeFromConversation === 'function') window.unsubscribeFromConversation();
+  if (typeof window.unsubscribeFromHub === 'function') window.unsubscribeFromHub();
+  activeFriend = null; activeHub = null;
+  knownMsgCount = 0; activePopoverMsgId = null; activeMoreMenuMsgId = null;
+  // Anything anchored to the message input goes away with it.
+  document.getElementById('emoji-picker')?.classList.add('hidden');
+  document.getElementById('extension-menu')?.classList.add('hidden');
+  // Hub chrome (same resets selectFriend() applies when leaving a Hub).
+  document.getElementById('hub-banner-info')?.classList.remove('visible');
+  const header = document.getElementById('chat-header');
+  header.style.backgroundImage = ''; header.style.backgroundSize = ''; header.style.backgroundPosition = '';
+  const messages = document.getElementById('messages-list');
+  messages.classList.remove('hub-chat-bg');
+  applyWallpaper(localStorage.getItem('wallpaper') || '');
+  ['hub-settings-btn', 'hub-invite-btn', 'hub-pinned-messages-btn', 'hub-search-btn'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+  document.getElementById('hub-pinned-messages-menu')?.classList.add('hidden');
+  closeHubSearch();
+  document.getElementById('pinned-messages-btn')?.classList.remove('hidden'); // home hosts the ⋯ Saved Messages menu
+  // DM chrome.
+  document.getElementById('chat-header-avatar-container').classList.add('hidden');
+  document.getElementById('chat-title').innerText = 'Select a friend to message';
+  document.getElementById('chat-input-container').classList.add('hidden');
+  messages.innerHTML = '';
+  document.querySelector('.main-chat').classList.remove('hub-active');
+  renderSidebar();
+  updateJumpToLatestVisibility();
+}
+window.goHome = goHome;
+
 function closeHeaderMoreMenu() {
   document.getElementById('header-more-menu')?.classList.add('hidden');
   document.getElementById('pinned-messages-btn')?.setAttribute('aria-expanded', 'false');
