@@ -201,6 +201,14 @@
 
 /* Hub-media safety net: uploaded art stays within its intended UI surface. */
 @media (min-width: 721px) { #mobile-conversations { display:none !important; } }
+/* Back arrow (DMs and Hubs): returns to the home state. Hidden while home itself is showing;
+   .is-home is kept in sync on #chat-header by initHomeHeader() in script.js. */
+/* Sizes mirror the neighbouring buttons: 38px like the header action buttons on desktop,
+   42px / 38px like the existing ☰ button on phones. .chat-header prefix outranks the inline .icon-btn rule. */
+.chat-header .chat-back-btn { flex:0 0 auto; width:38px; min-width:38px; height:38px; }
+.chat-header.is-home .chat-back-btn { display:none; }
+@media (max-width: 720px) { .chat-header .chat-back-btn { width:42px; min-width:42px; height:42px; } }
+@media (max-width: 360px) { .chat-header .chat-back-btn { width:38px; min-width:38px; height:38px; } }
 .main-chat, .chat-header, .messages-list, .hub-row, .hub-row .user-profile-info { min-width:0; }
 .messages-list { overflow-x:hidden; }
 .hub-row { max-width:100%; overflow:hidden; }
