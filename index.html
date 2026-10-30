@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ItzMasterBlade⚚</title>
+<title>ItzMasterBlade</title>
 <script>try{var t=localStorage.getItem("mb-theme");if(t==="midnight"||t==="onyx"||t==="starlight"||t==="halloween"||t==="eclipse"||t==="frost"||t==="forest")document.documentElement.setAttribute("data-theme",t);var q=Date.now()+19800000,m=Math.floor(q/60000)%1440;if((m>=1200||m<300)&&localStorage.getItem("mb-moon")===new Date(q-(m<300?864e5:0)).toISOString().slice(0,10))document.documentElement.setAttribute("data-theme","moonlight")}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -432,13 +432,6 @@ html[data-theme="starlight"] .mn-cr circle{stroke:rgba(70,50,160,.3)}
 .mcshot.ph span{font-size:1.6rem;color:var(--violet)}.mcshot.ph small{font:.7rem var(--mono);letter-spacing:.1em;text-transform:uppercase}
 .mcshot.wide{grid-column:span 2}
 @media (max-width:560px){.mcshot.wide{grid-column:auto}}
-
-/* glowing, hover-expanding character sprites in the side gutters */
-.gwrap.sm img{image-rendering:auto}
-.gwrap.glow::after{content:"";position:absolute;inset:-14%;z-index:-1;border-radius:50%;background:radial-gradient(circle,var(--violet) 0,var(--glow) 36%,transparent 70%);filter:blur(18px);opacity:.55;transition:transform .4s cubic-bezier(.3,1.5,.5,1),opacity .3s;animation:gpulse 4.5s ease-in-out infinite;animation-delay:var(--d,0s)}
-.gwrap.glow:hover::after{transform:scale(1.55);opacity:.85}
-@keyframes gpulse{50%{scale:1.14}}
-@media (prefers-reduced-motion:reduce){.gwrap.glow::after{animation:none;transition:none}}
 </style>
 </head>
 <body>
@@ -492,9 +485,9 @@ html[data-theme="starlight"] .mn-cr circle{stroke:rgba(70,50,160,.3)}
       </div>
     </div>
     <div class="who">
-      <h1>ItzMasterBlade⚚</h1>
+      <h1>ItzMasterBlade</h1>
       <div class="tag"><i></i>online · he/him ·  · INFJ · 10/02</div>
-      <p class="f-hero">⌖Hey there! I'm Blade. I'm a gamer, a creator, and someone who's always curious about what’s on the horizon. Whether I'm diving into a new game world, tinkering with code and AI, or crafting something from scratch, I thrive on the thrill of transforming ideas into reality. Tech and creative challenges really fuel my passion, and I'm constantly on the lookout for new discoveries and projects to tackle. I'm all about learning, building, and exploring. So glad you stopped by my little corner of the internet!~</p>
+      <p class="f-hero">Hey there! I'm Blade. I'm a gamer, a creator, and someone who's always curious about what’s on the horizon. Whether I'm diving into a new game world, tinkering with code and AI, or crafting something from scratch, I thrive on the thrill of transforming ideas into reality. Tech and creative challenges really fuel my passion, and I'm constantly on the lookout for new discoveries and projects to tackle. I'm all about learning, building, and exploring. So glad you stopped by my little corner of the internet!~</p>
     </div>
     <div class="starbox" aria-hidden="true"><img src="star-blue.png" alt=""></div>
   </section>
@@ -506,7 +499,7 @@ html[data-theme="starlight"] .mn-cr circle{stroke:rgba(70,50,160,.3)}
 
   <section class="card about">
     <h2>// about</h2>
-    <p class="f-about">ツI find myself moving from one game to another, each offering its own unique vibe. Minecraft lets my creativity run wild, while Roblox is packed with endless possibilities. Asphalt Legends gets my heart racing with pure adrenaline, and War Thunder challenges me to think strategically. When I'm not gaming, I dive into tech, creative design, and coding, with music always playing in the background. I enjoy experimenting with fresh ideas, tackling various projects, and noticing those little details that truly make a difference.
+    <p class="f-about">I find myself moving from one game to another, each offering its own unique vibe. Minecraft lets my creativity run wild, while Roblox is packed with endless possibilities. Asphalt Legends gets my heart racing with pure adrenaline, and War Thunder challenges me to think strategically. When I'm not gaming, I dive into tech, creative design, and coding, with music always playing in the background. I enjoy experimenting with fresh ideas, tackling various projects, and noticing those little details that truly make a difference.
 
 </p>
   </section>
@@ -664,8 +657,6 @@ html[data-theme="starlight"] .mn-cr circle{stroke:rgba(70,50,160,.3)}
 
   <div class="gdeco gwrap gr" data-near=".fitcheck" style="--w:150px;--d:-4s;--r:5deg" aria-hidden="true"><img src="sprite-1.png" alt=""></div>
   <div class="gdeco gwrap gl" data-near=".mcw" style="--w:140px;--d:-2s;--r:-5deg" aria-hidden="true"><img src="sprite-2.png" alt=""></div>
-  <div class="gdeco gwrap glow sm gl" data-near=".about" style="--w:160px;--d:-3s;--r:-4deg" aria-hidden="true"><img src="sprite-4.png" alt=""></div>
-  <div class="gdeco gwrap glow sm gr" data-near=".clock" style="--w:160px;--d:-1s;--r:4deg" aria-hidden="true"><img src="sprite-3.png" alt=""></div>
 
   <footer>
     <img class="foot-star" src="star-icon.png" alt="" aria-hidden="true">
