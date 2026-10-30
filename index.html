@@ -432,6 +432,13 @@ html[data-theme="starlight"] .mn-cr circle{stroke:rgba(70,50,160,.3)}
 .mcshot.ph span{font-size:1.6rem;color:var(--violet)}.mcshot.ph small{font:.7rem var(--mono);letter-spacing:.1em;text-transform:uppercase}
 .mcshot.wide{grid-column:span 2}
 @media (max-width:560px){.mcshot.wide{grid-column:auto}}
+
+/* glowing, hover-expanding character sprites in the side gutters */
+.gwrap.sm img{image-rendering:auto}
+.gwrap.glow::after{content:"";position:absolute;inset:-14%;z-index:-1;border-radius:50%;background:radial-gradient(circle,var(--violet) 0,var(--glow) 36%,transparent 70%);filter:blur(18px);opacity:.55;transition:transform .4s cubic-bezier(.3,1.5,.5,1),opacity .3s;animation:gpulse 4.5s ease-in-out infinite;animation-delay:var(--d,0s)}
+.gwrap.glow:hover::after{transform:scale(1.55);opacity:.85}
+@keyframes gpulse{50%{scale:1.14}}
+@media (prefers-reduced-motion:reduce){.gwrap.glow::after{animation:none;transition:none}}
 </style>
 </head>
 <body>
@@ -657,6 +664,8 @@ html[data-theme="starlight"] .mn-cr circle{stroke:rgba(70,50,160,.3)}
 
   <div class="gdeco gwrap gr" data-near=".fitcheck" style="--w:150px;--d:-4s;--r:5deg" aria-hidden="true"><img src="sprite-1.png" alt=""></div>
   <div class="gdeco gwrap gl" data-near=".mcw" style="--w:140px;--d:-2s;--r:-5deg" aria-hidden="true"><img src="sprite-2.png" alt=""></div>
+  <div class="gdeco gwrap glow sm gl" data-near=".about" style="--w:160px;--d:-3s;--r:-4deg" aria-hidden="true"><img src="sprite-4.png" alt=""></div>
+  <div class="gdeco gwrap glow sm gr" data-near=".clock" style="--w:160px;--d:-1s;--r:4deg" aria-hidden="true"><img src="sprite-3.png" alt=""></div>
 
   <footer>
     <img class="foot-star" src="star-icon.png" alt="" aria-hidden="true">
