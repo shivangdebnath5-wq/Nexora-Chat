@@ -670,3 +670,18 @@
    button; in a menu row it just sits inline. */
 .main-chat:not(.hub-active) #hub-more-menu { display:none !important; }
 #hub-more-menu #hub-invite-btn sup { position:static; margin-left:1px; font-size:9px; }
+
+/* Hollow Night minigame shortcut: large floating pumpkin tucked into the bottom-right
+   corner of the home view. It is a sibling after #chat-header, so it appears exactly
+   while the header carries .is-home (no chat/Hub open) and disappears otherwise. */
+.hollow-night-fab { display:none; position:absolute; right:18px; bottom:18px; width:84px; height:84px; border-radius:50%; align-items:center; justify-content:center; font-size:46px; line-height:1; text-decoration:none; background:radial-gradient(circle at 35% 30%, color-mix(in srgb, #f39a4a 28%, var(--bg-card)), var(--bg-card) 70%); border:2px solid rgba(243,154,74,.65); box-shadow:0 10px 26px var(--shadow), 0 0 22px rgba(243,154,74,.45), inset 0 2px 6px rgba(255,255,255,.12); z-index:40; cursor:pointer; animation:hollowFabFloat 3.2s ease-in-out infinite; transition:transform .18s ease, box-shadow .18s ease; -webkit-tap-highlight-color:transparent; }
+.chat-header.is-home ~ .hollow-night-fab { display:flex; }
+/* Soft rings that curve outward from the edges of the button */
+.hollow-night-fab::before, .hollow-night-fab::after { content:''; position:absolute; inset:-2px; border-radius:50%; border:2px solid rgba(243,154,74,.55); pointer-events:none; animation:hollowFabRipple 2.8s ease-out infinite; }
+.hollow-night-fab::after { animation-delay:1.4s; }
+.hollow-night-fab:hover { transform:scale(1.1) rotate(-6deg); box-shadow:0 12px 30px var(--shadow), 0 0 32px rgba(243,154,74,.7), inset 0 2px 6px rgba(255,255,255,.12); animation-play-state:paused; }
+.hollow-night-fab:active { transform:scale(.95); }
+@keyframes hollowFabFloat { 0%, 100% { translate:0 0; } 50% { translate:0 -10px; } }
+@keyframes hollowFabRipple { 0% { transform:scale(1); opacity:.7; } 100% { transform:scale(1.55); opacity:0; } }
+@media (max-width: 720px) { .hollow-night-fab { right:14px; bottom:calc(14px + env(safe-area-inset-bottom, 0px)); width:72px; height:72px; font-size:40px; } }
+@media (prefers-reduced-motion: reduce) { .hollow-night-fab, .hollow-night-fab::before, .hollow-night-fab::after { animation:none; } }
